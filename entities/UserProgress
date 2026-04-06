@@ -1,0 +1,77 @@
+{
+  "name": "UserProgress",
+  "type": "object",
+  "properties": {
+    "total_tests": {
+      "type": "number",
+      "default": 0
+    },
+    "total_correct": {
+      "type": "number",
+      "default": 0
+    },
+    "total_questions_answered": {
+      "type": "number",
+      "default": 0
+    },
+    "streak_days": {
+      "type": "number",
+      "default": 0
+    },
+    "last_activity_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "difficult_question_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "favorite_question_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "activity_dates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "achievements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "earned_date": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "topics_progress": {
+      "type": "object",
+      "description": "Progress per topic",
+      "additionalProperties": true
+    },
+    "srs_data": {
+      "type": "object",
+      "description": "Spaced repetition data per question",
+      "additionalProperties": true
+    },
+    "marathon_best": {
+      "type": "number",
+      "default": 0,
+      "description": "Best marathon score (streak without mistakes)"
+    }
+  },
+  "required": []
+}

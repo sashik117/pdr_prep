@@ -1,0 +1,58 @@
+{
+  "name": "TestResult",
+  "type": "object",
+  "properties": {
+    "test_type": {
+      "type": "string",
+      "enum": [
+        "quick",
+        "full",
+        "difficult",
+        "daily"
+      ],
+      "description": "Type of test taken"
+    },
+    "category": {
+      "type": "string",
+      "description": "Vehicle category tested"
+    },
+    "total_questions": {
+      "type": "number"
+    },
+    "correct_answers": {
+      "type": "number"
+    },
+    "score_percent": {
+      "type": "number"
+    },
+    "time_spent_seconds": {
+      "type": "number"
+    },
+    "answers": {
+      "type": "array",
+      "description": "User answers for each question",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question_id": {
+            "type": "string"
+          },
+          "selected_answer": {
+            "type": "string"
+          },
+          "is_correct": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "passed": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "test_type",
+    "total_questions",
+    "correct_answers"
+  ]
+}

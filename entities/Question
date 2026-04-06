@@ -1,0 +1,73 @@
+{
+  "name": "Question",
+  "type": "object",
+  "properties": {
+    "question_number": {
+      "type": "number",
+      "description": "Unique question number from official exam"
+    },
+    "text": {
+      "type": "string",
+      "description": "Question text in Ukrainian"
+    },
+    "options": {
+      "type": "array",
+      "description": "Answer options",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "correct_answer": {
+      "type": "string",
+      "description": "Label of the correct answer (A, B, C, D)"
+    },
+    "explanation": {
+      "type": "string",
+      "description": "Explanation why this answer is correct"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "URL of the question image if any"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "BE",
+        "CE"
+      ],
+      "description": "Vehicle category"
+    },
+    "topic": {
+      "type": "string",
+      "description": "Topic/section of the question"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ],
+      "default": "medium"
+    }
+  },
+  "required": [
+    "text",
+    "options",
+    "correct_answer",
+    "category",
+    "topic"
+  ]
+}
