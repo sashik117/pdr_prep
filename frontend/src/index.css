@@ -1,0 +1,173 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-main: 'Manrope', sans-serif;
+    --background: 220 20% 97%;
+    --foreground: 220 25% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 10%;
+    --primary: 217 91% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 93%;
+    --secondary-foreground: 220 25% 15%;
+    --muted: 220 15% 95%;
+    --muted-foreground: 220 10% 45%;
+    --accent: 43 96% 56%;
+    --accent-foreground: 30 60% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 217 91% 50%;
+    --chart-1: 217 91% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 43 96% 56%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 0 84% 60%;
+    --radius: 0.75rem;
+    --sidebar-background: 220 25% 12%;
+    --sidebar-foreground: 220 10% 85%;
+    --sidebar-primary: 217 91% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 18%;
+    --sidebar-accent-foreground: 220 10% 90%;
+    --sidebar-border: 220 20% 20%;
+    --sidebar-ring: 217 91% 50%;
+    --success: 152 60% 45%;
+    --success-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 220 25% 7%;
+    --foreground: 220 10% 95%;
+    --card: 220 25% 10%;
+    --card-foreground: 220 10% 95%;
+    --popover: 220 25% 10%;
+    --popover-foreground: 220 10% 95%;
+    --primary: 217 91% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 20% 15%;
+    --secondary-foreground: 220 10% 90%;
+    --muted: 220 20% 13%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 43 96% 56%;
+    --accent-foreground: 30 60% 15%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 20% 16%;
+    --input: 220 20% 16%;
+    --ring: 217 91% 55%;
+    --chart-1: 217 91% 55%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 43 96% 56%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 0 84% 60%;
+    --sidebar-background: 220 25% 5%;
+    --sidebar-foreground: 220 10% 85%;
+    --sidebar-primary: 217 91% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 12%;
+    --sidebar-accent-foreground: 220 10% 90%;
+    --sidebar-border: 220 20% 14%;
+    --sidebar-ring: 217 91% 55%;
+    --success: 152 60% 45%;
+    --success-foreground: 0 0% 100%;
+  }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-main);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: geometricPrecision;
+    letter-spacing: -0.01em;
+    background-image:
+      radial-gradient(circle at top left, rgba(20, 107, 255, 0.08), transparent 30%),
+      linear-gradient(180deg, #f8fbff 0%, #f4f7fb 100%);
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 30%),
+      linear-gradient(180deg, #020617 0%, #081120 100%);
+  }
+
+  .dark .bg-white {
+    background-color: rgb(2 6 23 / 0.96) !important;
+  }
+
+  .dark .bg-white\/80,
+  .dark .bg-white\/90 {
+    background-color: rgb(2 6 23 / 0.88) !important;
+  }
+
+  .dark .bg-slate-50,
+  .dark .bg-slate-50\/70,
+  .dark .bg-slate-50\/80 {
+    background-color: rgb(15 23 42 / 0.9) !important;
+  }
+
+  .dark .bg-slate-100 {
+    background-color: rgb(30 41 59 / 0.92) !important;
+  }
+
+  .dark .border-slate-100,
+  .dark .border-slate-200,
+  .dark .border-slate-300,
+  .dark .border-white\/70,
+  .dark .border-white\/80,
+  .dark .border-white\/85,
+  .dark .border-white\/90 {
+    border-color: rgb(51 65 85 / 0.9) !important;
+  }
+
+  .dark .text-slate-900,
+  .dark .text-slate-950 {
+    color: rgb(248 250 252) !important;
+  }
+
+  .dark .text-slate-700 {
+    color: rgb(226 232 240) !important;
+  }
+
+  .dark .text-slate-600,
+  .dark .text-slate-500 {
+    color: rgb(203 213 225) !important;
+  }
+
+  .dark .text-slate-400 {
+    color: rgb(148 163 184) !important;
+  }
+
+  .dark .shadow-\[0_18px_45px_rgba\(15\,23\,42\,0\.05\)\],
+  .dark .shadow-\[0_24px_60px_rgba\(37\,99\,235\,0\.08\)\],
+  .dark .shadow-\[0_34px_80px_rgba\(15\,23\,42\,0\.08\)\] {
+    box-shadow: 0 18px 45px rgba(2, 6, 23, 0.45) !important;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
