@@ -282,6 +282,25 @@ def ensure_runtime_migrations() -> None:
         "ALTER TABLE battles ADD COLUMN IF NOT EXISTS opponent_seen_at TIMESTAMP",
         "ALTER TABLE battles ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP",
         "ALTER TABLE battles ADD COLUMN IF NOT EXISTS finished_at TIMESTAMP",
+        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT NOW()",
+        "CREATE INDEX IF NOT EXISTS idx_battles_challenger_email ON battles(challenger_email)",
+        "CREATE INDEX IF NOT EXISTS idx_battles_opponent_email ON battles(opponent_email)",
+        "CREATE INDEX IF NOT EXISTS idx_battles_status ON battles(status)",
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1
+                FROM information_schema.tables
+                WHERE table_name = 'battles'
+            ) THEN
+                ALTER TABLE battles DROP CONSTRAINT IF EXISTS battles_status_check;
+                ALTER TABLE battles
+                ADD CONSTRAINT battles_status_check
+                CHECK (status IN ('pending', 'active', 'finished', 'declined'));
+            END IF;
+        END $$;
+        """,
         """
         DO $$
         BEGIN
@@ -826,6 +845,45 @@ def _battle_role(battle: dict[str, Any], email: str) -> Optional[str]:
     return None
 
 
+def _normalize_battle_record(battle: dict[str, Any]) -> dict[str, Any]:
+    battle["challenger_email"] = str(battle.get("challenger_email") or "").strip().lower()
+    battle["opponent_email"] = str(battle.get("opponent_email") or "").strip().lower()
+    battle["challenger_name"] = str(battle.get("challenger_name") or "").strip() or None
+    battle["opponent_name"] = str(battle.get("opponent_name") or "").strip() or None
+    battle["status"] = str(battle.get("status") or "pending").strip().lower() or "pending"
+    battle["category"] = str(battle.get("category") or "B").strip().upper() or "B"
+    battle["question_ids"] = _coerce_json_list(battle.get("question_ids"))
+    battle["challenger_answers"] = _coerce_json_dict(battle.get("challenger_answers"))
+    battle["opponent_answers"] = _coerce_json_dict(battle.get("opponent_answers"))
+    battle["challenger_score"] = int(battle.get("challenger_score") or 0)
+    battle["opponent_score"] = int(battle.get("opponent_score") or 0)
+    battle["challenger_time"] = int(battle.get("challenger_time") or 0)
+    battle["opponent_time"] = int(battle.get("opponent_time") or 0)
+    return battle
+
+
+def _battle_table_columns(conn: psycopg.Connection) -> set[str]:
+    rows = conn.execute(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'battles'
+        """
+    ).fetchall()
+    return {str(row["column_name"]) for row in rows}
+
+
+def _update_battle_declined(conn: psycopg.Connection, battle_id: int, seen_column: Optional[str]) -> None:
+    available = _battle_table_columns(conn)
+    updates = ["status = 'declined'"]
+    if seen_column and seen_column in available:
+        updates.append(f"{seen_column} = NOW()")
+    if "finished_at" in available:
+        updates.append("finished_at = COALESCE(finished_at, NOW())")
+    sql = f"UPDATE battles SET {', '.join(updates)} WHERE id = %s"
+    conn.execute(sql, (battle_id,))
+
+
 def _pick_winner(battle: dict[str, Any]) -> Optional[str]:
     challenger_score = int(battle.get("challenger_score") or 0)
     opponent_score = int(battle.get("opponent_score") or 0)
@@ -875,9 +933,7 @@ def _mark_battle_seen(conn: psycopg.Connection, battle: dict[str, Any], role: Op
 
 
 def _finalize_battle_state(conn: psycopg.Connection, battle: dict[str, Any]) -> dict[str, Any]:
-    battle["question_ids"] = _coerce_json_list(battle.get("question_ids"))
-    battle["challenger_answers"] = _coerce_json_dict(battle.get("challenger_answers"))
-    battle["opponent_answers"] = _coerce_json_dict(battle.get("opponent_answers"))
+    battle = _normalize_battle_record(battle)
     expires_at = battle.get("expires_at")
     if battle.get("status") != "active" or not expires_at or expires_at > datetime.utcnow():
         return battle
@@ -1467,9 +1523,8 @@ def upload_avatar(file: UploadFile = File(...), user=Depends(get_current_user)):
             (avatar_url, user["id"]),
         )
         conn.commit()
-        updated = conn.execute("SELECT avatar_url, avatar_version FROM users WHERE id = %s", (user["id"],)).fetchone()
-    version = int(updated["avatar_version"] or 0)
-    return {"avatar_url": f"{updated['avatar_url']}?v={version}", "avatar_version": version}
+        updated = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone())
+    return _user_public(updated)
 
 
 @app.get("/users/{user_id}/profile")
@@ -2928,6 +2983,8 @@ def get_battles(user=Depends(get_current_user)):
         for row in rows:
             battle = _finalize_battle_state(conn, dict(row))
             role = _battle_role(battle, user["email"])
+            if not role:
+                continue
             if battle.get("status") == "pending":
                 battle = _mark_battle_seen(conn, battle, role)
             opponent_email = battle["opponent_email"] if role == "challenger" else battle["challenger_email"]
@@ -3062,11 +3119,14 @@ async def decline_battle(battle_id: int, user=Depends(get_current_user)):
         battle = conn.execute("SELECT * FROM battles WHERE id = %s", (battle_id,)).fetchone()
         if not battle:
             raise HTTPException(404, "Батл не знайдено")
-        if battle["opponent_email"].lower() != user["email"].lower():
+        battle = _normalize_battle_record(dict(battle))
+        if battle["opponent_email"] != user["email"].lower():
             raise HTTPException(403, "Тільки опонент може відхилити батл")
         if battle["status"] != "pending":
+            if battle["status"] == "declined":
+                return {"message": "Батл уже відхилено"}
             raise HTTPException(409, "Можна відхилити лише очікуючий батл")
-        conn.execute("UPDATE battles SET status = 'declined', opponent_seen_at = NOW() WHERE id = %s", (battle_id,))
+        _update_battle_declined(conn, battle_id, "opponent_seen_at")
         conn.commit()
     await realtime_hub.emit(battle["challenger_email"], "battle_declined", {"battle_id": battle_id})
     await realtime_hub.emit(battle["opponent_email"], "battle_declined", {"battle_id": battle_id})
@@ -3079,11 +3139,14 @@ async def cancel_battle(battle_id: int, user=Depends(get_current_user)):
         battle = conn.execute("SELECT * FROM battles WHERE id = %s", (battle_id,)).fetchone()
         if not battle:
             raise HTTPException(404, "Батл не знайдено")
-        if battle["challenger_email"].lower() != user["email"].lower():
+        battle = _normalize_battle_record(dict(battle))
+        if battle["challenger_email"] != user["email"].lower():
             raise HTTPException(403, "Тільки ініціатор може скасувати виклик")
         if battle["status"] != "pending":
+            if battle["status"] == "declined":
+                return {"message": "Виклик уже скасовано"}
             raise HTTPException(409, "Скасувати можна лише очікуючий виклик")
-        conn.execute("UPDATE battles SET status = 'declined', challenger_seen_at = NOW() WHERE id = %s", (battle_id,))
+        _update_battle_declined(conn, battle_id, "challenger_seen_at")
         conn.commit()
     await realtime_hub.emit(battle["challenger_email"], "battle_cancelled", {"battle_id": battle_id})
     await realtime_hub.emit(battle["opponent_email"], "battle_cancelled", {"battle_id": battle_id})

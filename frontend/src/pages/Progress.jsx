@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AtSign, BookMarked, CheckCheck, CheckCircle2, ChevronDown, ChevronUp, CircleAlert, Copy, Flame, LogOut, Mail, MessageCircleMore, PencilLine, Save, Settings, ShieldCheck, Sparkles, Star, Users, XCircle } from 'lucide-react';
+import { AtSign, BookMarked, CheckCheck, CheckCircle2, ChevronDown, ChevronUp, CircleAlert, Copy, Flame, LogOut, Mail, MessageCircleMore, PencilLine, Save, Settings, ShieldCheck, Sparkles, Star, Target, Users, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -82,7 +82,7 @@ export default function Progress() {
   });
 
   const stats = statsQuery.data;
-  const profile = stats?.user || user;
+  const profile = { ...(stats?.user || {}), ...(user || {}) };
   const notificationSummary = notificationsQuery.data || { friends: 0, support: 0, battles: 0 };
   const totalTests = stats?.total_tests || 0;
   const totalCorrect = stats?.total_correct || 0;
@@ -166,6 +166,7 @@ export default function Progress() {
     try {
       const updated = await api.updateProfile({ name, surname, username, bio, active_frame: activeFrame, email_visible: emailVisible });
       login(apiToken(), updated, hasPersistentLogin());
+      queryClient.setQueryData(['cabinet-stats'], (current) => current ? { ...current, user: { ...(current.user || {}), ...updated } } : current);
       setIsEditingProfile(false);
       setProfileMessage('Профіль оновлено');
       await queryClient.invalidateQueries({ queryKey: ['cabinet-stats'] });
@@ -176,9 +177,11 @@ export default function Progress() {
     }
   };
 
-  const handleAvatarChange = async (avatarUrl) => {
+  const handleAvatarChange = async (updatedUser) => {
     if (!user) return;
-    login(apiToken(), { ...profile, avatar_url: avatarUrl }, hasPersistentLogin());
+    const nextUser = updatedUser ? { ...profile, ...updatedUser } : profile;
+    login(apiToken(), nextUser, hasPersistentLogin());
+    queryClient.setQueryData(['cabinet-stats'], (current) => current ? { ...current, user: { ...(current.user || {}), ...nextUser } } : current);
     await queryClient.invalidateQueries({ queryKey: ['cabinet-stats'] });
   };
 
@@ -250,7 +253,7 @@ export default function Progress() {
       <Card className="overflow-hidden border-white/90 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(239,246,255,0.96))] shadow-[0_24px_60px_rgba(37,99,235,0.08)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96),rgba(15,23,42,0.98))]">
         <CardContent className="space-y-6 p-4 sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
-            <AvatarUpload avatarUrl={profile?.avatar_url} activeFrame={profile?.active_frame || 'default'} onAvatarChange={handleAvatarChange} editable={isEditingProfile} />
+            <AvatarUpload avatarUrl={profile?.avatar_url} activeFrame={isEditingProfile ? activeFrame : (profile?.active_frame || 'default')} onAvatarChange={handleAvatarChange} editable={isEditingProfile} />
 
             <div className="min-w-0 flex-1">
               {!isEditingProfile ? (
@@ -389,7 +392,7 @@ export default function Progress() {
 
             <div className="grid grid-cols-2 gap-4 lg:contents">
               <MetricCard icon={CheckCheck} label="Складено іспитів" value={String(passedTests)} accent="blue" />
-              <MetricCard icon={CheckCheck} label="Точність" value={`${accuracy}%`} accent="amber" />
+              <MetricCard icon={Target} label="Точність" value={`${accuracy}%`} accent="amber" />
               <MetricCard icon={CheckCircle2} label="Правильних" value={String(totalCorrect)} accent="green" />
               <MetricCard icon={XCircle} label="Помилки" value={String(totalWrong)} accent="red" />
             </div>

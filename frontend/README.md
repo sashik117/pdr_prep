@@ -64,7 +64,20 @@ PowerShell
 npm run dev
 Він дасть посилання, зазвичай http://localhost:5173. Тисни Ctrl + Click на нього.
 
-Оновлення БД з питаннями
+3. Якщо показує Пайтона більше ніж ДжаваСкріпт зроби наступне: 
+
+ в PowerShell з кореня проєкту:
+
+cd D:\PDRPrep
+git rm -r --cached --ignore-unmatch backend/venv311 frontend/venv backend/__pycache__ node_modules frontend/node_modules dist frontend/dist
+git add .gitignore
+git status
+Після цього закоміть зміни:
+
+git commit -m "Clean tracked build and virtualenv files"
+Після такого GitHub/аналізатор мов перестане рахувати віртуалки як код проєкту, і відсоток Python має різко впасти. Якщо хочеш, я далі ще підкажу, які папки варто лишити в репо, а які точно ні.
+
+4. Оновлення БД з питаннями
 Як користуватись:
 
 Запусти бекенд:

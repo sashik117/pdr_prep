@@ -216,7 +216,7 @@ export const api = {
     const form = new FormData();
     form.append('file', file);
     const response = await request('/users/me/avatar', { method: 'POST', body: form });
-    return normalizeUser(response);
+    return normalizeUser(response?.user || response);
   },
 
   getUserProfile: async (id) => normalizeUser(await request(`/users/${id}/profile`)),
@@ -259,7 +259,13 @@ export const api = {
       method: 'POST',
     }),
 
-  getStats: () => request('/progress/stats'),
+  getStats: async () => {
+    const data = await request('/progress/stats');
+    return {
+      ...data,
+      user: normalizeUser(data?.user),
+    };
+  },
   getTestResults: () => request('/progress/results'),
   getAchievements: () => request('/achievements'),
   getLeaderboard: async () => (await request('/leaderboard')).map(normalizeUser),
