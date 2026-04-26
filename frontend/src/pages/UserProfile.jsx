@@ -123,8 +123,11 @@ export default function UserProfile() {
             <Link to="/leaderboard">До рейтингу</Link>
           </Button>
         </CardHeader>
-        <CardContent className="text-sm leading-7 text-slate-600 dark:text-slate-300">
-          Тут видно основний прогрес користувача: скільки тестів він уже склав, яка в нього точність відповідей і як стабільно він проходить навчання.
+        <CardContent className="flex flex-wrap gap-3 text-sm text-slate-600 dark:text-slate-300">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold dark:border-slate-700 dark:bg-slate-900">Складено: {passedTests}</span>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold dark:border-slate-700 dark:bg-slate-900">Точність: {accuracy}%</span>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold dark:border-slate-700 dark:bg-slate-900">Правильно: {profile.total_correct || 0}</span>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold dark:border-slate-700 dark:bg-slate-900">Помилки: {totalWrong}</span>
         </CardContent>
       </Card>
     </div>

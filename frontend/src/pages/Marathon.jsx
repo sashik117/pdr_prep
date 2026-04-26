@@ -24,6 +24,7 @@ export default function Marathon() {
   const [answered, setAnswered] = useState(false);
   const [seenIds, setSeenIds] = useState(/** @type {number[]} */ ([]));
   const [lives, setLives] = useState(TOTAL_LIVES);
+  const [breakingHeartIndex, setBreakingHeartIndex] = useState(/** @type {number | null} */ (null));
 
   /** @type {{ data: import('@/types/app').StatsResponse | undefined }} */
   const { data: stats } = useQuery({
@@ -51,6 +52,7 @@ export default function Marathon() {
     setAnswered(false);
     setSeenIds([Number(first.id)]);
     setLives(TOTAL_LIVES);
+    setBreakingHeartIndex(null);
     setPhase('running');
   };
 
@@ -62,25 +64,33 @@ export default function Marathon() {
     const currentQuestion = queue[currentIndex];
     if (!currentQuestion) return;
 
+    const nextScore = score + 1;
+    setScore(nextScore);
+
     if (label !== currentQuestion.correct_answer) {
       const nextLives = lives - 1;
+      const brokenIndex = Math.max(0, lives - 1);
+      setBreakingHeartIndex(brokenIndex);
       setLives(nextLives);
+
       if (nextLives <= 0) {
         try {
-          await api.submitMarathonScore(score);
+          await api.submitMarathonScore(nextScore);
         } catch {
           // Keep local result visible.
         }
-        setTimeout(() => setPhase('dead'), 1200);
+        setTimeout(() => {
+          setBreakingHeartIndex(null);
+          setPhase('dead');
+        }, 1200);
       } else {
         setTimeout(() => {
+          setBreakingHeartIndex(null);
           void handleNext();
         }, 900);
       }
       return;
     }
-
-    setScore((prev) => prev + 1);
   };
 
   const handleNext = async () => {
@@ -101,7 +111,7 @@ export default function Marathon() {
   }
 
   if (!user) {
-    return <LoginPrompt title="Режим Марафон" description="Увійдіть або зареєструйтесь, щоб грати в марафон і потрапити в таблицю лідерів." />;
+    return <LoginPrompt title="Режим марафон" description="Увійдіть або зареєструйтесь, щоб грати в марафон і потрапити в таблицю лідерів." />;
   }
 
   const currentQuestion = queue[currentIndex];
@@ -114,7 +124,7 @@ export default function Marathon() {
             <Zap className="h-6 w-6 text-accent" />
             Марафон
           </h1>
-          <p className="text-sm text-muted-foreground">Три життя. Кожна помилка розбиває одне сердечко.</p>
+          <p className="text-sm text-muted-foreground">Три життя. Рекорд тепер рахується як максимальна кількість питань, до яких ви дійшли.</p>
         </div>
         <div className="text-right">
           <div className="flex items-center gap-2">
@@ -131,12 +141,14 @@ export default function Marathon() {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-foreground">Готові до марафону?</h2>
-            <p className="mx-auto mt-2 max-w-md text-muted-foreground">Відповідайте на питання одне за одним. Помилилися? Втрачаєте життя, але ще можете повернутись у гру.</p>
+            <p className="mx-auto mt-2 max-w-md text-muted-foreground">
+              Відповідайте на питання одне за одним. Помилки забирають життя, але рекорд тепер рахується по тому, наскільки далеко ви дійшли до втрати всіх трьох сердець.
+            </p>
           </div>
           {bestScore > 0 ? (
             <div className="inline-flex items-center gap-2 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-2 text-sm font-medium text-yellow-800 dark:border-yellow-900/60 dark:bg-yellow-950/30 dark:text-yellow-300">
               <Trophy className="h-4 w-4" />
-              Ваш рекорд: {bestScore} питань поспіль
+              Ваш рекорд: {bestScore} питань
             </div>
           ) : null}
           <Button size="lg" onClick={() => void startMarathon()} className="h-12 rounded-xl px-10">
@@ -151,22 +163,31 @@ export default function Marathon() {
           <div className="flex items-center justify-between px-1">
             <Badge variant="outline" className="gap-2 px-4 py-1.5 text-base">
               <Zap className="h-4 w-4 text-accent" />
-              {score} поспіль
+              {score} максимум
             </Badge>
 
             <div className="flex items-center gap-2">
               {Array.from({ length: TOTAL_LIVES }).map((_, index) => {
                 const alive = index < lives;
+                const breaking = breakingHeartIndex === index;
                 return (
                   <motion.div
                     key={index}
                     initial={false}
-                    animate={alive ? { scale: 1, rotate: 0, opacity: 1 } : { scale: [1, 1.1, 0.9], rotate: [0, -20, 18, -12], opacity: 0.45 }}
-                    transition={{ duration: 0.45 }}
+                    animate={
+                      breaking
+                        ? { scale: [1, 1.15, 0.85], rotate: [0, -18, 14, -10], opacity: [1, 1, 0.35] }
+                        : alive
+                          ? { scale: 1, rotate: 0, opacity: 1 }
+                          : { scale: 0.9, rotate: 0, opacity: 0.4 }
+                    }
+                    transition={{ duration: breaking ? 0.65 : 0.35 }}
                     className="relative"
                   >
-                    <Heart className={alive ? 'h-6 w-6 fill-rose-500 text-rose-500' : 'h-6 w-6 text-slate-300'} />
-                    {!alive ? <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[10px] font-black text-slate-500">×</span> : null}
+                    <Heart className={alive ? 'h-7 w-7 fill-rose-500 text-rose-500' : 'h-7 w-7 text-slate-300 dark:text-slate-600'} />
+                    {breaking ? (
+                      <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[10px] font-black text-white/90">✦</span>
+                    ) : null}
                   </motion.div>
                 );
               })}
@@ -206,7 +227,7 @@ export default function Marathon() {
           </div>
           <div>
             <h2 className="text-3xl font-black text-foreground">Марафон завершено</h2>
-            <p className="mt-2 text-muted-foreground">Ви відповіли правильно на <span className="font-bold text-foreground">{score}</span> питань поспіль.</p>
+            <p className="mt-2 text-muted-foreground">Ви дійшли до <span className="font-bold text-foreground">{score}</span> питань, поки не вичерпали всі три життя.</p>
           </div>
           <div className="flex justify-center gap-3">
             <Button onClick={() => void startMarathon()} className="gap-2 rounded-xl px-6">

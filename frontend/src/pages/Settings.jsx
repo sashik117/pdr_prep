@@ -242,7 +242,7 @@ export default function Settings() {
         <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-6">
           <div>
             <p className="font-semibold text-slate-900 dark:text-white">Вихід з акаунту</p>
-            <p className="text-sm text-slate-600 dark:text-slate-300">Кнопка винесена окремо внизу, щоб не губилася серед інших дій.</p>
+    
           </div>
           <Button variant="destructive" className="w-full rounded-xl px-5 shadow-[0_12px_24px_rgba(239,68,68,0.18)] sm:w-auto" onClick={logout}>
             <LogOut className="mr-2 h-4 w-4" />

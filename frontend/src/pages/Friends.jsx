@@ -1,5 +1,5 @@
-// @ts-nocheck
-import { useEffect, useMemo, useState } from 'react';
+﻿// @ts-nocheck
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, AtSign, Check, CheckCheck, MessageCircleMore, Send, Swords, UserCheck, UserMinus, Users, X } from 'lucide-react';
@@ -18,8 +18,13 @@ export default function Friends() {
   const [inviteUsername, setInviteUsername] = useState('');
   const [inviteInfo, setInviteInfo] = useState('');
   const [inviteError, setInviteError] = useState('');
-  const [selectedFriend, setSelectedFriend] = useState('');
+  const [selectedFriend, setSelectedFriend] = useState(null);
   const [message, setMessage] = useState('');
+  const messagesEndRef = useRef(null);
+
+  const scrollToLatestMessage = (behavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' });
+  };
 
   const { data: friendsData, isLoading } = useQuery({
     queryKey: ['friends'],
@@ -48,16 +53,24 @@ export default function Friends() {
   );
 
   useEffect(() => {
-    if (!selectedFriend && friendsData?.friends?.length) {
-      setSelectedFriend(friendsData.friends[0].user?.username || '');
-    }
-  }, [friendsData, selectedFriend]);
-
-  useEffect(() => {
     if (friendsData) {
       queryClient.invalidateQueries({ queryKey: ['notification-summary'] });
     }
   }, [friendsData, queryClient]);
+
+  useEffect(() => {
+    if (!selectedFriendData) return;
+    const frame = window.requestAnimationFrame(() => {
+      scrollToLatestMessage(messages.length > 0 ? 'smooth' : 'auto');
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [messages, selectedFriendData]);
+
+  useEffect(() => {
+    if (!selectedFriendData) return;
+    queryClient.invalidateQueries({ queryKey: ['friends'] });
+    queryClient.invalidateQueries({ queryKey: ['notification-summary'] });
+  }, [messages, queryClient, selectedFriendData]);
 
   const inviteMutation = useMutation({
     mutationFn: (username) => api.inviteFriend(username),
@@ -69,7 +82,7 @@ export default function Friends() {
     },
     onError: (error) => {
       setInviteInfo('');
-      setInviteError(error instanceof Error ? error.message : 'Не вдалося надіслати запрошення');
+      setInviteError(error instanceof Error ? error.message : 'Не вдалося надіслати запит');
     },
   });
 
@@ -113,8 +126,6 @@ export default function Friends() {
     },
   });
 
-  const chatOpenOnMobile = Boolean(selectedFriendData);
-
   if (!user) {
     return (
       <LoginPrompt
@@ -124,217 +135,209 @@ export default function Friends() {
     );
   }
 
-  return (
-    <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-      <Card className={cn('border-white/85 shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92', chatOpenOnMobile && 'hidden xl:block')}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 dark:text-white">
-            <Users className="h-5 w-5 text-primary" />
-            Друзі
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/70">
-            <div className="flex gap-2">
-              <Input
-                placeholder="@username друга"
-                value={inviteUsername}
-                onChange={(event) => {
-                  setInviteUsername(event.target.value);
-                  setInviteInfo('');
-                  setInviteError('');
-                }}
-              />
-              <Button disabled={!inviteUsername || inviteMutation.isPending} onClick={() => inviteMutation.mutate(inviteUsername.trim())}>
-                <AtSign className="mr-2 h-4 w-4" />
-                Додати
-              </Button>
-            </div>
-            {inviteInfo ? <p className="mt-3 text-sm font-medium text-emerald-600">{inviteInfo}</p> : null}
-            {inviteError ? <p className="mt-3 text-sm font-medium text-red-600">{inviteError}</p> : null}
+  return !selectedFriendData ? (
+    <Card className="h-[calc(100dvh-11rem)] min-h-[34rem] flex flex-col overflow-hidden border-white/85 shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92 sm:h-[calc(100dvh-12rem)]">
+      <CardHeader className="shrink-0">
+        <CardTitle className="flex items-center gap-2 dark:text-white">
+          <Users className="h-5 w-5 text-primary" />
+          Друзі
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 overflow-y-auto space-y-5 custom-scrollbar">
+        <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/70">
+          <div className="flex gap-2">
+            <Input
+              placeholder="@username друга"
+              value={inviteUsername}
+              onChange={(event) => {
+                setInviteUsername(event.target.value);
+                setInviteInfo('');
+                setInviteError('');
+              }}
+            />
+            <Button disabled={!inviteUsername || inviteMutation.isPending} onClick={() => inviteMutation.mutate(inviteUsername.trim())}>
+              <AtSign className="mr-2 h-4 w-4" />
+              Додати
+            </Button>
           </div>
+          {inviteInfo ? <p className="mt-3 text-sm font-medium text-emerald-600">{inviteInfo}</p> : null}
+          {inviteError ? <p className="mt-3 text-sm font-medium text-red-600">{inviteError}</p> : null}
+        </div>
 
-          {(friendsData?.incoming || []).length ? (
-            <div className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Вхідні запити</p>
-              {(friendsData?.incoming || []).map((invite) => (
-                <FriendRequest key={invite.id} invite={invite} onAccept={() => acceptMutation.mutate(invite.id)} onReject={() => removeMutation.mutate(invite.id)} />
-              ))}
-            </div>
-          ) : null}
-
-          {(friendsData?.outgoing || []).length ? (
-            <div className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Очікують підтвердження</p>
-              {(friendsData?.outgoing || []).map((invite) => (
-                <FriendRequest key={invite.id} invite={invite} outgoing onReject={() => removeMutation.mutate(invite.id)} />
-              ))}
-            </div>
-          ) : null}
-
-          <div className="space-y-3">
-            {(friendsData?.friends || []).map((friend) => (
-              <button
-                key={friend.id}
-                type="button"
-                className={cn(
-                  'w-full rounded-2xl border p-4 text-left transition-all duration-200',
-                  selectedFriend === friend.user?.username
-                    ? 'border-primary bg-primary/5 shadow-[0_16px_38px_rgba(20,107,255,0.12)]'
-                    : 'border-slate-100 bg-white hover:border-primary/20 dark:border-slate-800 dark:bg-slate-900/70',
-                )}
-                onClick={() => setSelectedFriend(friend.user?.username || '')}
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar user={friend.user} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-slate-900 dark:text-white">{friend.user?.full_name || `${friend.user?.name || ''} ${friend.user?.surname || ''}`.trim()}</p>
-                    <p className="truncate text-sm text-slate-500 dark:text-slate-300">@{friend.user?.username || 'unknown'}</p>
-                  </div>
-                  {friend.unread_count ? <span className="rounded-lg bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground">{friend.unread_count}</span> : null}
-                </div>
-              </button>
+        {(friendsData?.incoming || []).length ? (
+          <div className="space-y-2">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Вхідні запити</p>
+            {(friendsData?.incoming || []).map((invite) => (
+              <FriendRequest key={invite.id} invite={invite} onAccept={() => acceptMutation.mutate(invite.id)} onReject={() => removeMutation.mutate(invite.id)} />
             ))}
-
-            {!isLoading && !(friendsData?.friends?.length || friendsData?.incoming?.length || friendsData?.outgoing?.length) ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
-                Поки що немає друзів. Додайте когось через @username зверху.
-              </div>
-            ) : null}
           </div>
-        </CardContent>
-      </Card>
+        ) : null}
 
-      <Card className={cn('border-white/85 shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92', !chatOpenOnMobile && 'hidden xl:block')}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 dark:text-white">
-            <MessageCircleMore className="h-5 w-5 text-primary" />
-            {selectedFriendData ? `Чат з @${selectedFriendData.username}` : 'Повідомлення'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {selectedFriendData ? (
-            <>
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/70">
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button variant="ghost" size="icon" className="xl:hidden" onClick={() => setSelectedFriend('')}>
-                    <ArrowLeft className="h-5 w-5" />
-                  </Button>
-                  <Link to={selectedFriendData.username ? `/u/${selectedFriendData.username}` : `/users/${selectedFriendData.id}`} className="shrink-0">
-                    <Avatar user={selectedFriendData} />
-                  </Link>
-                  <Link to={selectedFriendData.username ? `/u/${selectedFriendData.username}` : `/users/${selectedFriendData.id}`} className="min-w-0">
-                    <p className="font-semibold text-slate-900 dark:text-white">{selectedFriendData.full_name || `${selectedFriendData.name || ''} ${selectedFriendData.surname || ''}`.trim()}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-300">@{selectedFriendData.username}</p>
-                  </Link>
-                  <Button asChild variant="outline" className="ml-auto rounded-xl">
-                    <Link to={selectedFriendData.username ? `/u/${selectedFriendData.username}` : `/users/${selectedFriendData.id}`}>Профіль</Link>
-                  </Button>
+        {(friendsData?.outgoing || []).length ? (
+          <div className="space-y-2">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Очікують підтвердження</p>
+            {(friendsData?.outgoing || []).map((invite) => (
+              <FriendRequest key={invite.id} invite={invite} outgoing onReject={() => removeMutation.mutate(invite.id)} />
+            ))}
+          </div>
+        ) : null}
+
+        <div className="space-y-3 pb-4">
+          {(friendsData?.friends || []).map((friend) => (
+            <button
+              key={friend.id}
+              type="button"
+              className="w-full rounded-2xl border border-slate-100 bg-white p-4 text-left transition-all duration-200 hover:border-primary/20 dark:border-slate-800 dark:bg-slate-900/70"
+              onClick={() => setSelectedFriend(friend.user?.username || null)}
+            >
+              <div className="flex items-center gap-3">
+                <Avatar user={friend.user} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-slate-900 dark:text-white">{friend.user?.full_name || `${friend.user?.name || ''} ${friend.user?.surname || ''}`.trim()}</p>
+                  <p className="truncate text-sm text-slate-500 dark:text-slate-300">@{friend.user?.username || 'unknown'}</p>
                 </div>
+                {friend.unread_count ? <span className="rounded-lg bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground">{friend.unread_count}</span> : null}
               </div>
+            </button>
+          ))}
 
-              <div className="max-h-[560px] space-y-3 overflow-y-auto pr-1">
-                {messages.length > 0 ? messages.map((item) => {
-                  const mine = item.from_email === user.email;
-                  const invite = item.result_data?.kind === 'battle_invite' && item.result_data?.battle_id;
-                  const battle = invite ? battlesById.get(item.result_data.battle_id) : null;
-                  const canAccept = battle?.status === 'pending' && battle?.role === 'opponent';
-                  const canDecline = canAccept;
-                  const canOpen = !!battle?.id;
+          {!isLoading && !(friendsData?.friends?.length || friendsData?.incoming?.length || friendsData?.outgoing?.length) ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+              Поки що немає друзів. Додайте когось через @username зверху.
+            </div>
+          ) : null}
+        </div>
+      </CardContent>
+    </Card>
+  ) : (
+    <Card className="h-[calc(100dvh-11rem)] min-h-[34rem] flex flex-col overflow-hidden border-white/85 shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92 sm:h-[calc(100dvh-12rem)]">
+      <CardHeader className="shrink-0 pb-2">
+        <CardTitle className="flex items-center gap-2 dark:text-white">
+          <MessageCircleMore className="h-5 w-5 text-primary" />
+          <span className="truncate">{`Чат з @${selectedFriendData.username}`}</span>
+        </CardTitle>
+      </CardHeader>
+      
+      <CardContent className="flex flex-1 flex-col min-h-0 p-0 overflow-hidden">
+        {/* Хедер чату */}
+        <div className="shrink-0 border-b border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setSelectedFriend(null)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Link to={selectedFriendData.username ? `/u/${selectedFriendData.username}` : `/users/${selectedFriendData.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+              <Avatar user={selectedFriendData} small />
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-slate-900 dark:text-white leading-tight">{selectedFriendData.full_name || `${selectedFriendData.name || ''} ${selectedFriendData.surname || ''}`.trim()}</p>
+                <p className="truncate text-xs text-slate-500 dark:text-slate-300">@{selectedFriendData.username}</p>
+              </div>
+            </Link>
+            <Button asChild variant="outline" size="sm" className="ml-auto hidden rounded-xl sm:inline-flex">
+              <Link to={selectedFriendData.username ? `/u/${selectedFriendData.username}` : `/users/${selectedFriendData.id}`}>Профіль</Link>
+            </Button>
+          </div>
+        </div>
 
-                  return (
-                    <div key={item.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`flex max-w-[92%] gap-3 ${mine ? 'flex-row-reverse' : 'flex-row'}`}>
-                        <Avatar user={mine ? user : selectedFriendData} small />
-                        <div className={cn(
-                          'rounded-2xl px-4 py-3 text-sm shadow-sm',
-                          invite
-                            ? mine
-                              ? 'border border-primary/20 bg-primary/10 text-slate-900 dark:text-white'
-                              : 'border border-amber-200 bg-amber-50 text-slate-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-white'
-                            : mine
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-100',
-                        )}>
-                          <p className="mb-1 text-xs font-semibold opacity-80">{mine ? `@${user.username || ''}` : `@${selectedFriendData.username || ''}`}</p>
+        {/* Список повідомлень з незалежним скролом */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 custom-scrollbar">
+          {messages.length > 0 ? messages.map((item) => {
+            const mine = item.from_email === user.email;
+            const invite = item.result_data?.kind === 'battle_invite' && item.result_data?.battle_id;
+            const battle = invite ? battlesById.get(item.result_data.battle_id) : null;
+            const canAccept = battle?.status === 'pending' && battle?.role === 'opponent';
+            const canDecline = canAccept;
+            const canOpen = !!battle?.id;
 
-                          {invite ? (
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <Swords className="h-4 w-4 text-primary" />
-                                <p className="font-semibold">Запрошення на батл</p>
-                              </div>
-                              <p className="text-sm opacity-90">
-                                {battle?.status === 'active'
-                                  ? 'Батл уже активний. Можна переходити прямо в поєдинок.'
-                                  : battle?.status === 'finished'
-                                    ? 'Цей батл уже завершився.'
-                                    : 'Тисніть нижче, щоб перейти до батлу й прийняти або відхилити виклик.'}
-                              </p>
-                              <div className="flex flex-wrap gap-2">
-                                {canOpen ? (
-                                  <Button size="sm" variant={mine ? 'secondary' : 'outline'} className="rounded-xl" asChild>
-                                    <Link to={`/battle?battleId=${item.result_data.battle_id}`}>Відкрити батл</Link>
-                                  </Button>
-                                ) : null}
-                                {canAccept ? (
-                                  <Button size="sm" className="rounded-xl" onClick={() => acceptBattleMutation.mutate(battle.id)}>
-                                    Прийняти
-                                  </Button>
-                                ) : null}
-                                {canDecline ? (
-                                  <Button size="sm" variant="outline" className="rounded-xl" onClick={() => declineBattleMutation.mutate(battle.id)}>
-                                    Відхилити
-                                  </Button>
-                                ) : null}
-                              </div>
-                            </div>
-                          ) : (
-                            <p>{item.content}</p>
+            return (
+              <div key={item.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                <div className={`flex max-w-[92%] gap-3 ${mine ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <Avatar user={mine ? user : selectedFriendData} small />
+                  <div className={cn(
+                    'rounded-2xl px-4 py-3 text-sm shadow-sm',
+                    invite
+                      ? mine
+                        ? 'border border-primary/20 bg-primary/10 text-slate-900 dark:text-white'
+                        : 'border border-amber-200 bg-amber-50 text-slate-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-white'
+                      : mine
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-100',
+                  )}>
+                    <p className="mb-1 text-xs font-semibold opacity-80">{mine ? `@${user.username || ''}` : `@${selectedFriendData.username || ''}`}</p>
+
+                    {invite ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Swords className="h-4 w-4 text-primary" />
+                          <p className="font-semibold">Запрошення на батл</p>
+                        </div>
+                        <p className="text-sm opacity-90">
+                          {battle?.status === 'active'
+                            ? 'Батл уже активний.'
+                            : battle?.status === 'finished'
+                              ? 'Цей батл уже завершився.'
+                              : 'Прийміть або відхиліть виклик.'}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {canOpen && (
+                            <Button size="sm" variant={mine ? 'secondary' : 'outline'} className="rounded-xl h-8" asChild>
+                              <Link to={`/battle?battleId=${item.result_data.battle_id}`}>Відкрити</Link>
+                            </Button>
                           )}
-
-                          {mine ? (
-                            <div className="mt-2 flex items-center justify-end gap-1 text-[11px] opacity-80">
-                              {item.is_read ? (
-                                <>
-                                  <CheckCheck className="h-3.5 w-3.5" />
-                                  Прочитано
-                                </>
-                              ) : (
-                                <>
-                                  <Check className="h-3.5 w-3.5" />
-                                  Відправлено
-                                </>
-                              )}
-                            </div>
-                          ) : null}
+                          {canAccept && (
+                            <Button size="sm" className="rounded-xl h-8" onClick={() => acceptBattleMutation.mutate(battle.id)}>
+                              Прийняти
+                            </Button>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  );
-                }) : (
-                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
-                    Почніть розмову першими.
-                  </div>
-                )}
-              </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap break-words">{item.content}</p>
+                    )}
 
-              <div className="flex gap-2">
-                <Input placeholder="Написати повідомлення" value={message} onChange={(event) => setMessage(event.target.value)} />
-                <Button disabled={!message.trim() || messageMutation.isPending} onClick={() => messageMutation.mutate({ to_user: selectedFriend, content: message.trim(), type: 'text' })}>
-                  <Send className="mr-2 h-4 w-4" />
-                  Надіслати
-                </Button>
+                    {mine && (
+                      <div className="mt-1.5 flex items-center justify-end gap-1 text-[10px] opacity-70">
+                        {item.is_read ? <CheckCheck className="h-3 w-3" /> : <Check className="h-3 w-3" />}
+                        <span>{item.is_read ? 'Прочитано' : 'Відправлено'}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
-              Оберіть друга зліва, щоб побачити переписку.
+            );
+          }) : (
+            <div className="flex h-full items-center justify-center py-10">
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+                Почніть розмову першими.
+              </div>
             </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Фіксований інпут */}
+        <div className="shrink-0 border-t border-slate-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex gap-2">
+            <Input 
+              placeholder="Написати повідомлення..." 
+              value={message} 
+              onChange={(event) => setMessage(event.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && message.trim() && !messageMutation.isPending) {
+                  messageMutation.mutate({ to_user: selectedFriend, content: message.trim(), type: 'text' });
+                }
+              }}
+            />
+            <Button 
+              size="icon"
+              disabled={!message.trim() || messageMutation.isPending} 
+              onClick={() => messageMutation.mutate({ to_user: selectedFriend, content: message.trim(), type: 'text' })}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -342,22 +345,24 @@ function FriendRequest({ invite, onAccept, onReject, outgoing = false }) {
   return (
     <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/70">
       <div className="flex items-center gap-3">
-        <Avatar user={invite.user} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-slate-900 dark:text-white">{invite.user?.full_name || `${invite.user?.name || ''} ${invite.user?.surname || ''}`.trim()}</p>
-          <p className="truncate text-sm text-slate-500 dark:text-slate-300">@{invite.user?.username || 'unknown'}</p>
-        </div>
-        <Button asChild size="sm" variant="outline" className="rounded-xl">
+        <Link to={invite.user?.username ? `/u/${invite.user.username}` : `/users/${invite.user?.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+          <Avatar user={invite.user} />
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-slate-900 dark:text-white">{invite.user?.full_name || `${invite.user?.name || ''} ${invite.user?.surname || ''}`.trim()}</p>
+            <p className="truncate text-sm text-slate-500 dark:text-slate-300">@{invite.user?.username || 'unknown'}</p>
+          </div>
+        </Link>
+        <Button asChild size="sm" variant="outline" className="ml-auto hidden rounded-xl sm:inline-flex">
           <Link to={invite.user?.username ? `/u/${invite.user.username}` : `/users/${invite.user?.id}`}>Профіль</Link>
         </Button>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        {!outgoing ? (
+        {!outgoing && (
           <Button size="sm" className="rounded-xl" onClick={onAccept}>
             <UserCheck className="mr-2 h-4 w-4" />
             Прийняти
           </Button>
-        ) : null}
+        )}
         <Button size="sm" variant="outline" className="rounded-xl" onClick={onReject}>
           {outgoing ? <UserMinus className="mr-2 h-4 w-4" /> : <X className="mr-2 h-4 w-4" />}
           {outgoing ? 'Скасувати' : 'Відхилити'}
@@ -372,7 +377,7 @@ function Avatar({ user, small = false }) {
   const size = small ? 'h-10 w-10 rounded-xl' : 'h-12 w-12 rounded-2xl';
   const frameClass = cn(
     size,
-    'overflow-hidden p-[2px]',
+    'overflow-hidden p-[2px] shrink-0',
     user?.active_frame === 'fire' && 'bg-[linear-gradient(135deg,#fb7185,#f97316)]',
     user?.active_frame === 'sun' && 'bg-[linear-gradient(135deg,#facc15,#fb7185)]',
     user?.active_frame === 'gold' && 'bg-[linear-gradient(135deg,#f59e0b,#fde68a)]',
@@ -391,7 +396,7 @@ function Avatar({ user, small = false }) {
   return (
     <div className={frameClass}>
       <div className="h-full w-full overflow-hidden rounded-[inherit] bg-slate-200 dark:bg-slate-700">
-        {resolved ? <img src={resolved} alt={user?.full_name || user?.name || user?.username || 'avatar'} className="h-full w-full object-cover" /> : null}
+        {resolved ? <img src={resolved} alt={user?.username || 'avatar'} className="h-full w-full object-cover" /> : null}
       </div>
     </div>
   );

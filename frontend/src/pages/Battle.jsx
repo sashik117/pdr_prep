@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -36,6 +36,7 @@ export default function Battle() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [exitBattleOpen, setExitBattleOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [friendsOpen, setFriendsOpen] = useState(false);
 
   const normalizedOpponentUsername = useMemo(() => String(opponentUser || '').trim().replace(/^@/, ''), [opponentUser]);
 
@@ -87,7 +88,7 @@ export default function Battle() {
       setAnswers({});
       setStartedAt(Date.now());
     }
-  }, [battleDetails?.id]);
+  }, [battleDetails?.id, battleDetails?.questions?.length]);
 
   useEffect(() => {
     setSecondsLeft(Number(battleDetails?.seconds_left || 0));
@@ -95,10 +96,10 @@ export default function Battle() {
 
   useEffect(() => {
     if (!battleDetails || battleDetails.status !== 'active') return undefined;
-    const timer = setInterval(() => {
+    const timer = window.setInterval(() => {
       setSecondsLeft((value) => Math.max(0, value - 1));
     }, 1000);
-    return () => clearInterval(timer);
+    return () => window.clearInterval(timer);
   }, [battleDetails?.status, battleDetails?.id]);
 
   const filteredFriends = useMemo(() => {
@@ -209,7 +210,7 @@ export default function Battle() {
     return (
       <LoginPrompt
         title="Батли"
-        description="Увійдіть, щоб кидати виклики, приймати запрошення і проходити PVP-батли в реальному часі."
+        description="Увійдіть, щоб кидати виклики, приймати запрошення й проходити PVP-батли в реальному часі."
       />
     );
   }
@@ -283,37 +284,53 @@ export default function Battle() {
             ) : null}
 
             <div className="space-y-3 rounded-[24px] border border-sky-100 bg-[linear-gradient(135deg,rgba(239,246,255,0.92),rgba(255,255,255,0.98))] p-5 dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(30,64,175,0.18),rgba(2,6,23,0.98))]">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input className="pl-9" value={friendSearch} onChange={(event) => setFriendSearch(event.target.value)} placeholder="Або виберіть друга зі списку" />
-              </div>
-              <div className="max-h-[300px] space-y-3 overflow-y-auto pr-1">
-                {filteredFriends.length > 0 ? filteredFriends.map((friend) => (
-                  <button
-                    key={friend.id}
-                    type="button"
-                    className="flex w-full items-center gap-3 rounded-3xl border border-slate-100 bg-white p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[0_16px_34px_rgba(20,107,255,0.08)] dark:border-slate-800 dark:bg-slate-950/80"
-                    onClick={() => {
-                      const username = friend.user?.username || '';
-                      setOpponentUser(`@${username}`);
-                      createMutation.mutate({ opponent_user: username, category });
-                    }}
-                  >
-                    <Avatar user={friend.user} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-slate-900 dark:text-white">
-                        {friend.user?.full_name || `${friend.user?.name || ''} ${friend.user?.surname || ''}`.trim() || 'Користувач'}
-                      </p>
-                      <p className="truncate text-sm text-slate-500 dark:text-slate-300">@{friend.user?.username || 'unknown'}</p>
-                    </div>
-                    <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Інвайт</span>
-                  </button>
-                )) : (
-                  <div className="rounded-3xl border border-dashed border-slate-200 bg-white/80 p-5 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
-                    Можна запросити будь-якого користувача через @username, а друзі з’являються тут списком.
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-left dark:border-slate-700 dark:bg-slate-950/80"
+                onClick={() => setFriendsOpen((value) => !value)}
+              >
+                <div>
+                  <p className="font-semibold text-slate-900 dark:text-white">Список друзів для батлу</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-300">Розгорніть список і викличте когось одразу звідси.</p>
+                </div>
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{friendsOpen ? 'Сховати' : 'Показати'}</span>
+              </button>
+
+              {friendsOpen ? (
+                <>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Input className="pl-9" value={friendSearch} onChange={(event) => setFriendSearch(event.target.value)} placeholder="Або виберіть друга зі списку" />
                   </div>
-                )}
-              </div>
+                  <div className="max-h-[300px] space-y-3 overflow-y-auto pr-1">
+                    {filteredFriends.length > 0 ? filteredFriends.map((friend) => (
+                      <button
+                        key={friend.id}
+                        type="button"
+                        className="flex w-full items-center gap-3 rounded-3xl border border-slate-100 bg-white p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[0_16px_34px_rgba(20,107,255,0.08)] dark:border-slate-800 dark:bg-slate-950/80"
+                        onClick={() => {
+                          const username = friend.user?.username || '';
+                          setOpponentUser(`@${username}`);
+                          createMutation.mutate({ opponent_user: username, category });
+                        }}
+                      >
+                        <Avatar user={friend.user} />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold text-slate-900 dark:text-white">
+                            {friend.user?.full_name || `${friend.user?.name || ''} ${friend.user?.surname || ''}`.trim() || 'Користувач'}
+                          </p>
+                          <p className="truncate text-sm text-slate-500 dark:text-slate-300">@{friend.user?.username || 'unknown'}</p>
+                        </div>
+                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Інвайт</span>
+                      </button>
+                    )) : (
+                      <div className="rounded-3xl border border-dashed border-slate-200 bg-white/80 p-5 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
+                        Можна запросити будь-якого користувача через @username, а друзі з’являються тут списком.
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -369,7 +386,7 @@ export default function Battle() {
       <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
         <DialogContent className="sm:max-w-3xl">
           <DialogTitle>Історія батлів</DialogTitle>
-          <DialogDescription>Останні завершені дуелі без перевантаження головного екрану.</DialogDescription>
+          <DialogDescription>Останні завершені дуелі з датою та часом фінішу.</DialogDescription>
           <div className="max-h-[70vh] space-y-3 overflow-y-auto pr-1">
             {historyBattles.length > 0 ? historyBattles.map((battle) => (
               <button
@@ -386,6 +403,9 @@ export default function Battle() {
                   <div>
                     <p className="font-semibold text-slate-900 dark:text-white">{battle.opponent_name || `@${battle.opponent_username || 'unknown'}`}</p>
                     <p className="text-sm text-slate-500 dark:text-slate-300">@{battle.opponent_username || 'unknown'} • Категорія {battle.category}</p>
+                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                      Завершено: {battle.finished_at ? new Date(battle.finished_at).toLocaleString('uk-UA') : 'без часу'}
+                    </p>
                   </div>
                   <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
                     Завершено
@@ -495,14 +515,14 @@ export default function Battle() {
                 <div className="space-y-5">
                   {pressureMode ? (
                     <div className="rounded-[24px] border border-rose-200 bg-rose-50 p-4 text-center text-sm font-bold text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300">
-                      Час різко скорочено. Суперник уже фінішував, у вас залишились лічені секунди.
+                      Час різко скорочено. Суперник уже фінішував, у вас залишилися лічені секунди.
                     </div>
                   ) : null}
 
                   <div className="rounded-[26px] border border-primary/20 bg-[linear-gradient(135deg,rgba(219,234,254,0.85),rgba(255,255,255,0.98))] p-4 shadow-[0_12px_30px_rgba(20,107,255,0.08)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(30,64,175,0.22),rgba(2,6,23,0.98))]">
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <span className="inline-flex h-3 w-3 rounded-full bg-rose-500 shadow-[0_0_14px_rgba(244,63,94,0.7)] animate-pulse" />
+                        <span className="inline-flex h-3 w-3 animate-pulse rounded-full bg-rose-500 shadow-[0_0_14px_rgba(244,63,94,0.7)]" />
                         <p className="text-sm font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">У бою</p>
                       </div>
                       <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">@{battleDetails.opponent_username || 'unknown'}</p>
@@ -561,9 +581,7 @@ export default function Battle() {
       <Dialog open={compareOpen} onOpenChange={setCompareOpen}>
         <DialogContent className="sm:max-w-5xl">
           <DialogTitle>Порівняння відповідей</DialogTitle>
-          <DialogDescription>
-            Зліва ваші відповіді, справа відповіді суперника. Зелене — правильно, червоне — помилка.
-          </DialogDescription>
+          <DialogDescription>Паралельний розбір ваших відповідей і відповідей суперника.</DialogDescription>
           {battleDetails ? <BattleComparison battleDetails={battleDetails} /> : null}
         </DialogContent>
       </Dialog>
@@ -640,9 +658,9 @@ function BattleFinishCard({ battleDetails, onBackToLobby, onCompare }) {
           : 'border-slate-300 bg-[linear-gradient(135deg,rgba(226,232,240,0.98),rgba(248,250,252,0.98))] dark:border-slate-700 dark:bg-[linear-gradient(135deg,rgba(30,41,59,0.98),rgba(15,23,42,0.98))]',
       )}
     >
-      <div className="text-6xl">{iWon ? '🎉' : '🌫️'}</div>
+      <div className="text-6xl">{iWon ? '🏆' : '💥'}</div>
       <h3 className={cn('mt-5 text-4xl font-black tracking-[-0.05em]', iWon ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-100')}>
-        {iWon ? 'Ура! Ви рознесли суперника!' : `О ні! Переміг @${winnerUsername}, але наступного разу вам точно пощастить!`}
+        {iWon ? 'Ура! Ви рознесли суперника!' : 'О ні! Переміг @' + winnerUsername + ', але наступного разу вам точно пощастить!'}
       </h3>
       <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
         {iWon
@@ -654,7 +672,7 @@ function BattleFinishCard({ battleDetails, onBackToLobby, onCompare }) {
         <Button variant="outline" className="rounded-full" onClick={onCompare}>Порівняти відповіді</Button>
         {battleDetails?.opponent_username ? (
           <Button asChild variant="outline" className="rounded-full">
-            <Link to={`/u/${battleDetails.opponent_username}`}>Профіль суперника</Link>
+            <Link to={'/u/' + battleDetails.opponent_username}>Профіль суперника</Link>
           </Button>
         ) : null}
       </div>
@@ -674,10 +692,11 @@ function BattleComparison({ battleDetails }) {
       </div>
 
       {(battleDetails.questions || []).map((question, index) => {
+        const normalizedQuestion = normalizeQuestion(question);
         const key = String(question.id);
-        const correct = question.correct_answer;
-        const mine = myAnswers[key] || '—';
-        const opponent = opponentAnswers[key] || '—';
+        const correct = String(normalizedQuestion?.correct_answer || question.correct_answer || '?').toUpperCase();
+        const mine = String(myAnswers[key] || '?').toUpperCase();
+        const opponent = String(opponentAnswers[key] || '?').toUpperCase();
         const mineCorrect = mine === correct;
         const opponentCorrect = opponent === correct;
 
@@ -685,12 +704,12 @@ function BattleComparison({ battleDetails }) {
           <div key={question.id} className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950/80">
             <div className="mb-4">
               <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Питання {index + 1}</p>
-              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{question.question_text || question.name}</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{normalizedQuestion?.text || question.question_text || question.name}</p>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              <AnswerColumn title="Ви" answer={mine} correct={correct} isCorrect={mineCorrect} />
-              <AnswerColumn title={`@${battleDetails.opponent_username || 'unknown'}`} answer={opponent} correct={correct} isCorrect={opponentCorrect} />
+              <AnswerColumn title="Твоя відповідь" answer={mine} correct={correct} isCorrect={mineCorrect} />
+              <AnswerColumn title={'@' + (battleDetails.opponent_username || 'unknown')} answer={opponent} correct={correct} isCorrect={opponentCorrect} />
             </div>
           </div>
         );
@@ -706,10 +725,13 @@ function AnswerColumn({ title, answer, correct, isCorrect }) {
       isCorrect ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/25' : 'border-rose-200 bg-rose-50 dark:border-rose-900/50 dark:bg-rose-950/25',
     )}>
       <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{title}</p>
-      <p className={cn('mt-2 font-semibold', isCorrect ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300')}>
+      <div className={cn(
+        'mt-3 inline-flex h-11 min-w-11 items-center justify-center rounded-2xl px-4 text-lg font-black',
+        isCorrect ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
+      )}>
         {answer}
-      </p>
-      {!isCorrect ? <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Правильно: {correct}</p> : null}
+      </div>
+      <p className="mt-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Правильно: {correct}</p>
     </div>
   );
 }
@@ -741,6 +763,10 @@ function Avatar({ user, size = 'md', centered = false }) {
     user?.active_frame === 'crown' && 'bg-[linear-gradient(135deg,#fbbf24,#f59e0b)]',
     user?.active_frame === 'galaxy' && 'bg-[linear-gradient(135deg,#312e81,#7c3aed,#ec4899)]',
     user?.active_frame === 'platinum' && 'bg-[linear-gradient(135deg,#cbd5e1,#94a3b8)]',
+    user?.active_frame === 'mint' && 'bg-[linear-gradient(135deg,#34d399,#10b981)]',
+    user?.active_frame === 'sunset' && 'bg-[linear-gradient(135deg,#fb7185,#f59e0b)]',
+    user?.active_frame === 'neon' && 'bg-[linear-gradient(135deg,#d946ef,#8b5cf6)]',
+    user?.active_frame === 'aurora' && 'bg-[linear-gradient(135deg,#22d3ee,#34d399)]',
     !user?.active_frame || user?.active_frame === 'default' ? 'bg-[linear-gradient(135deg,#dbeafe,#93c5fd)]' : '',
   );
 

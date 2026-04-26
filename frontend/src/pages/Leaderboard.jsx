@@ -27,7 +27,13 @@ export default function Leaderboard() {
   };
 
   const isMe = (row) => row.email && row.email === user?.email;
-  const topByCorrect = [...rows].sort((a, b) => (b.total_correct || 0) - (a.total_correct || 0)).slice(0, visibleCount);
+  const topByPassed = [...rows]
+    .sort((a, b) => {
+      const delta = (b.passed_tests || 0) - (a.passed_tests || 0);
+      if (delta !== 0) return delta;
+      return (b.total_correct || 0) - (a.total_correct || 0);
+    })
+    .slice(0, visibleCount);
   const topMarathon = [...rows]
     .filter((row) => (row.marathon_best || 0) > 0)
     .sort((a, b) => {
@@ -36,7 +42,7 @@ export default function Leaderboard() {
       return (b.passed_tests || 0) - (a.passed_tests || 0);
     })
     .slice(0, visibleCount);
-  const topByTests = [...rows].sort((a, b) => (b.total_tests || 0) - (a.total_tests || 0)).slice(0, visibleCount);
+  const topByCorrect = [...rows].sort((a, b) => (b.total_correct || 0) - (a.total_correct || 0)).slice(0, visibleCount);
 
   const LeaderTable = ({ data, valueKey, valueLabel }) => (
     <div className="space-y-2">
@@ -75,10 +81,19 @@ export default function Leaderboard() {
           <Trophy className="h-8 w-8 text-yellow-500" />
           Таблиця лідерів
         </h1>
-        <p className="mt-1 text-muted-foreground">За замовчуванням показуємо топ-5. За потреби список можна розгорнути до 15 людей.</p>
       </motion.div>
 
       <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CheckCircle className="h-5 w-5 text-success" />
+              За складеними іспитами
+            </CardTitle>
+          </CardHeader>
+          <CardContent>{isLoading ? <Spinner /> : <LeaderTable data={topByPassed} valueKey="passed_tests" valueLabel="складено" />}</CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -87,16 +102,6 @@ export default function Leaderboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>{isLoading ? <Spinner /> : <LeaderTable data={topByCorrect} valueKey="total_correct" valueLabel="правильних" />}</CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CheckCircle className="h-5 w-5 text-success" />
-              За тестами
-            </CardTitle>
-          </CardHeader>
-          <CardContent>{isLoading ? <Spinner /> : <LeaderTable data={topByTests} valueKey="total_tests" valueLabel="тестів" />}</CardContent>
         </Card>
       </div>
 
@@ -107,14 +112,14 @@ export default function Leaderboard() {
             Режим марафон
           </CardTitle>
         </CardHeader>
-        <CardContent>{isLoading ? <Spinner /> : <LeaderTable data={topMarathon} valueKey="marathon_best" valueLabel="поспіль" />}</CardContent>
+        <CardContent>{isLoading ? <Spinner /> : <LeaderTable data={topMarathon} valueKey="marathon_best" valueLabel="питань" />}</CardContent>
       </Card>
 
       {rows.length > 5 ? (
         <div className="flex justify-center">
           <button
             type="button"
-            className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary/20 hover:text-primary"
+            className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary/20 hover:text-primary dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             onClick={() => setExpanded((value) => !value)}
           >
             {expanded ? 'Показати менше' : 'Показати більше'}

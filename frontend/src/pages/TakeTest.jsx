@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { cn } from '@/lib/utils';
 import { fetchRandomQuestions, normalizeQuestion } from '@/api/questionsApi';
 import api from '@/api/apiClient';
+import { queuePendingTestResult } from '@/lib/offlineProgress';
 import QuestionCard from '@/components/test/QuestionCard';
 import QuestionNavigator from '@/components/test/QuestionNavigator';
 import SituationAnalysisModal from '@/components/test/SituationAnalysisModal';
@@ -137,22 +138,24 @@ export default function TakeTest() {
     setGhostBestTime(nextBest);
     localStorage.setItem(ghostKey, String(nextBest));
 
+    const resultPayload = {
+      section: section || topic || null,
+      mode,
+      total: questions.length,
+      correct,
+      time_seconds: timeSpent,
+      answers: questions.map((question) => ({
+        question_id: Number(question.id),
+        selected_index: answerToIndex(answers[String(question.id)]),
+        is_correct: answers[String(question.id)] === question.correct_answer,
+        time_ms: null,
+      })),
+    };
+
     let response = null;
     if (user) {
       try {
-        response = await api.submitTestResult({
-          section: section || topic || null,
-          mode,
-          total: questions.length,
-          correct,
-          time_seconds: timeSpent,
-          answers: questions.map((question) => ({
-            question_id: Number(question.id),
-            selected_index: answerToIndex(answers[String(question.id)]),
-            is_correct: answers[String(question.id)] === question.correct_answer,
-            time_ms: null,
-          })),
-        });
+        response = await api.submitTestResult(resultPayload);
 
         (response?.new_achievements || []).forEach((achievement) => {
           toast({
@@ -161,7 +164,11 @@ export default function TakeTest() {
           });
         });
       } catch {
-        // Keep local result visible even if saving failed.
+        await queuePendingTestResult(resultPayload);
+        toast({
+          title: 'Результат збережено офлайн',
+          description: 'Ми автоматично надішлемо його на сервер, щойно з’явиться інтернет.',
+        });
       }
     } else {
       localStorage.setItem(guestTestKey, '1');
@@ -483,3 +490,4 @@ function Spinner({ text = 'Завантаження...' }) {
     </div>
   );
 }
+

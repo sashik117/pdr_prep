@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -28,32 +28,42 @@ const profileLinks = [
 
 const onboardingSections = [
   {
-    title: 'Як проходити тести',
-    text: 'Відкрийте розділ з тестами, оберіть формат і просто відповідайте на питання. За ідеальний результат без жодної помилки ви отримуєте зірку. Саме ці зірки потім можна витрачати на рамки профілю.',
+    title: 'Тести та навчання',
+    text: 'Починайте з розділу Тести, коли хочете пройти швидкий тест, повний іспит або попрацювати над помилками. Якщо хочеться краще зрозуміти тему, відкривайте Бібліотеку і переходьте до потрібного розділу правил.',
   },
   {
-    title: 'Як працюють батли',
-    text: 'У батлах можна кликати друзів і змагатися на однаковому наборі питань. Перемагає той, хто відповість точніше, а якщо результат однаковий — вирішує час.',
+    title: 'Аналітика та прогрес',
+    text: 'У профілі та в аналітиці видно, як часто ви тренуєтесь, яка у вас точність, скільки тестів уже складено і які теми варто підтягнути. Це допомагає не просто клацати питання, а реально бачити свій рух.',
   },
   {
-    title: 'Що таке зірки і рамки',
-    text: 'Зірки даються тільки за 100% правильні проходження тестів. Частина рамок відкривається за досягнення, а частину можна купити за зірки прямо в редагуванні профілю.',
+    title: 'Зірки, серія і нагороди',
+    text: 'Зірки даються за ідеальні тести без помилок. Вогник показує серію активності: проходьте хоча б один тест на день, щоб не втрачати темп. Досягнення відкривають нові рамки й роблять профіль живішим.',
   },
   {
-    title: 'Навіщо потрібні помилки й аналітика',
-    text: 'Розділ помилок збирає слабкі місця, щоб не ганяти все підряд. Аналітика показує динаміку балів, активність по місяцях і теми, які ще варто підтягнути.',
+    title: 'Друзі, чат і батли',
+    text: 'У Друзях зберігаються ваші контакти, переписка і запити. Через Батли можна кинути виклик другу або будь-якому користувачу за нікнеймом, а потім порівняти відповіді після завершення поєдинку.',
   },
   {
-    title: 'Для чого друзі і підтримка',
-    text: 'Через друзів зручно спілкуватися і ділитися результатами, а підтримка потрібна, якщо щось ламається або хочеться запропонувати нову ідею для сайту.',
+    title: 'Налаштування і підтримка',
+    text: 'У налаштуваннях можна змінити тему, шрифт, звук і приватність профілю. Якщо щось ламається або є питання, пишіть у Підтримку: відповідь прийде прямо в чат усередині сайту.',
   },
 ];
 
 export default function Progress() {
   const { user, isLoadingAuth, login, logout } = useAuth();
   const queryClient = useQueryClient();
+  const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  const chartTooltipStyle = {
+    backgroundColor: '#ffffff',
+    border: isDark ? '1px solid #94a3b8' : '1px solid #cbd5e1',
+    color: '#0f172a',
+    borderRadius: '14px',
+    boxShadow: '0 10px 30px rgba(15,23,42,0.12)',
+  };
+  const chartTooltipLabelStyle = { color: '#0f172a', fontWeight: 700 };
+  const chartTooltipItemStyle = { color: '#0f172a' };
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [name, setName] = useState(user?.name || '');
   const [surname, setSurname] = useState(user?.surname || '');
   const [username, setUsername] = useState(user?.username || '');
@@ -475,7 +485,7 @@ export default function Progress() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} stroke="#94a3b8" />
                     <YAxis tickLine={false} axisLine={false} domain={[0, 100]} fontSize={12} stroke="#94a3b8" />
-                    <Tooltip />
+                    <Tooltip contentStyle={chartTooltipStyle} labelStyle={chartTooltipLabelStyle} itemStyle={chartTooltipItemStyle} />
                     <Area type="monotone" dataKey="score" stroke="#60a5fa" strokeWidth={3} fill="url(#scoreFill)" />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -501,7 +511,6 @@ export default function Progress() {
             {showOnboarding ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
             {showOnboarding ? 'Сховати гайд' : 'Показати гайд'}
           </Button>
-
           {showOnboarding ? (
             <div className="grid gap-4 md:grid-cols-2">
               {onboardingSections.map((section) => (

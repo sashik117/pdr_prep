@@ -1,26 +1,28 @@
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Menu, X, ClipboardCheck, UserCircle2, BookMarked, Trophy, Flame, Swords, BarChart3, Settings } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+﻿import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Menu, X, ClipboardCheck, UserCircle2, BookMarked, Trophy, Flame, Swords, BarChart3, Settings, MessageCircleMore, Wifi, WifiOff } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
 import InternalBackButton from '@/components/layout/InternalBackButton';
-import api, { resolveWsUrl, tokenStore } from '@/api/apiClient';
+import api, { resolveApiUrl, resolveWsUrl, tokenStore } from '@/api/apiClient';
+import { getPendingTestResults, removePendingTestResult } from '@/lib/offlineProgress';
 
 const primaryNavItems = [
-  { path: '/tests', label: 'Тести ПДР', icon: ClipboardCheck },
+  { path: '/tests', label: 'Тести', icon: ClipboardCheck },
   { path: '/signs', label: 'Знаки', icon: BookMarked },
   { path: '/marathon', label: 'Марафон', icon: Flame },
+  { path: '/leaderboard', label: 'Рейтинг', icon: Trophy },
   { path: '/battle', label: 'Батли', icon: Swords, badgeKey: 'battles' },
   { path: '/analytics', label: 'Аналітика', icon: BarChart3 },
-  { path: '/leaderboard', label: 'Рейтинг', icon: Trophy },
 ];
 
 /** @type {Record<string, string>} */
 const pageTitles = {
-  '/tests': 'Тести ПДР',
+  '/tests': 'Тести',
   '/test': 'Проходження тесту',
   '/daily': 'Виклик дня',
   '/signs': 'Дорожні знаки',
@@ -73,7 +75,11 @@ export default function AppLayout() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
+  const networkBootRef = useRef(true);
+  const previousOnlineRef = useRef(/** @type {boolean | null} */ (null));
   const { isAuthenticated, navigateToLogin, user } = useAuth();
+  const { toast } = useToast();
 
   const notificationsQuery = useQuery({
     queryKey: ['notification-summary'],
@@ -103,6 +109,90 @@ export default function AppLayout() {
     document.documentElement.classList.toggle('dark', isDark);
     document.documentElement.style.fontSize = `${savedFontSize}px`;
   }, []);
+
+  useEffect(() => {
+    const syncPendingResults = async () => {
+      if (!tokenStore.get()) return;
+      const pending = await getPendingTestResults().catch(() => []);
+      for (const item of pending) {
+        try {
+          await api.submitTestResult(item.payload);
+          await removePendingTestResult(item.id);
+        } catch {
+          break;
+        }
+      }
+      queryClient.invalidateQueries({ queryKey: ['cabinet-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['test-results'] });
+    };
+
+    const checkServerConnection = async () => {
+      try {
+        const response = await fetch(resolveApiUrl('/health'), {
+          method: 'GET',
+          cache: 'no-store',
+        });
+        const nextOnline = response.ok;
+        setIsOnline(nextOnline);
+
+        if (!networkBootRef.current && previousOnlineRef.current !== null && previousOnlineRef.current !== nextOnline) {
+          if (nextOnline) {
+            toast({
+              title: 'З’єднання відновлено',
+              description: 'Дані синхронізуються.',
+            });
+            void syncPendingResults();
+          } else {
+            toast({
+              title: 'З’єднання втрачено',
+              description: 'Працюємо офлайн!',
+              variant: 'destructive',
+            });
+          }
+        }
+        previousOnlineRef.current = nextOnline;
+      } catch {
+        setIsOnline(false);
+        if (!networkBootRef.current && previousOnlineRef.current !== false) {
+          toast({
+            title: 'З’єднання втрачено',
+            description: 'Працюємо офлайн!',
+            variant: 'destructive',
+          });
+        }
+        previousOnlineRef.current = false;
+      }
+    };
+
+    const handleOnline = () => {
+      void checkServerConnection();
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      if (!networkBootRef.current && previousOnlineRef.current !== false) {
+        toast({
+          title: 'З’єднання втрачено',
+          description: 'Працюємо офлайн!',
+          variant: 'destructive',
+        });
+      }
+      previousOnlineRef.current = false;
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    void checkServerConnection();
+    const interval = window.setInterval(() => {
+      void checkServerConnection();
+    }, 15000);
+    networkBootRef.current = false;
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      window.clearInterval(interval);
+    };
+  }, [queryClient, toast]);
 
   useEffect(() => {
     if (!isAuthenticated) return undefined;
@@ -175,6 +265,30 @@ export default function AppLayout() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            <div className={cn(
+              'inline-flex h-12 min-w-12 items-center justify-center rounded-2xl border px-3',
+              isOnline
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300'
+                : 'border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300',
+            )} title={isOnline ? 'Онлайн: прогрес синхронізується' : 'Офлайн: прогрес збережеться локально'}>
+              {isOnline ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
+            </div>
+
+            {isAuthenticated ? (
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                size="icon"
+                className="relative hidden h-12 w-12 rounded-2xl border-slate-200 bg-white text-slate-700 shadow-none sm:inline-flex dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              >
+                <Link to="/friends" aria-label="Повідомлення">
+                  <MessageCircleMore className="h-4 w-4" />
+                  <Badge value={notificationSummary.friends} />
+                </Link>
+              </Button>
+            ) : null}
+
             {isAuthenticated ? (
               <Button
                 asChild
@@ -243,9 +357,34 @@ export default function AppLayout() {
                 );
               })}
 
+              {isAuthenticated ? (
+                <Link
+                  to="/friends"
+                  onClick={() => setMobileOpen(false)}
+                  className="relative flex items-center justify-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                >
+                  <MessageCircleMore className="h-4 w-4" />
+                  Повідомлення
+                  {notificationSummary.friends ? (
+                    <span className="ml-auto inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-black text-white">
+                      {Math.min(notificationSummary.friends, 9)}
+                    </span>
+                  ) : null}
+                </Link>
+              ) : null}
+
+              {isAuthenticated ? (
+                <Button asChild type="button" variant="outline" className="rounded-2xl">
+                  <Link to="/settings" onClick={() => setMobileOpen(false)}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Налаштування
+                  </Link>
+                </Button>
+              ) : null}
+
               <Button
                 type="button"
-                className="mt-2 rounded-2xl"
+                className="rounded-2xl"
                 onClick={() => {
                   setMobileOpen(false);
                   if (isAuthenticated) {
@@ -258,15 +397,6 @@ export default function AppLayout() {
                 <UserCircle2 className="mr-2 h-4 w-4" />
                 {isAuthenticated ? 'Профіль' : 'Увійти'}
               </Button>
-
-              {isAuthenticated ? (
-                <Button asChild type="button" variant="outline" className="rounded-2xl">
-                  <Link to="/settings" onClick={() => setMobileOpen(false)}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Налаштування
-                  </Link>
-                </Button>
-              ) : null}
             </div>
           </div>
         ) : null}
@@ -289,3 +419,4 @@ export default function AppLayout() {
     </div>
   );
 }
+
