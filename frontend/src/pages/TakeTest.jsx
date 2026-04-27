@@ -359,7 +359,13 @@ export default function TakeTest() {
         ) : null}
       </div>
 
-      {analyzingQuestion ? <SituationAnalysisModal question={analyzingQuestion} onClose={() => setAnalyzingQuestion(null)} /> : null}
+      {analyzingQuestion ? (
+        <SituationAnalysisModal
+          question={analyzingQuestion}
+          revealAnswer={Boolean(answers[String(analyzingQuestion.id)]) || showResults}
+          onClose={() => setAnalyzingQuestion(null)}
+        />
+      ) : null}
 
       <Dialog open={showResults} onOpenChange={(open) => !open && setShowResults(false)}>
         <DialogContent className="overflow-hidden rounded-[32px] border-white/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(239,246,255,0.96))] p-0 shadow-[0_30px_80px_rgba(15,23,42,0.14)] sm:max-w-xl dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.98))]">

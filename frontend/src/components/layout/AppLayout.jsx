@@ -11,6 +11,8 @@ import InternalBackButton from '@/components/layout/InternalBackButton';
 import api, { resolveApiUrl, resolveWsUrl, tokenStore } from '@/api/apiClient';
 import { getPendingTestResults, removePendingTestResult } from '@/lib/offlineProgress';
 
+const CONNECTIVITY_CHECK_URL = 'https://www.gstatic.com/generate_204';
+
 const primaryNavItems = [
   { path: '/tests', label: 'Тести', icon: ClipboardCheck },
   { path: '/signs', label: 'Знаки', icon: BookMarked },
@@ -127,12 +129,38 @@ export default function AppLayout() {
     };
 
     const checkServerConnection = async () => {
+      const healthUrl = resolveApiUrl('/health');
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setIsOnline(false);
+        if (!networkBootRef.current && previousOnlineRef.current !== false) {
+          toast({
+            title: 'З’єднання втрачено',
+            description: 'Працюємо офлайн!',
+            variant: 'destructive',
+          });
+        }
+        previousOnlineRef.current = false;
+        return;
+      }
+
       try {
-        const response = await fetch(resolveApiUrl('/health'), {
-          method: 'GET',
-          cache: 'no-store',
-        });
-        const nextOnline = response.ok;
+        if (!healthUrl) {
+          setIsOnline(false);
+          previousOnlineRef.current = false;
+          return;
+        }
+        const [healthResponse] = await Promise.all([
+          fetch(healthUrl, {
+            method: 'GET',
+            cache: 'no-store',
+          }),
+          fetch(CONNECTIVITY_CHECK_URL, {
+            method: 'GET',
+            mode: 'no-cors',
+            cache: 'no-store',
+          }),
+        ]);
+        const nextOnline = healthResponse.ok;
         setIsOnline(nextOnline);
 
         if (!networkBootRef.current && previousOnlineRef.current !== null && previousOnlineRef.current !== nextOnline) {

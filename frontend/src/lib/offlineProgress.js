@@ -2,7 +2,10 @@ const DB_NAME = 'pdrprep-offline';
 const DB_VERSION = 1;
 const STORE_NAME = 'pending-test-results';
 
+/** @typedef {{ id?: number, payload: any, createdAt: string }} PendingTestResult */
+
 function openDb() {
+  /** @returns {Promise<IDBDatabase>} */
   return new Promise((resolve, reject) => {
     if (typeof window === 'undefined' || !('indexedDB' in window)) {
       reject(new Error('IndexedDB unavailable'));
@@ -20,6 +23,12 @@ function openDb() {
   });
 }
 
+/**
+ * @template T
+ * @param {'readonly' | 'readwrite'} mode
+ * @param {(store: IDBObjectStore, resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: any) => void) => T | void} executor
+ * @returns {Promise<T>}
+ */
 async function withStore(mode, executor) {
   const db = await openDb();
   return new Promise((resolve, reject) => {
@@ -27,7 +36,7 @@ async function withStore(mode, executor) {
     const store = transaction.objectStore(STORE_NAME);
     const result = executor(store, resolve, reject);
     transaction.oncomplete = () => {
-      if (result !== undefined) resolve(result);
+      if (result !== undefined) resolve(/** @type {T} */ (result));
       db.close();
     };
     transaction.onerror = () => {
@@ -37,7 +46,9 @@ async function withStore(mode, executor) {
   });
 }
 
+/** @param {any} payload */
 export async function queuePendingTestResult(payload) {
+  /** @returns {Promise<number>} */
   return withStore('readwrite', (store, resolve) => {
     const request = store.add({
       payload,
@@ -48,12 +59,14 @@ export async function queuePendingTestResult(payload) {
 }
 
 export async function getPendingTestResults() {
+  /** @returns {Promise<PendingTestResult[]>} */
   return withStore('readonly', (store, resolve) => {
     const request = store.getAll();
     request.onsuccess = () => resolve(request.result || []);
   });
 }
 
+/** @param {number} id */
 export async function removePendingTestResult(id) {
   return withStore('readwrite', (store) => {
     store.delete(id);

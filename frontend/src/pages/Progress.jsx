@@ -112,17 +112,25 @@ export default function Progress() {
     ? `Наступна зміна нікнейму буде доступна після ${usernameChangeAvailableAt.toLocaleDateString('uk-UA')} о ${usernameChangeAvailableAt.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}.`
     : 'Наступна зміна нікнейму буде доступна лише через 7 днів.';
 
-  const weakTopics = useMemo(() => (
-    (stats?.by_section || [])
-      .map((topic) => ({
-        id: String(topic.section || topic.section_name || 'topic'),
-        name: topic.section_name || `Розділ ${topic.section || ''}`,
-        total: topic.total || 0,
-        accuracy: topic.total ? Math.round(((topic.correct || 0) / topic.total) * 100) : 0,
-      }))
-      .sort((a, b) => a.accuracy - b.accuracy)
-      .slice(0, 5)
-  ), [stats]);
+  const weakTopics = useMemo(() => {
+    const source = (stats?.weak_sections?.length ? stats.weak_sections : stats?.by_section) || [];
+    return source
+      .map((topic) => {
+        const total = Number(topic.total || 0);
+        const correct = Number(topic.correct || 0);
+        const wrong = Number(topic.wrong || Math.max(0, total - correct));
+        return {
+          id: String(topic.section || topic.section_name || 'topic'),
+          name: topic.section_name || `Розділ ${topic.section || ''}`,
+          total,
+          wrong,
+          accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+        };
+      })
+      .filter((topic) => topic.total > 0 && topic.wrong > 0)
+      .sort((a, b) => (b.wrong - a.wrong) || (a.accuracy - b.accuracy))
+      .slice(0, 5);
+  }, [stats]);
 
   const achievements = useMemo(() => (
     (stats?.achievements || []).map((achievement) => ({
@@ -457,7 +465,7 @@ export default function Progress() {
               <div key={topic.id}>
                 <div className="mb-1 flex items-center justify-between gap-4">
                   <span className="truncate text-sm font-semibold text-slate-700 dark:text-slate-100">{topic.name}</span>
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">{topic.accuracy}%</span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">{topic.accuracy}% · {topic.wrong} пом.</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                   <div className="h-2 rounded-full bg-[linear-gradient(90deg,#fb7185_0%,#f59e0b_48%,#38bdf8_100%)]" style={{ width: `${topic.accuracy}%` }} />
@@ -528,7 +536,6 @@ export default function Progress() {
         <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-6">
           <div>
             <p className="font-semibold text-slate-900 dark:text-white">Вихід з акаунту</p>
-            <p className="text-sm text-slate-600 dark:text-slate-300">Кнопка `Log out` завершує сесію та очищає збережені дані входу на цьому пристрої.</p>
           </div>
           <Button variant="destructive" className="w-full rounded-xl px-5 shadow-[0_12px_24px_rgba(239,68,68,0.18)] sm:w-auto" onClick={logout}>
             <LogOut className="mr-2 h-4 w-4" />

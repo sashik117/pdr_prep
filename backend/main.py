@@ -114,6 +114,11 @@ if PUBLIC_IMAGES_DIR.exists():
     app.mount("/images/questions_img", StaticFiles(directory=str(PUBLIC_IMAGES_DIR)), name="questions_img")
 
 
+@app.get("/health")
+def healthcheck() -> dict[str, str]:
+    return {"status": "ok"}
+
+
 class RealtimeHub:
     def __init__(self) -> None:
         self._connections: dict[str, set[WebSocket]] = defaultdict(set)
@@ -1920,6 +1925,26 @@ def get_stats(user=Depends(get_current_user)):
             """,
             (user["id"],),
         ).fetchall()
+        weak_sections = conn.execute(
+            """
+            SELECT q.section,
+                   q.section_name,
+                   COUNT(*) FILTER (WHERE ua.is_correct = false) AS wrong,
+                   COUNT(*) FILTER (WHERE ua.is_correct = true) AS correct,
+                   COUNT(*) AS total
+            FROM user_answers ua
+            JOIN questions q ON q.id = ua.question_id
+            WHERE ua.user_id = %s
+            GROUP BY q.section, q.section_name
+            HAVING COUNT(*) FILTER (WHERE ua.is_correct = false) > 0
+            ORDER BY wrong DESC, total DESC, """
+            + section_order_sql
+            + """
+                     NULLS LAST, q.section
+            LIMIT 8
+            """,
+            (user["id"],),
+        ).fetchall()
         recent_tests = conn.execute(
             """
             SELECT *
@@ -1979,6 +2004,7 @@ def get_stats(user=Depends(get_current_user)):
         "total_stars": int(available_stars or 0),
         "available_stars": available_stars,
         "by_section": [dict(row) for row in by_section],
+        "weak_sections": [dict(row) for row in weak_sections],
         "recent_tests": [dict(row) for row in recent_tests],
         "difficult_question_ids": [row["question_id"] for row in difficult],
         "achievements": [dict(row) for row in achievements],

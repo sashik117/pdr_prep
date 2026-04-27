@@ -21,6 +21,11 @@ self.addEventListener('activate', (event) => {
 });
 
 async function staleWhileRevalidate(request, cacheName) {
+  const url = new URL(request.url);
+  const canCache = url.protocol === 'http:' || url.protocol === 'https:';
+  if (!canCache) {
+    return fetch(request);
+  }
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
   const networkPromise = fetch(request)
@@ -35,6 +40,11 @@ async function staleWhileRevalidate(request, cacheName) {
 }
 
 async function cacheFirst(request, cacheName) {
+  const url = new URL(request.url);
+  const canCache = url.protocol === 'http:' || url.protocol === 'https:';
+  if (!canCache) {
+    return fetch(request);
+  }
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
   if (cached) return cached;

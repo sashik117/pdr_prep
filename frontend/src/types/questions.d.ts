@@ -55,4 +55,5 @@ export type QuestionNavigatorProps = {
 export type SituationAnalysisModalProps = {
   question?: QuestionViewModel | null;
   onClose: () => void;
+  revealAnswer?: boolean;
 };
