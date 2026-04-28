@@ -92,6 +92,65 @@ FRAME_SHOP: dict[str, dict[str, Any]] = {
     "aurora": {"price": 15, "achievement_id": None, "label": "Аврора"},
 }
 
+HANDBOOK_TOPICS: list[dict[str, Any]] = [
+    {
+        "key": "rules",
+        "title": "Правила дорожнього руху",
+        "category": "rules",
+        "chapters": [
+            {"chapter_num": index + 1, "title": title}
+            for index, title in enumerate(
+                [
+                    "Загальні положення",
+                    "Обов’язки і права водіїв механічних транспортних засобів",
+                    "Рух транспортних засобів із спеціальними сигналами",
+                    "Обов’язки і права пішоходів",
+                    "Обов’язки і права пасажирів",
+                    "Вимоги до велосипедистів",
+                    "Вимоги до осіб, які керують гужовим транспортом, і погоничам тварин",
+                    "Регулювання дорожнього руху",
+                    "Попереджувальні сигнали",
+                    "Початок руху та зміна його напрямку",
+                    "Розташування транспортних засобів на дорозі",
+                    "Швидкість руху",
+                    "Дистанція, інтервал, зустрічний роз’їзд",
+                    "Обгін",
+                    "Зупинка і стоянка",
+                    "Проїзд перехресть",
+                    "Переваги маршрутних транспортних засобів",
+                    "Проїзд пішохідних переходів і зупинок транспортних засобів",
+                    "Користування зовнішніми світловими приладами",
+                    "Рух через залізничні переїзди",
+                    "Перевезення пасажирів",
+                    "Перевезення вантажу",
+                    "Буксирування і експлуатація транспортних складів",
+                    "Навчальна їзда",
+                    "Рух транспортних засобів у колонах",
+                    "Рух у житловій та пішохідній зоні",
+                    "Рух по автомагістралях і дорогах для автомобілів",
+                    "Рух по гірських дорогах і на крутих спусках",
+                    "Міжнародний рух",
+                    "Номерні, розпізнавальні знаки, написи і позначення",
+                    "Технічний стан транспортних засобів та їх обладнання",
+                    "Окремі питання дорожнього руху, що вимагають узгодження",
+                    "Дорожні знаки",
+                    "Дорожня розмітка",
+                    "Медицина",
+                ]
+            )
+        ],
+    },
+    {"key": "road-signs", "title": "Дорожні знаки", "category": "signs", "chapters": []},
+    {"key": "road-markings", "title": "Дорожня розмітка", "category": "markings", "chapters": []},
+    {"key": "regulator", "title": "Регулювальник", "category": "regulator", "chapters": []},
+    {"key": "traffic-light", "title": "Світлофор", "category": "traffic-light", "chapters": []},
+]
+
+HANDBOOK_TOPIC_CATEGORY_MAP: dict[str, str] = {
+    topic["key"]: str(topic.get("category") or topic["key"])
+    for topic in HANDBOOK_TOPICS
+}
+
 app = FastAPI(title="PDRPrep API", version="3.0.0")
 app.add_middleware(
     CORSMiddleware,
@@ -251,6 +310,82 @@ def ensure_runtime_migrations() -> None:
         "ALTER TABLE messages ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'text'",
         "ALTER TABLE messages ADD COLUMN IF NOT EXISTS result_data JSONB NOT NULL DEFAULT '{}'::jsonb",
         "ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_read BOOLEAN NOT NULL DEFAULT FALSE",
+        """
+        CREATE TABLE IF NOT EXISTS handbook_data (
+            id SERIAL PRIMARY KEY,
+            topic_key TEXT NOT NULL,
+            category TEXT,
+            chapter_num INT,
+            sort_order INT NOT NULL DEFAULT 0,
+            section_title TEXT NOT NULL,
+            source_url TEXT UNIQUE,
+            source_slug TEXT UNIQUE,
+            content_html TEXT NOT NULL,
+            content_text TEXT NOT NULL DEFAULT '',
+            image_paths JSONB NOT NULL DEFAULT '[]'::jsonb,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+        """,
+        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS topic_key TEXT",
+        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS category TEXT",
+        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS chapter_num INT",
+        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS sort_order INT NOT NULL DEFAULT 0",
+        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS source_url TEXT",
+        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS source_slug TEXT",
+        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS content_html TEXT",
+        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS content_text TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS image_paths JSONB NOT NULL DEFAULT '[]'::jsonb",
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'handbook_data' AND column_name = 'search_vector'
+            ) THEN
+                ALTER TABLE handbook_data
+                ADD COLUMN search_vector TSVECTOR GENERATED ALWAYS AS (
+                    to_tsvector('simple', COALESCE(section_title, '') || ' ' || COALESCE(content_text, ''))
+                ) STORED;
+            END IF;
+        END $$;
+        """,
+        "CREATE INDEX IF NOT EXISTS idx_handbook_topic_key ON handbook_data(topic_key)",
+        "CREATE INDEX IF NOT EXISTS idx_handbook_chapter_num ON handbook_data(chapter_num)",
+        "CREATE INDEX IF NOT EXISTS idx_handbook_sort_order ON handbook_data(sort_order)",
+        "CREATE INDEX IF NOT EXISTS idx_handbook_category ON handbook_data(category)",
+        "CREATE INDEX IF NOT EXISTS idx_handbook_search_vector ON handbook_data USING gin(search_vector)",
+        """
+        UPDATE handbook_data
+        SET content_html = regexp_replace(
+                content_html,
+                '<(?:p|div)[^>]*>\\s*(?:<a[^>]*>\\s*\\d+\\s*</a>\\s*){5,}</(?:p|div)>',
+                '',
+                'gi'
+            ),
+            content_text = regexp_replace(
+                content_text,
+                '(?:\\m\\d{1,2}\\M\\s*){10,}',
+                ' ',
+                'g'
+            )
+        WHERE content_html ~ '<(?:p|div)[^>]*>\\s*(?:<a[^>]*>\\s*\\d+\\s*</a>\\s*){5,}</(?:p|div)>'
+           OR content_text ~ '(?:\\m\\d{1,2}\\M\\s*){10,}';
+        """,
+        """
+        UPDATE handbook_data
+        SET topic_key = CASE
+                WHEN source_url LIKE '%/theory/rules/%' THEN 'rules'
+                WHEN source_url LIKE '%/theory/road-signs%' THEN 'road-signs'
+                WHEN source_url LIKE '%/theory/road-markings%' THEN 'road-markings'
+                WHEN source_url LIKE '%/theory/regulator%' THEN 'regulator'
+                WHEN source_url LIKE '%/theory/traffic-light%' THEN 'traffic-light'
+                ELSE topic_key
+            END
+        WHERE topic_key IS NULL
+           OR BTRIM(topic_key) = ''
+           OR topic_key NOT IN ('rules', 'road-signs', 'road-markings', 'regulator', 'traffic-light');
+        """,
         "ALTER TABLE friendships ADD COLUMN IF NOT EXISTS addressee_seen_at TIMESTAMP",
         """
         DO $$
@@ -382,6 +517,23 @@ def _clean_text(value: Any) -> str:
     for marker in QUESTION_UI_MARKERS:
         text = text.replace(marker, " ")
     return re.sub(r"\s+", " ", text).strip()
+
+
+def _sanitize_handbook_text(value: Any) -> str:
+    text = _clean_text(value)
+    text = re.sub(r"(?:\b\d{1,2}\b\s*){10,}", " ", text)
+    text = re.sub(r"\s+(?:(?:\d+\.)+\d+|\d+\.\d+|\d+)\s*$", "", text).strip()
+    words = text.split()
+    if len(words) > 3 and words[0].lower() == words[-1].lower():
+        text = " ".join(words[:-1])
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _sanitize_handbook_html(value: Any, section_title: str = "") -> str:
+    html = str(value or "")
+    if not html:
+        return ""
+    return html.strip()
 
 
 def _normalize_category(category: Optional[str]) -> Optional[str]:
@@ -2093,7 +2245,159 @@ def leaderboard():
             ,
             (list(ADMIN_EMAILS),)
         ).fetchall()
-    return [dict(row) for row in rows]
+        return [dict(row) for row in rows]
+
+
+@app.get("/handbook/topics")
+def get_handbook_topics():
+    with db() as conn:
+        counts = {
+            row["topic_key"]: int(row["count"] or 0)
+            for row in conn.execute(
+                """
+                SELECT
+                    CASE
+                        WHEN topic_key IS NOT NULL AND BTRIM(topic_key) <> '' THEN topic_key
+                        WHEN category = 'rules' OR source_url LIKE '%/theory/rules/%' THEN 'rules'
+                        WHEN category = 'signs' OR source_url LIKE '%/theory/road-signs%' THEN 'road-signs'
+                        WHEN category = 'markings' OR source_url LIKE '%/theory/road-markings%' THEN 'road-markings'
+                        WHEN category = 'regulator' OR source_url LIKE '%/theory/regulator%' THEN 'regulator'
+                        WHEN category = 'traffic-light' OR source_url LIKE '%/theory/traffic-light%' THEN 'traffic-light'
+                        ELSE topic_key
+                    END AS topic_key,
+                    COUNT(*) AS count
+                FROM handbook_data
+                GROUP BY 1
+                """
+            ).fetchall()
+        }
+
+    return [
+        {
+            "key": topic["key"],
+            "title": topic["title"],
+            "category": topic["category"],
+            "count": counts.get(topic["key"], 0),
+            "chapters": topic["chapters"],
+        }
+        for topic in HANDBOOK_TOPICS
+    ]
+
+
+def _handbook_rows_for_topic(conn: psycopg.Connection, topic: str):
+    fallback_category = HANDBOOK_TOPIC_CATEGORY_MAP.get(topic, topic)
+    return conn.execute(
+        """
+        SELECT id, topic_key, category, chapter_num, sort_order, section_title, source_url, source_slug, image_paths, created_at
+        FROM handbook_data
+        WHERE topic_key = %s
+           OR (COALESCE(topic_key, '') = '' AND category = %s)
+           OR (
+                %s = 'rules' AND source_url LIKE '%%/theory/rules/%%'
+              )
+           OR (
+                %s = 'road-signs' AND source_url LIKE '%%/theory/road-signs%%'
+              )
+           OR (
+                %s = 'road-markings' AND source_url LIKE '%%/theory/road-markings%%'
+              )
+           OR (
+                %s = 'regulator' AND source_url LIKE '%%/theory/regulator%%'
+              )
+           OR (
+                %s = 'traffic-light' AND source_url LIKE '%%/theory/traffic-light%%'
+              )
+        ORDER BY
+            COALESCE(chapter_num, 10_000),
+            sort_order,
+            id
+        """,
+        (topic, fallback_category, topic, topic, topic, topic, topic),
+    ).fetchall()
+
+
+@app.get("/handbook/entries")
+def get_handbook_entries(topic: str = Query(..., min_length=1)):
+    with db() as conn:
+        rows = _handbook_rows_for_topic(conn, topic)
+
+    return [
+        {
+            **dict(row),
+            "section_title": _sanitize_handbook_text(row.get("section_title")),
+            "image_paths": row.get("image_paths") or [],
+        }
+        for row in rows
+    ]
+
+
+@app.get("/handbook/entries/{entry_id}")
+def get_handbook_entry(entry_id: int):
+    with db() as conn:
+        row = conn.execute(
+            """
+            SELECT id, topic_key, category, chapter_num, sort_order, section_title, source_url, source_slug,
+                   content_html, content_text, image_paths, created_at
+            FROM handbook_data
+            WHERE id = %s
+            """,
+            (entry_id,),
+        ).fetchone()
+    if not row:
+        raise HTTPException(404, "Розділ довідника не знайдено")
+
+    return {
+        **dict(row),
+        "section_title": _sanitize_handbook_text(row.get("section_title")),
+        "content_text": _sanitize_handbook_text(row.get("content_text")),
+        "content_html": _sanitize_handbook_html(row.get("content_html"), str(row.get("section_title") or "")),
+        "image_paths": row.get("image_paths") or [],
+    }
+
+
+@app.get("/handbook/search")
+def search_handbook(q: str = Query(..., min_length=2), topic: Optional[str] = None):
+    conds = [
+        "search_vector @@ websearch_to_tsquery('simple', %s)",
+    ]
+    params: list[Any] = [q]
+    if topic:
+        fallback_category = HANDBOOK_TOPIC_CATEGORY_MAP.get(topic, topic)
+        conds.append(
+            """
+            (
+                topic_key = %s
+                OR (COALESCE(topic_key, '') = '' AND category = %s)
+                OR (%s = 'rules' AND source_url LIKE '%%/theory/rules/%%')
+                OR (%s = 'road-signs' AND source_url LIKE '%%/theory/road-signs%%')
+                OR (%s = 'road-markings' AND source_url LIKE '%%/theory/road-markings%%')
+                OR (%s = 'regulator' AND source_url LIKE '%%/theory/regulator%%')
+                OR (%s = 'traffic-light' AND source_url LIKE '%%/theory/traffic-light%%')
+            )
+            """
+        )
+        params.extend([topic, fallback_category, topic, topic, topic, topic, topic])
+
+    with db() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT id, topic_key, category, chapter_num, sort_order, section_title, source_url, source_slug,
+                   ts_rank(search_vector, websearch_to_tsquery('simple', %s)) AS rank
+            FROM handbook_data
+            WHERE {' AND '.join(conds)}
+            ORDER BY rank DESC, COALESCE(chapter_num, 10_000), sort_order, id
+            LIMIT 30
+            """,
+            [q, *params],
+        ).fetchall()
+
+    return [
+        {
+            **dict(row),
+            "section_title": _sanitize_handbook_text(row.get("section_title")),
+        }
+        for row in rows
+    ]
 
 
 @app.get("/friends")

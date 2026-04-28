@@ -19,6 +19,7 @@ import DailyChallenge from '@/pages/DailyChallenge';
 import Friends from '@/pages/Friends';
 import Battle from '@/pages/Battle';
 import Study from '@/pages/Study';
+import StudyChapter from '@/pages/StudyChapter';
 import ImportQuestions from '@/pages/ImportQuestions';
 import Settings from '@/pages/Settings';
 import UserProfile from '@/pages/UserProfile';
@@ -47,6 +48,7 @@ function App() {
               <Route path="/friends" element={<Friends />} />
               <Route path="/battle" element={<Battle />} />
               <Route path="/study" element={<Study />} />
+              <Route path="/study/:topicKey/:entryId" element={<StudyChapter />} />
               <Route path="/library" element={<Navigate to="/study" replace />} />
               <Route path="/cabinet" element={<Progress />} />
               <Route path="/progress" element={<Navigate to="/cabinet" replace />} />

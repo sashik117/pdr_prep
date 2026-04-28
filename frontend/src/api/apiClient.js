@@ -237,6 +237,17 @@ export const api = {
     return request(`/sections${query ? `?${query}` : ''}`);
   },
 
+  getHandbookTopics: () => request('/handbook/topics'),
+  getHandbookEntries: (topic) => {
+    const query = toQueryString({ topic });
+    return request(`/handbook/entries${query ? `?${query}` : ''}`);
+  },
+  getHandbookEntry: (entryId) => request(`/handbook/entries/${entryId}`),
+  searchHandbook: (q, topic) => {
+    const query = toQueryString({ q, topic });
+    return request(`/handbook/search${query ? `?${query}` : ''}`);
+  },
+
   importQuestions: (payload) =>
     request('/questions/import', {
       method: 'POST',

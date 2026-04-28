@@ -158,3 +158,27 @@ CREATE TABLE IF NOT EXISTS battles (
 CREATE INDEX IF NOT EXISTS idx_battles_challenger_email ON battles(challenger_email);
 CREATE INDEX IF NOT EXISTS idx_battles_opponent_email ON battles(opponent_email);
 CREATE INDEX IF NOT EXISTS idx_battles_status ON battles(status);
+
+CREATE TABLE IF NOT EXISTS handbook_data (
+    id            SERIAL PRIMARY KEY,
+    topic_key     TEXT NOT NULL,
+    category      TEXT,
+    chapter_num   INT,
+    sort_order    INT NOT NULL DEFAULT 0,
+    section_title TEXT NOT NULL,
+    source_url    TEXT UNIQUE,
+    source_slug   TEXT UNIQUE,
+    content_html  TEXT NOT NULL,
+    content_text  TEXT NOT NULL DEFAULT '',
+    image_paths   JSONB NOT NULL DEFAULT '[]'::jsonb,
+    search_vector TSVECTOR GENERATED ALWAYS AS (
+        to_tsvector('simple', COALESCE(section_title, '') || ' ' || COALESCE(content_text, ''))
+    ) STORED,
+    created_at    TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_handbook_topic_key ON handbook_data(topic_key);
+CREATE INDEX IF NOT EXISTS idx_handbook_chapter_num ON handbook_data(chapter_num);
+CREATE INDEX IF NOT EXISTS idx_handbook_sort_order ON handbook_data(sort_order);
+CREATE INDEX IF NOT EXISTS idx_handbook_category ON handbook_data(category);
+CREATE INDEX IF NOT EXISTS idx_handbook_search_vector ON handbook_data USING gin(search_vector);
