@@ -23,7 +23,7 @@ DATABASE_URL = (
 )
 QUESTIONS_FILE = PROJECT_ROOT / "data" / "questions" / "pdr_final_category.json"
 SCHEMA_FILE = PROJECT_ROOT / "create_tables.sql"
-BATCH_SIZE = 200
+BATCH_SIZE = 500
 
 
 COMMON_SECTIONS = list(range(1, 40))
@@ -104,52 +104,69 @@ def normalize_question(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def import_questions(conn: psycopg.Connection, questions: list[dict[str, Any]]) -> int:
+def prepare_questions(questions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     clean = []
     for question in questions:
         normalized = normalize_question(question)
         if normalized["question_text"] and normalized["options"] and normalized["correct_ans"] > 0:
             clean.append(normalized)
+    return clean
+
+
+def import_questions(conn: psycopg.Connection, questions: list[dict[str, Any]]) -> int:
+    clean = prepare_questions(questions)
 
     inserted = 0
+    columns = [
+        "id",
+        "section",
+        "section_name",
+        "num_in_section",
+        "category",
+        "difficulty",
+        "explanation",
+        "question_text",
+        "options",
+        "correct_ans",
+        "images",
+        "page",
+    ]
+    row_placeholder = "(%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s::jsonb, %s)"
+    conflict_updates = ", ".join(f"{column} = EXCLUDED.{column}" for column in columns if column != "id")
+
     with conn.cursor() as cursor:
         for start in range(0, len(clean), BATCH_SIZE):
             batch = clean[start : start + BATCH_SIZE]
-            cursor.executemany(
-                """
-                INSERT INTO questions (
-                    id, section, section_name, num_in_section, category, difficulty,
-                    explanation, question_text, options, correct_ans, images, page
+            values: list[Any] = []
+            for row in batch:
+                values.extend(
+                    [
+                        row["id"],
+                        row["section"],
+                        row["section_name"],
+                        row["num_in_section"],
+                        row["category"],
+                        row["difficulty"],
+                        row["explanation"],
+                        row["question_text"],
+                        json.dumps(row["options"], ensure_ascii=False),
+                        row["correct_ans"],
+                        json.dumps(row["images"], ensure_ascii=False),
+                        row["page"],
+                    ]
                 )
-                VALUES (
-                    %(id)s, %(section)s, %(section_name)s, %(num_in_section)s, %(category)s, %(difficulty)s,
-                    %(explanation)s, %(question_text)s, %(options)s::jsonb, %(correct_ans)s, %(images)s::jsonb, %(page)s
-                )
-                ON CONFLICT (id) DO UPDATE SET
-                    section = EXCLUDED.section,
-                    section_name = EXCLUDED.section_name,
-                    num_in_section = EXCLUDED.num_in_section,
-                    category = EXCLUDED.category,
-                    difficulty = EXCLUDED.difficulty,
-                    explanation = EXCLUDED.explanation,
-                    question_text = EXCLUDED.question_text,
-                    options = EXCLUDED.options,
-                    correct_ans = EXCLUDED.correct_ans,
-                    images = EXCLUDED.images,
-                    page = EXCLUDED.page
+
+            cursor.execute(
+                f"""
+                INSERT INTO questions ({", ".join(columns)})
+                VALUES {", ".join([row_placeholder] * len(batch))}
+                ON CONFLICT (id) DO UPDATE SET {conflict_updates}
                 """,
-                [
-                    {
-                        **row,
-                        "options": json.dumps(row["options"], ensure_ascii=False),
-                        "images": json.dumps(row["images"], ensure_ascii=False),
-                    }
-                    for row in batch
-                ],
+                values,
             )
             conn.commit()
             inserted += len(batch)
-            print(f"Imported {inserted}/{len(clean)} questions")
+            print(f"Imported {inserted}/{len(clean)} questions", flush=True)
     return inserted
 
 

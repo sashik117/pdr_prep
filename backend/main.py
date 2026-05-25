@@ -42,6 +42,7 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
 IS_PRODUCTION = os.getenv("NODE_ENV", "").strip().lower() == "production"
+RUN_STARTUP_MAINTENANCE = os.getenv("RUN_STARTUP_MAINTENANCE", "true").strip().lower() not in {"0", "false", "no"}
 RAW_DB_URL = os.environ["DATABASE_URL"]
 DB_URL = (
     f"{RAW_DB_URL}{'&' if '?' in RAW_DB_URL else '?'}sslmode=require"
@@ -962,6 +963,10 @@ def ensure_runtime_migrations() -> None:
 
 @app.on_event("startup")
 def on_startup() -> None:
+    if not RUN_STARTUP_MAINTENANCE:
+        print("[startup] maintenance skipped; Render preDeployCommand handles schema and seed data", flush=True)
+        return
+
     tasks = [
         ("schema tables", ensure_schema_tables),
         ("runtime migrations", ensure_runtime_migrations),

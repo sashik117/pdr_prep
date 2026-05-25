@@ -213,7 +213,8 @@ Render deploy:
 ```bash
 # The Blueprint uses Docker.
 # Frontend build: npm ci --include=dev && npm run build
-# Backend start: python backend/scripts/render_migrate.py && uvicorn main:app
+# Pre-deploy: python backend/scripts/render_migrate.py
+# Backend start: uvicorn main:app
 render.yaml
 ```
 
