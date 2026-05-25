@@ -25,6 +25,7 @@ from psycopg import errors as psycopg_errors
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from psycopg.rows import dict_row
 from pydantic import BaseModel, Field
@@ -40,7 +41,13 @@ from services.theory_service import (
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_URL = os.environ["DATABASE_URL"]
+IS_PRODUCTION = os.getenv("NODE_ENV", "").strip().lower() == "production"
+RAW_DB_URL = os.environ["DATABASE_URL"]
+DB_URL = (
+    f"{RAW_DB_URL}{'&' if '?' in RAW_DB_URL else '?'}sslmode=require"
+    if os.getenv("DATABASE_SSL", "").strip().lower() in {"1", "true", "yes", "require"} and "sslmode=" not in RAW_DB_URL
+    else RAW_DB_URL
+)
 JWT_SECRET = os.getenv("JWT_SECRET", "change-me-in-production")
 JWT_REMEMBER_DAYS = int(os.getenv("JWT_REMEMBER_DAYS", "90"))
 JWT_SESSION_DAYS = int(os.getenv("JWT_SESSION_DAYS", "1"))
@@ -63,7 +70,12 @@ SMTP_PASS = os.getenv("SMTP_PASS", "")
 PORT = int(os.getenv("PORT", "8000"))
 UPLOAD_DIR = BASE_DIR / "uploads" / "avatars"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-PUBLIC_IMAGES_DIR = BASE_DIR.parent / "frontend" / "public" / "images" / "questions_img"
+FRONTEND_DIST_DIR = BASE_DIR.parent / "frontend" / "dist"
+PUBLIC_IMAGES_DIR = (
+    FRONTEND_DIST_DIR / "images" / "questions_img"
+    if IS_PRODUCTION
+    else BASE_DIR.parent / "frontend" / "public" / "images" / "questions_img"
+)
 USERNAME_RE = re.compile(r"^[a-z][a-z0-9_]{2,31}$")
 
 COMMON_SECTIONS = list(range(1, 40))
@@ -263,6 +275,11 @@ if PUBLIC_IMAGES_DIR.exists():
 @app.get("/health")
 def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/health", include_in_schema=False)
+def api_healthcheck() -> dict[str, str]:
+    return healthcheck()
 
 
 class RealtimeHub:
@@ -1930,6 +1947,8 @@ def _check_achievements(conn: psycopg.Connection, user_id: int) -> list[dict[str
 
 @app.get("/")
 def root():
+    if IS_PRODUCTION and FRONTEND_DIST_DIR.exists():
+        return FileResponse(FRONTEND_DIST_DIR / "index.html")
     return {"status": "ok", "version": "3.0.0"}
 
 
@@ -4870,6 +4889,58 @@ async def submit_battle_answers(battle_id: int, req: BattleSubmitRequest, user=D
         "winner_email": battle_dict["winner_email"],
         "seconds_left": _battle_deadline_seconds(battle_dict),
     }
+
+
+API_ROUTE_PREFIXES = {
+    "api",
+    "auth",
+    "promo",
+    "admin",
+    "payment",
+    "users",
+    "questions",
+    "sections",
+    "progress",
+    "achievements",
+    "leaderboard",
+    "theory",
+    "tickets",
+    "handbook",
+    "friends",
+    "messages",
+    "support",
+    "notifications",
+    "frames",
+    "battles",
+    "uploads",
+    "images",
+    "health",
+    "ws",
+}
+
+
+if IS_PRODUCTION:
+    if FRONTEND_DIST_DIR.exists():
+
+        @app.get("/{full_path:path}", include_in_schema=False)
+        def serve_frontend(full_path: str):
+            first_segment = full_path.strip("/").split("/", 1)[0]
+            if first_segment in API_ROUTE_PREFIXES:
+                raise HTTPException(404, "Not found")
+
+            dist_root = FRONTEND_DIST_DIR.resolve()
+            requested_file = (dist_root / full_path).resolve()
+            try:
+                requested_file.relative_to(dist_root)
+            except ValueError:
+                raise HTTPException(404, "Not found")
+
+            if requested_file.is_file():
+                return FileResponse(requested_file)
+
+            return FileResponse(dist_root / "index.html")
+    else:
+        print(f"[startup] frontend dist not found at {FRONTEND_DIST_DIR}", flush=True)
 
 
 if __name__ == "__main__":

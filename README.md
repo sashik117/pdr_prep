@@ -144,7 +144,7 @@ PDRPrep/
 
 ## 🚀 Live Demo
 
-Deployment link: **coming soon**
+Deployment link: [https://driveprep-pdr.onrender.com](https://driveprep-pdr.onrender.com)
 
 Repository: [github.com/sashik117/pdr_prep](https://github.com/sashik117/pdr_prep)
 
@@ -206,6 +206,15 @@ cd frontend
 npm run dev
 npm run build
 npm run typecheck
+```
+
+Render deploy:
+
+```bash
+# The Blueprint uses Docker.
+# Frontend build: npm ci --include=dev && npm run build
+# Backend start: python backend/scripts/render_migrate.py && uvicorn main:app
+render.yaml
 ```
 
 ---
