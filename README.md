@@ -214,7 +214,8 @@ Render deploy:
 # The Blueprint uses Docker.
 # Frontend build: npm ci --include=dev && npm run build
 # Free Render accounts can have only one active free PostgreSQL database.
-# DATABASE_URL is requested during Blueprint sync, so use an existing Render database URL.
+# DATABASE_URL is requested during Blueprint sync.
+# Use the existing Render database Internal Database URL when the web service is in the same region.
 # Pre-deploy: python backend/scripts/render_migrate.py
 # Backend start: uvicorn main:app
 render.yaml
