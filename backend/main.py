@@ -21,7 +21,7 @@ from uuid import uuid4
 import bcrypt
 import jwt
 import psycopg
-from psycopg import errors as psycopg_errors
+from psycopg import errors as psycopg_errors, sql
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -49,6 +49,7 @@ DB_URL = (
     if os.getenv("DATABASE_SSL", "").strip().lower() in {"1", "true", "yes", "require"} and "sslmode=" not in RAW_DB_URL
     else RAW_DB_URL
 )
+DATABASE_SCHEMA = os.getenv("DATABASE_SCHEMA", "").strip()
 JWT_SECRET = os.getenv("JWT_SECRET", "change-me-in-production")
 JWT_REMEMBER_DAYS = int(os.getenv("JWT_REMEMBER_DAYS", "90"))
 JWT_SESSION_DAYS = int(os.getenv("JWT_SESSION_DAYS", "1"))
@@ -318,6 +319,10 @@ realtime_hub = RealtimeHub()
 
 def db():
     conn = psycopg.connect(DB_URL, row_factory=dict_row)
+    if DATABASE_SCHEMA:
+        if not DATABASE_SCHEMA.replace("_", "").isalnum() or DATABASE_SCHEMA[0].isdigit():
+            raise RuntimeError("DATABASE_SCHEMA must contain only letters, numbers, and underscores, and cannot start with a number")
+        conn.execute(sql.SQL("SET search_path TO {}, public").format(sql.Identifier(DATABASE_SCHEMA)))
     conn.execute("SET lock_timeout TO '2000ms'")
     conn.execute("SET statement_timeout TO '20000ms'")
     return conn

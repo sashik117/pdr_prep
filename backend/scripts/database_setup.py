@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import psycopg
+from psycopg import sql
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -21,6 +22,7 @@ DATABASE_URL = (
     and "sslmode=" not in RAW_DATABASE_URL
     else RAW_DATABASE_URL
 )
+DATABASE_SCHEMA = os.getenv("DATABASE_SCHEMA", "").strip()
 QUESTIONS_FILE = PROJECT_ROOT / "data" / "questions" / "pdr_final_category.json"
 SCHEMA_FILE = PROJECT_ROOT / "create_tables.sql"
 BATCH_SIZE = 500
@@ -45,7 +47,18 @@ CATEGORY_SECTION_RULES = {
 }
 
 
+def configure_schema(conn: psycopg.Connection) -> None:
+    if not DATABASE_SCHEMA:
+        return
+    if not DATABASE_SCHEMA.replace("_", "").isalnum() or DATABASE_SCHEMA[0].isdigit():
+        raise RuntimeError("DATABASE_SCHEMA must contain only letters, numbers, and underscores, and cannot start with a number")
+
+    conn.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(sql.Identifier(DATABASE_SCHEMA)))
+    conn.execute(sql.SQL("SET search_path TO {}, public").format(sql.Identifier(DATABASE_SCHEMA)))
+
+
 def ensure_schema(conn: psycopg.Connection) -> None:
+    configure_schema(conn)
     if not SCHEMA_FILE.exists():
         return
     statements = [statement.strip() for statement in SCHEMA_FILE.read_text(encoding="utf-8").split(";") if statement.strip()]

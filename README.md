@@ -215,8 +215,8 @@ Render deploy:
 # Frontend build: npm ci --include=dev && npm run build
 # Free Render accounts can have only one active free PostgreSQL database.
 # DATABASE_URL is requested during Blueprint sync.
-# Use Internal Database URL only when the database is in the same Render region.
-# Otherwise use External Database URL and add sslmode=require if Render requires SSL.
+# Supabase Postgres works here too. Paste its connection string as DATABASE_URL.
+# DATABASE_SCHEMA=driveprep keeps this project isolated inside a shared database.
 # Backend start: python backend/scripts/render_start.py
 render.yaml
 ```

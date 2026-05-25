@@ -13,6 +13,8 @@ services:
         value: "false"
       - key: DATABASE_URL
         sync: false
+      - key: DATABASE_SCHEMA
+        value: driveprep
       - key: JWT_SECRET
         generateValue: true
       - key: FRONTEND_URL
