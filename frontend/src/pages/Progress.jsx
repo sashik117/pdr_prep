@@ -8,17 +8,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { useAuth } from '@/lib/AuthContext';
+import { useProtectedScreen } from '@/lib/useProtectedScreen';
 import api, { tokenStore } from '@/api/apiClient';
 import AvatarUpload from '@/components/profile/AvatarUpload';
 import FramePicker from '@/components/profile/FramePicker';
 import LoginPrompt from '@/components/auth/LoginPrompt';
+import ProtectedScreenFallback from '@/components/auth/ProtectedScreenFallback';
 import ActivityCalendar from '@/components/progress/ActivityCalendar';
 import { TIER_COLORS, getUnlockedFrames } from '@/lib/achievements';
 import AdminPanel from '@/pages/AdminPanel';
 
 const profileLinks = [
-  { to: '/study', label: 'Бібліотека', icon: BookMarked, badgeKey: null },
+  { to: '/study', label: 'Теорія', icon: BookMarked, badgeKey: null },
   { to: '/mistakes', label: 'Помилки', icon: CircleAlert, badgeKey: null },
   { to: '/friends', label: 'Друзі', icon: Users, badgeKey: 'friends' },
   { to: '/support', label: 'Підтримка', icon: MessageCircleMore, badgeKey: 'support' },
@@ -50,25 +51,25 @@ const onboardingSections = [
 ];
 
 export default function Progress() {
-  const { user, isLoadingAuth, login, logout } = useAuth();
+  const { user, login, logout, isCheckingAccess, isTemporaryAuthFailure, canAccess, checkUserAuth } = useProtectedScreen();
   const queryClient = useQueryClient();
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   const chartTooltipStyle = {
-    backgroundColor: '#ffffff',
-    border: isDark ? '1px solid #94a3b8' : '1px solid #cbd5e1',
-    color: '#0f172a',
+    backgroundColor: isDark ? '#0f172a' : '#ffffff',
+    border: isDark ? '1px solid #334155' : '1px solid #cbd5e1',
+    color: isDark ? '#f8fafc' : '#0f172a',
     borderRadius: '14px',
     boxShadow: '0 10px 30px rgba(15,23,42,0.12)',
   };
-  const chartTooltipLabelStyle = { color: '#0f172a', fontWeight: 700 };
-  const chartTooltipItemStyle = { color: '#0f172a' };
+  const chartTooltipLabelStyle = { color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 700 };
+  const chartTooltipItemStyle = { color: isDark ? '#e2e8f0' : '#0f172a' };
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [name, setName] = useState(user?.name || '');
   const [surname, setSurname] = useState(user?.surname || '');
   const [username, setUsername] = useState(user?.username || '');
   const [bio, setBio] = useState(user?.bio || '');
-  const [activeFrame, setActiveFrame] = useState(user?.active_frame || 'default');
+  const [activeFrame, setActiveFrame] = useState(user?.active_frame || '');
   const [emailVisible, setEmailVisible] = useState(Boolean(user?.email_visible ?? true));
   const [saving, setSaving] = useState(false);
   const [copyInfo, setCopyInfo] = useState('');
@@ -222,7 +223,7 @@ export default function Progress() {
     setSurname(profile?.surname || '');
     setUsername(profile?.username || '');
     setBio(profile?.bio || '');
-    setActiveFrame(profile?.active_frame || 'default');
+    setActiveFrame(profile?.active_frame || '');
     setEmailVisible(Boolean(profile?.email_visible ?? true));
     setProfileMessage('');
     setIsEditingProfile(true);
@@ -249,11 +250,15 @@ export default function Progress() {
     }
   };
 
-  if (isLoadingAuth || (!!user && statsQuery.isLoading)) {
-    return <CenteredSpinner />;
+  if (isCheckingAccess || (!!user && statsQuery.isLoading)) {
+    return isCheckingAccess ? <ProtectedScreenFallback loading /> : <CenteredSpinner />;
   }
 
-  if (!user) {
+  if (isTemporaryAuthFailure) {
+    return <ProtectedScreenFallback temporary onRetry={checkUserAuth} />;
+  }
+
+  if (!canAccess || !user) {
     return (
       <LoginPrompt
         title="Особистий кабінет"
@@ -267,18 +272,18 @@ export default function Progress() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full space-y-6 pb-6">
       <Card className="overflow-hidden border-white/90 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(239,246,255,0.96))] shadow-[0_24px_60px_rgba(37,99,235,0.08)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96),rgba(15,23,42,0.98))]">
         <CardContent className="space-y-6 p-4 sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
-            <AvatarUpload avatarUrl={profile?.avatar_url} activeFrame={isEditingProfile ? activeFrame : (profile?.active_frame || 'default')} onAvatarChange={handleAvatarChange} editable={isEditingProfile} />
+            <AvatarUpload avatarUrl={profile?.avatar_url} activeFrame={isEditingProfile ? activeFrame : (profile?.active_frame || '')} onAvatarChange={handleAvatarChange} editable={isEditingProfile} />
 
             <div className="min-w-0 flex-1">
               {!isEditingProfile ? (
                 <>
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0">
-                      <h2 className="text-2xl font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl">
+                      <h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl">
                         {user.full_name || `${user.name || ''} ${user.surname || ''}`.trim() || 'Користувач'}
                       </h2>
                       <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-300">
@@ -298,8 +303,8 @@ export default function Progress() {
                       {profileMessage ? <p className="mt-2 text-sm font-semibold text-primary">{profileMessage}</p> : null}
 
                       <div className="mt-4 flex flex-wrap items-center gap-3">
-                        <StatusPill icon={Flame} value={streak} label="вогник" active={streakStatus === 'active'} animate={streakAnimating} palette="orange" />
-                        <StatusPill icon={Star} value={totalStars} label="зірочки" active animate={false} palette="amber" filled />
+                        <StatusPill icon={Flame} value={streak} label="" active={streakStatus === 'active'} animate={streakAnimating} palette="orange" />
+                        <StatusPill icon={Star} value={totalStars} label="" active animate={false} palette="amber" filled />
                         {streakStatus === 'restorable' ? (
                           <Button
                             type="button"
@@ -322,19 +327,19 @@ export default function Progress() {
                   </div>
 
                   <div className="mt-5 rounded-[24px] border border-sky-100 bg-white/80 p-4 shadow-[0_10px_28px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-900/80">
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-600 dark:text-sky-300">Про себе</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600 dark:text-sky-300">Про себе</p>
                     <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">{user.bio?.trim() || 'Тут можна коротко написати про себе або просто залишити профіль чистим і лаконічним.'}</p>
                   </div>
 
-                  <div className="mt-5 rounded-[24px] border border-slate-100 bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-900">
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <div className="surface-glass mt-5 rounded-[24px] p-4">
+                    <div className="mb-3 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <p className="text-sm font-black text-slate-900 dark:text-white">Досягнення</p>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white">Досягнення</p>
                         <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
                           Досягнення: {achievements.length}/{totalAchievements}
                         </p>
                       </div>
-                      <Button asChild variant="outline" className="rounded-xl dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                      <Button asChild variant="outline" size="sm" className="order-2 h-9 rounded-lg px-3 text-xs sm:order-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                         <Link to="/achievements">Переглянути всі</Link>
                       </Button>
                     </div>
@@ -352,10 +357,7 @@ export default function Progress() {
               ) : (
                 <div className="space-y-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-2xl font-black tracking-[-0.03em] text-slate-950 dark:text-white">Редагування профілю</h2>
-                    <Button variant="outline" className="w-full rounded-xl border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-auto" onClick={() => setIsEditingProfile(false)}>
-                      Скасувати
-                    </Button>
+                    <h2 className="text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">Редагування профілю</h2>
                   </div>
                   <Field label="Ім'я" value={name} onChange={setName} />
                   <Field label="Прізвище" value={surname} onChange={setSurname} />
@@ -385,10 +387,15 @@ export default function Progress() {
                     purchasingFrameId={purchasingFrameId}
                   />
                   {profileMessage ? <p className="text-sm font-semibold text-primary">{profileMessage}</p> : null}
-                  <Button className="w-full rounded-xl border border-primary/20 px-5 shadow-[0_14px_28px_rgba(20,107,255,0.18)] sm:w-auto" disabled={saving} onClick={() => void handleSave()}>
-                    {saving ? <Save className="mr-2 h-4 w-4" /> : <PencilLine className="mr-2 h-4 w-4" />}
-                    Зберегти зміни
-                  </Button>
+                  <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <Button variant="outline" className="w-full rounded-xl border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-auto" onClick={() => setIsEditingProfile(false)}>
+                      Скасувати
+                    </Button>
+                    <Button className="w-full rounded-xl border border-primary/20 px-5 shadow-[0_14px_28px_rgba(20,107,255,0.18)] sm:w-auto" disabled={saving} onClick={() => void handleSave()}>
+                      {saving ? <Save className="mr-2 h-4 w-4" /> : <PencilLine className="mr-2 h-4 w-4" />}
+                      Зберегти зміни
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -397,7 +404,7 @@ export default function Progress() {
           <div className="space-y-4 lg:grid lg:gap-4 lg:grid-cols-[1.15fr_repeat(4,minmax(0,1fr))] lg:space-y-0">
             <div className="rounded-[24px] border border-sky-100 bg-[linear-gradient(135deg,rgba(20,107,255,0.08),rgba(255,255,255,0.98)_42%,rgba(236,253,245,0.9))] p-4 shadow-[0_16px_40px_rgba(37,99,235,0.08)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(30,64,175,0.22),rgba(2,6,23,0.96)_48%,rgba(6,78,59,0.4))]">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <p className="text-sm font-black text-slate-900 dark:text-white">Коротко про статистику</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">Коротко про статистику</p>
                 <span className="rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-sm font-bold text-primary dark:bg-slate-900/80">{progressPercent}%</span>
               </div>
               <div className="h-3 overflow-hidden rounded-full bg-white/80 dark:bg-slate-950/80">
@@ -418,8 +425,8 @@ export default function Progress() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <Card className="overflow-hidden border-white/90 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92">
+      <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+        <Card className="surface-glass overflow-hidden">
           <CardHeader>
             <CardTitle className="dark:text-white">Меню профілю</CardTitle>
           </CardHeader>
@@ -433,7 +440,7 @@ export default function Progress() {
                 <Icon className="h-4 w-4 text-primary" />
                 {label}
                 {badgeKey && notificationSummary[badgeKey] > 0 ? (
-                  <span className="absolute right-3 top-3 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-black text-white">
+                  <span className="absolute right-3 top-3 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold text-white">
                     {Math.min(notificationSummary[badgeKey], 9)}
                   </span>
                 ) : null}
@@ -442,7 +449,7 @@ export default function Progress() {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden border-white/90 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92">
+        <Card className="surface-glass overflow-hidden">
           <CardHeader>
             <CardTitle className="dark:text-white">Активність по місяцях</CardTitle>
           </CardHeader>
@@ -452,8 +459,8 @@ export default function Progress() {
         </Card>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
-        <Card className="overflow-hidden border-white/90 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92">
+      <div className="grid gap-5 xl:grid-cols-[1.02fr_0.98fr]">
+        <Card className="surface-glass overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between gap-4">
             <CardTitle className="dark:text-white">Слабкі теми</CardTitle>
             <Button asChild variant="ghost" className="h-auto rounded-xl border border-primary/10 bg-primary/5 px-3 py-2 text-primary shadow-sm hover:bg-primary/10">
@@ -475,7 +482,7 @@ export default function Progress() {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden border-white/90 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92">
+        <Card className="surface-glass overflow-hidden">
           <CardHeader>
             <CardTitle className="dark:text-white">Динаміка результатів</CardTitle>
           </CardHeader>
@@ -523,7 +530,7 @@ export default function Progress() {
             <div className="grid gap-4 md:grid-cols-2">
               {onboardingSections.map((section) => (
                 <div key={section.title} className="rounded-[22px] border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-                  <p className="font-black text-slate-900 dark:text-white">{section.title}</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">{section.title}</p>
                   <p className="mt-2">{section.text}</p>
                 </div>
               ))}
@@ -552,7 +559,7 @@ function apiToken() {
 }
 
 function hasPersistentLogin() {
-  return Boolean(localStorage.getItem('pdr_token'));
+  return tokenStore.hasPersistent();
 }
 
 function Field(props) {
@@ -572,8 +579,8 @@ function StatusPill({ icon: Icon, value, label, active, animate, palette, filled
   return (
     <div className={`inline-flex items-center gap-3 rounded-full border px-4 py-2 ${paletteMap[palette] || paletteMap.orange}`}>
       <Icon className={`h-5 w-5 transition-all duration-500 ${filled ? 'fill-amber-400 text-amber-500' : active ? 'fill-orange-500 text-orange-500' : 'text-slate-400'} ${animate ? 'scale-125 drop-shadow-[0_0_14px_rgba(249,115,22,0.55)] animate-pulse' : ''}`} />
-      <span className={`text-base font-black transition-all duration-500 ${animate ? 'translate-y-[-2px] scale-110 text-orange-600' : ''}`}>{value}</span>
-      <span className="text-sm font-semibold">{label}</span>
+      <span className={`text-base font-semibold transition-all duration-500 ${animate ? 'translate-y-[-2px] scale-110 text-orange-600' : ''}`}>{value}</span>
+      {label ? <span className="text-sm font-semibold">{label}</span> : null}
     </div>
   );
 }
@@ -613,7 +620,7 @@ function MetricCard({ icon: Icon, label, value, accent = 'blue', filledIcon = fa
       <div className={`mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white ${palette.icon} ${palette.glow}`}>
         <Icon className={`h-5 w-5 ${filledIcon ? 'fill-current' : ''}`} />
       </div>
-      <p className="text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">{value}</p>
+      <p className="text-2xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-white">{value}</p>
       <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{label}</p>
     </div>
   );
@@ -622,7 +629,10 @@ function MetricCard({ icon: Icon, label, value, accent = 'blue', filledIcon = fa
 function AchievementBadge({ achievement }) {
   const tierStyle = TIER_COLORS[achievement.tier] || TIER_COLORS[1];
   return (
-    <div className={`rounded-full border px-3 py-1.5 text-xs font-bold ${tierStyle.bg} ${tierStyle.text} ${tierStyle.border}`} title={achievement.description}>
+    <div
+      className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-bold shadow-sm ${tierStyle.bg} ${tierStyle.text} ${tierStyle.border}`}
+      title={achievement.description}
+    >
       {achievement.name}
     </div>
   );

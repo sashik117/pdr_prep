@@ -1,8 +1,8 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AtSign, BarChart3, CheckCheck, CheckCircle2, User2, XCircle } from 'lucide-react';
+import { AtSign, BarChart3, CheckCheck, CheckCircle2, Crown, Mail, User2, XCircle } from 'lucide-react';
 import api from '@/api/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -68,20 +68,27 @@ export default function UserProfile() {
             <ProfileAvatar profile={profile} />
 
             <div className="min-w-0 flex-1">
-              <h2 className="text-2xl font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl">
+              <h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl">
                 {profile.full_name || `${profile.name || ''} ${profile.surname || ''}`.trim()}
               </h2>
               {profile.username ? (
                 <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-sm font-semibold text-primary">
                   <AtSign className="h-4 w-4" />
                   {profile.username}
+                  {profile.is_premium ? <Crown className="h-4 w-4 text-amber-500" /> : null}
+                </p>
+              ) : null}
+              {profile.email ? (
+                <p className="mt-3 inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-300">
+                  <Mail className="h-4 w-4" />
+                  {profile.email}
                 </p>
               ) : null}
               <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">{profile.bio?.trim() || 'Користувач поки що не додав опис.'}</p>
 
-              <div className="mt-5 rounded-[24px] border border-slate-100 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-900/80">
+              <div className="surface-glass mt-5 rounded-[24px] p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <p className="text-sm font-black text-slate-900 dark:text-white">Прогрес</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Прогрес</p>
                   <span className="text-sm font-bold text-primary">{progressPercent}%</span>
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
@@ -91,7 +98,7 @@ export default function UserProfile() {
 
               <div className="mt-5 rounded-[24px] border border-slate-100 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-900/80">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <p className="text-sm font-black text-slate-900 dark:text-white">Досягнення</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Досягнення</p>
                   <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">{showcasedAchievements.length} на вітрині</span>
                 </div>
                 {showcasedAchievements.length > 0 ? (
@@ -179,7 +186,7 @@ function StatCard({ icon: Icon, label, value, accent = 'blue' }) {
         <div className={`mb-3 flex h-11 w-11 items-center justify-center rounded-xl ${accentMap[accent] || accentMap.blue}`}>
           <Icon className="h-5 w-5" />
         </div>
-        <p className="text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">{value}</p>
+        <p className="text-2xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-white">{value}</p>
         <p className="text-sm text-slate-500 dark:text-slate-300">{label}</p>
       </CardContent>
     </Card>
@@ -189,7 +196,10 @@ function StatCard({ icon: Icon, label, value, accent = 'blue' }) {
 function AchievementBadge({ achievement }) {
   const tierStyle = TIER_COLORS[achievement.tier] || TIER_COLORS[1];
   return (
-    <div className={`rounded-full border px-3 py-1.5 text-xs font-bold ${tierStyle.bg} ${tierStyle.text} ${tierStyle.border}`} title={achievement.description}>
+    <div
+      className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-bold shadow-sm ${tierStyle.bg} ${tierStyle.text} ${tierStyle.border}`}
+      title={achievement.description}
+    >
       {achievement.name}
     </div>
   );

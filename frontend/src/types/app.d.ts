@@ -10,6 +10,7 @@ export type UserProfile = {
   avatar_version?: number | null;
   bio?: string | null;
   active_frame?: string | null;
+  is_premium?: boolean;
   streak_days?: number;
   marathon_best?: number;
   total_tests?: number;

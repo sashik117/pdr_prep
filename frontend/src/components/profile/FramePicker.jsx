@@ -5,20 +5,23 @@ import { cn } from '@/lib/utils';
 
 const FRAME_PRESETS = {
   ...FRAMES,
+  default: { label: 'Без рамки', style: 'ring-0' },
   mint: { label: 'Mint', style: 'ring-4 ring-emerald-400 ring-offset-2 shadow-lg shadow-emerald-300/50' },
   sunset: { label: 'Sunset', style: 'ring-4 ring-rose-400 ring-offset-2 shadow-lg shadow-orange-300/50' },
   neon: { label: 'Neon', style: 'ring-4 ring-fuchsia-500 ring-offset-2 shadow-lg shadow-fuchsia-400/50' },
   aurora: { label: 'Aurora', style: 'ring-4 ring-cyan-400 ring-offset-2 shadow-lg shadow-sky-300/60' },
 };
 
-/** @typedef {keyof typeof FRAME_PRESETS} FrameKey */
-/** @typedef {{ label: string, style: string }} FramePreset */
-/** @type {Record<string, FramePreset>} */
 const FRAME_PRESETS_MAP = FRAME_PRESETS;
 
-/**
- * @param {Array<{ id: string, unlocked?: boolean, purchased?: boolean, can_purchase?: boolean, price?: number, achievement_id?: string, label?: string }>} items
- */
+function sortFrames(a, b) {
+  if (a.id === 'default') return -1;
+  if (b.id === 'default') return 1;
+  const aKind = a.achievement_id ? 2 : 1;
+  const bKind = b.achievement_id ? 2 : 1;
+  return aKind - bKind || a.price - b.price;
+}
+
 function normalizeItems(items = []) {
   return items
     .filter((item, index, list) => item?.id && FRAME_PRESETS_MAP[item.id] && list.findIndex((entry) => entry?.id === item.id) === index)
@@ -31,20 +34,10 @@ function normalizeItems(items = []) {
       achievement_id: item.achievement_id || null,
       label: item.label || FRAME_PRESETS_MAP[item.id].label,
       style: FRAME_PRESETS_MAP[item.id].style,
-    }));
+    }))
+    .sort(sortFrames);
 }
 
-/**
- * @param {{
- *   unlockedFrames?: FrameKey[],
- *   activeFrame?: FrameKey,
- *   onSelect?: (frame: FrameKey) => void,
- *   shopItems?: Array<{ id: string, unlocked?: boolean, purchased?: boolean, can_purchase?: boolean, price?: number, achievement_id?: string, label?: string }>,
- *   availableStars?: number,
- *   onPurchase?: (frameId: string) => void,
- *   purchasingFrameId?: string | null,
- * }} props
- */
 export default function FramePicker({
   unlockedFrames = ['default'],
   activeFrame = 'default',
@@ -67,24 +60,25 @@ export default function FramePicker({
       achievement_id: null,
       label: FRAME_PRESETS[frame].label,
       style: FRAME_PRESETS[frame].style,
-    }));
+    }))
+    .sort(sortFrames);
   const frames = normalizedShop.length > 0 ? normalizedShop : fallbackItems;
 
   return (
     <div className="space-y-4">
       <button
         type="button"
-        className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left shadow-sm transition-all hover:border-primary/20 hover:bg-primary/5 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-primary/30 dark:hover:bg-slate-800"
+        className="flex w-full items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left shadow-sm transition-all hover:border-primary/20 hover:bg-primary/5 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-primary/30 dark:hover:bg-slate-800"
         onClick={() => setIsOpen((value) => !value)}
       >
         <div>
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-100">Рамки профілю</p>
-          <p className="text-xs text-slate-500 dark:text-slate-300">Відкрийте блок, щоб вибрати або купити оформлення для аватарки.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-300">Спочатку рамки за зірки, нижче — рамки за досягнення.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200">
+        <div className="flex shrink-0 items-center gap-3">
+          <div className="hidden items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200 sm:inline-flex">
             <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
-            Доступно зірок: {availableStars}
+            {availableStars}
           </div>
           {isOpen ? <ChevronUp className="h-4 w-4 text-slate-500 dark:text-slate-300" /> : <ChevronDown className="h-4 w-4 text-slate-500 dark:text-slate-300" />}
         </div>
@@ -94,47 +88,47 @@ export default function FramePicker({
         frames.length > 0 ? (
           <div className="grid gap-3 sm:grid-cols-2">
             {frames.map((frame) => {
-              const selected = frame.id === activeFrame;
-              const unlocked = frame.unlocked;
+              const selected = frame.id === activeFrame || (!activeFrame && frame.id === 'default');
+              const unlocked = frame.unlocked || frame.id === 'default';
               const canBuy = !unlocked && frame.can_purchase;
               const loading = purchasingFrameId === frame.id;
               return (
                 <div
                   key={frame.id}
                   className={cn(
-                    'rounded-2xl border bg-white p-4 text-left transition-all duration-200 dark:bg-slate-950',
+                    'rounded-xl border bg-white p-4 text-left transition-all duration-200 dark:bg-slate-950',
                     selected ? 'border-primary bg-primary/5 shadow-[0_12px_28px_rgba(20,107,255,0.12)]' : 'border-slate-200 dark:border-slate-700',
                     !unlocked && 'opacity-90',
                   )}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={cn('flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-sm font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-300', frame.style)}>
+                    <div className={cn('flex h-14 w-14 items-center justify-center rounded-xl bg-slate-100 text-sm font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300', frame.id !== 'default' && frame.style)}>
                       A
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="font-semibold text-slate-900 dark:text-white">{frame.label}</p>
                         {unlocked ? (
-                          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200">
+                          <span className="rounded-md bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200">
                             Відкрита
                           </span>
                         ) : frame.achievement_id ? (
-                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                          <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
                             За досягнення
                           </span>
                         ) : (
-                          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+                          <span className="rounded-md bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
                             {frame.price} зірок
                           </span>
                         )}
                       </div>
                       <p className="mt-2 text-xs text-slate-500 dark:text-slate-300">
                         {selected
-                          ? 'Активна рамка'
+                          ? 'Активний варіант'
                           : unlocked
                             ? 'Натисніть, щоб вибрати'
                             : frame.achievement_id
-                              ? 'Відкривається автоматично після потрібного досягнення'
+                              ? 'Відкривається після потрібного досягнення'
                               : 'Можна купити за зірки'}
                       </p>
                     </div>
@@ -145,19 +139,19 @@ export default function FramePicker({
                       <button
                         type="button"
                         className={cn(
-                          'w-full rounded-xl border px-3 py-2 text-sm font-semibold transition-all',
+                          'w-full rounded-lg border px-3 py-2 text-sm font-semibold transition-all',
                           selected
                             ? 'border-primary bg-primary text-primary-foreground'
                             : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-primary/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100',
                         )}
-                        onClick={() => onSelect?.(/** @type {FrameKey} */ (frame.id))}
+                        onClick={() => onSelect?.(frame.id)}
                       >
-                        {selected ? 'Обрана рамка' : 'Вибрати'}
+                        {selected ? 'Обрано' : 'Вибрати'}
                       </button>
                     ) : canBuy ? (
                       <button
                         type="button"
-                        className="flex w-full items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 transition-all hover:bg-amber-100 disabled:opacity-60 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200"
+                        className="flex w-full items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 transition-all hover:bg-amber-100 disabled:opacity-60 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200"
                         disabled={availableStars < frame.price || loading}
                         onClick={() => onPurchase?.(frame.id)}
                       >
@@ -171,8 +165,8 @@ export default function FramePicker({
             })}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-            Поки що доступна лише стандартна рамка.
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            Поки що доступний тільки варіант без рамки.
           </div>
         )
       ) : null}

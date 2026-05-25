@@ -13,15 +13,17 @@ import api from '@/api/apiClient';
  *   editable?: boolean
  * }} props
  */
-export default function AvatarUpload({ avatarUrl = null, activeFrame = 'default', onAvatarChange, editable = true }) {
+export default function AvatarUpload({ avatarUrl = null, activeFrame = '', onAvatarChange, editable = true }) {
   const inputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(/** @type {string | null} */ (null));
   const [imageBroken, setImageBroken] = useState(false);
   const { toast } = useToast();
   const displayedAvatar = previewUrl || avatarUrl || null;
+  const hasFrame = Boolean(activeFrame && activeFrame !== 'default');
   const frameClass = cn(
-    'flex h-24 w-24 items-center justify-center rounded-[28px] p-[5px] transition',
+    'flex h-24 w-24 items-center justify-center rounded-[28px] transition',
+    hasFrame ? 'p-[5px]' : 'border border-slate-200 bg-transparent p-0 dark:border-slate-700',
     activeFrame === 'fire' && 'bg-[linear-gradient(135deg,#fb7185,#f97316)]',
     activeFrame === 'sun' && 'bg-[linear-gradient(135deg,#facc15,#fb7185)]',
     activeFrame === 'gold' && 'bg-[linear-gradient(135deg,#f59e0b,#fde68a)]',
@@ -34,7 +36,6 @@ export default function AvatarUpload({ avatarUrl = null, activeFrame = 'default'
     activeFrame === 'sunset' && 'bg-[linear-gradient(135deg,#fb7185,#f59e0b)]',
     activeFrame === 'neon' && 'bg-[linear-gradient(135deg,#d946ef,#8b5cf6)]',
     activeFrame === 'aurora' && 'bg-[linear-gradient(135deg,#22d3ee,#34d399)]',
-    (!activeFrame || activeFrame === 'default') && 'bg-[linear-gradient(135deg,#dbeafe,#93c5fd)]',
   );
 
   useEffect(() => {

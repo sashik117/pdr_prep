@@ -1,4 +1,4 @@
-import api from '@/api/apiClient';
+﻿import api from '@/api/apiClient';
 
 export const IMAGE_BASE_PATH = '/images/questions_img/';
 
@@ -70,6 +70,7 @@ export async function fetchSections(category) {
  *   correct_answer?: string,
  *   correct_ans?: number,
  *   explanation?: string,
+ *   explanation_html?: string,
  *   images?: unknown[],
  *   image_url?: string,
  *   category?: string,
@@ -77,7 +78,13 @@ export async function fetchSections(category) {
  *   topic?: string,
  *   section?: string|number,
  *   difficulty?: string,
- *   num_in_section?: number
+ *   num_in_section?: number,
+ *   question_number?: number,
+ *   ticket_number?: number,
+ *   source_rule_slug?: string,
+ *   theory_section_id?: number,
+ *   exam_block?: string,
+ *   exam_block_label?: string
  * } | null | undefined} q
  */
 export function normalizeQuestion(q) {
@@ -117,15 +124,22 @@ export function normalizeQuestion(q) {
 
   return {
     id,
-    question_number: q.num_in_section ?? id,
+    question_number: q.question_number ?? q.num_in_section ?? id,
+    ticket_number: q.ticket_number ?? null,
     text: q.question_text || q.text || '',
     options,
     correct_answer: correctAnswer,
     explanation: q.explanation || '',
+    explanation_html: q.explanation_html || '',
     image_url: images.length > 0 ? getImageUrl(imageFilename) : '',
     category: q.category || 'B',
     topic: q.section_name || q.topic || `Розділ ${q.section}`,
     section: q.section,
     difficulty: q.difficulty || 'medium',
+    source_rule_slug: q.source_rule_slug || '',
+    theory_section_id: q.theory_section_id || null,
+    exam_block: q.exam_block || '',
+    exam_block_label: q.exam_block_label || '',
   };
 }
+

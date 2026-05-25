@@ -1,21 +1,22 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Zap, Heart, Trophy, ArrowRight, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '@/lib/AuthContext';
+import { useProtectedScreen } from '@/lib/useProtectedScreen';
 import api from '@/api/apiClient';
 import { fetchRandomQuestions, normalizeQuestion } from '@/api/questionsApi';
 import LoginPrompt from '@/components/auth/LoginPrompt';
 import QuestionCard from '@/components/test/QuestionCard';
+import ProtectedScreenFallback from '@/components/auth/ProtectedScreenFallback';
 
 const TOTAL_LIVES = 3;
 
 export default function Marathon() {
   const navigate = useNavigate();
-  const { user, isLoadingAuth } = useAuth();
+  const { user, isCheckingAccess, isTemporaryAuthFailure, canAccess, checkUserAuth } = useProtectedScreen();
   const [phase, setPhase] = useState('idle');
   const [queue, setQueue] = useState(/** @type {import('@/types/questions').QuestionViewModel[]} */ ([]));
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -106,11 +107,15 @@ export default function Marathon() {
     setAnswered(false);
   };
 
-  if (isLoadingAuth) {
-    return <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/30 border-t-primary" /></div>;
+  if (isCheckingAccess) {
+    return <ProtectedScreenFallback loading />;
   }
 
-  if (!user) {
+  if (isTemporaryAuthFailure) {
+    return <ProtectedScreenFallback temporary onRetry={checkUserAuth} />;
+  }
+
+  if (!canAccess || !user) {
     return <LoginPrompt title="Режим марафон" description="Увійдіть або зареєструйтесь, щоб грати в марафон і потрапити в таблицю лідерів." />;
   }
 
@@ -120,7 +125,7 @@ export default function Marathon() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-black text-foreground">
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
             <Zap className="h-6 w-6 text-accent" />
             Марафон
           </h1>
@@ -186,7 +191,7 @@ export default function Marathon() {
                   >
                     <Heart className={alive ? 'h-7 w-7 fill-rose-500 text-rose-500' : 'h-7 w-7 text-slate-300 dark:text-slate-600'} />
                     {breaking ? (
-                      <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[10px] font-black text-white/90">✦</span>
+                      <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white/90">✦</span>
                     ) : null}
                   </motion.div>
                 );
@@ -226,7 +231,7 @@ export default function Marathon() {
             <span className="text-5xl">💔</span>
           </div>
           <div>
-            <h2 className="text-3xl font-black text-foreground">Марафон завершено</h2>
+            <h2 className="text-3xl font-semibold text-foreground">Марафон завершено</h2>
             <p className="mt-2 text-muted-foreground">Ви дійшли до <span className="font-bold text-foreground">{score}</span> питань, поки не вичерпали всі три життя.</p>
           </div>
           <div className="flex justify-center gap-3">

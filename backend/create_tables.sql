@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
     total_correct   INT NOT NULL DEFAULT 0,
     total_answers   INT NOT NULL DEFAULT 0,
     marathon_best   INT NOT NULL DEFAULT 0,
+    is_premium      BOOLEAN NOT NULL DEFAULT FALSE,
     created_at      TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -41,9 +42,14 @@ CREATE TABLE IF NOT EXISTS questions (
     section         TEXT NOT NULL,
     section_name    TEXT,
     num_in_section  INT,
+    ticket_number   INT,
+    question_number INT,
     category        TEXT,
     difficulty      TEXT,
     explanation     TEXT,
+    explanation_html TEXT,
+    source_rule_slug TEXT,
+    theory_section_id INT,
     question_text   TEXT NOT NULL,
     options         JSONB NOT NULL DEFAULT '[]'::jsonb,
     correct_ans     INT,
@@ -52,6 +58,8 @@ CREATE TABLE IF NOT EXISTS questions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_questions_section ON questions(section);
+CREATE INDEX IF NOT EXISTS idx_questions_ticket_number ON questions(ticket_number);
+CREATE INDEX IF NOT EXISTS idx_questions_ticket_question ON questions(ticket_number, question_number);
 CREATE INDEX IF NOT EXISTS idx_questions_text ON questions
     USING gin (to_tsvector('simple', question_text));
 
@@ -168,8 +176,11 @@ CREATE TABLE IF NOT EXISTS handbook_data (
     section_title TEXT NOT NULL,
     source_url    TEXT UNIQUE,
     source_slug   TEXT UNIQUE,
+    comment_html  TEXT,
     content_html  TEXT NOT NULL,
     content_text  TEXT NOT NULL DEFAULT '',
+    video_url     TEXT,
+    embed_url     TEXT,
     image_paths   JSONB NOT NULL DEFAULT '[]'::jsonb,
     search_vector TSVECTOR GENERATED ALWAYS AS (
         to_tsvector('simple', COALESCE(section_title, '') || ' ' || COALESCE(content_text, ''))
@@ -182,3 +193,84 @@ CREATE INDEX IF NOT EXISTS idx_handbook_chapter_num ON handbook_data(chapter_num
 CREATE INDEX IF NOT EXISTS idx_handbook_sort_order ON handbook_data(sort_order);
 CREATE INDEX IF NOT EXISTS idx_handbook_category ON handbook_data(category);
 CREATE INDEX IF NOT EXISTS idx_handbook_search_vector ON handbook_data USING gin(search_vector);
+
+CREATE TABLE IF NOT EXISTS theory_categories (
+    id            SERIAL PRIMARY KEY,
+    slug          TEXT NOT NULL UNIQUE,
+    title         TEXT NOT NULL,
+    description   TEXT,
+    sort_order    INT NOT NULL DEFAULT 0,
+    created_at    TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS theory_topics (
+    id            SERIAL PRIMARY KEY,
+    category_id   INT NOT NULL REFERENCES theory_categories(id) ON DELETE CASCADE,
+    slug          TEXT NOT NULL UNIQUE,
+    title         TEXT NOT NULL,
+    description   TEXT,
+    topic_type    TEXT NOT NULL DEFAULT 'topic',
+    sort_order    INT NOT NULL DEFAULT 0,
+    source_url    TEXT,
+    created_at    TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_theory_topics_category_id ON theory_topics(category_id);
+CREATE INDEX IF NOT EXISTS idx_theory_topics_sort_order ON theory_topics(sort_order);
+
+CREATE TABLE IF NOT EXISTS theory_sections (
+    id            SERIAL PRIMARY KEY,
+    topic_id      INT NOT NULL REFERENCES theory_topics(id) ON DELETE CASCADE,
+    slug          TEXT NOT NULL UNIQUE,
+    title         TEXT NOT NULL,
+    description   TEXT,
+    comment_html  TEXT,
+    content_html  TEXT NOT NULL DEFAULT '',
+    content_text  TEXT NOT NULL DEFAULT '',
+    video_url     TEXT,
+    embed_url     TEXT,
+    chapter_num   INT,
+    sort_order    INT NOT NULL DEFAULT 0,
+    source_url    TEXT,
+    created_at    TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_theory_sections_topic_id ON theory_sections(topic_id);
+CREATE INDEX IF NOT EXISTS idx_theory_sections_sort_order ON theory_sections(sort_order);
+CREATE INDEX IF NOT EXISTS idx_theory_sections_search ON theory_sections
+    USING gin (to_tsvector('simple', COALESCE(title, '') || ' ' || COALESCE(content_text, '')));
+
+CREATE TABLE IF NOT EXISTS theory_assets (
+    id            SERIAL PRIMARY KEY,
+    section_id     INT NOT NULL REFERENCES theory_sections(id) ON DELETE CASCADE,
+    asset_type     TEXT NOT NULL DEFAULT 'image',
+    asset_url      TEXT NOT NULL,
+    alt_text       TEXT,
+    caption        TEXT,
+    sort_order     INT NOT NULL DEFAULT 0,
+    created_at     TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_theory_assets_section_id ON theory_assets(section_id);
+CREATE INDEX IF NOT EXISTS idx_theory_assets_sort_order ON theory_assets(sort_order);
+
+CREATE TABLE IF NOT EXISTS premium_orders (
+    id                 SERIAL PRIMARY KEY,
+    user_id            INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    plan_code          TEXT NOT NULL,
+    amount             INT NOT NULL,
+    currency           TEXT NOT NULL DEFAULT 'UAH',
+    provider           TEXT NOT NULL DEFAULT 'liqpay',
+    status             TEXT NOT NULL DEFAULT 'pending',
+    provider_order_id  TEXT UNIQUE,
+    provider_payment_id TEXT,
+    checkout_url       TEXT,
+    provider_payload   JSONB NOT NULL DEFAULT '{}'::jsonb,
+    activated_at       TIMESTAMP,
+    expires_at         TIMESTAMP,
+    created_at         TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at         TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_premium_orders_user_id ON premium_orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_premium_orders_status ON premium_orders(status);

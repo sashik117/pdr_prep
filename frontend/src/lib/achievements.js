@@ -127,10 +127,10 @@ export const ACHIEVEMENTS_DEF = [
 ];
 
 export const TIER_COLORS = {
-  1: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300', label: 'Бронза' },
-  2: { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-300', label: 'Срібло' },
-  3: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300', label: 'Золото' },
-  4: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300', label: 'Легенда' },
+  1: { bg: 'bg-orange-100 dark:bg-orange-950/35', text: 'text-orange-700 dark:text-orange-200', border: 'border-orange-300 dark:border-orange-500/35', label: 'Бронза' },
+  2: { bg: 'bg-slate-100 dark:bg-slate-800/80', text: 'text-slate-700 dark:text-slate-100', border: 'border-slate-300 dark:border-slate-600', label: 'Срібло' },
+  3: { bg: 'bg-yellow-100 dark:bg-yellow-950/35', text: 'text-yellow-700 dark:text-yellow-200', border: 'border-yellow-300 dark:border-yellow-500/35', label: 'Золото' },
+  4: { bg: 'bg-purple-100 dark:bg-purple-950/35', text: 'text-purple-700 dark:text-purple-200', border: 'border-purple-300 dark:border-purple-500/35', label: 'Легенда' },
 };
 
 export const FRAMES = {

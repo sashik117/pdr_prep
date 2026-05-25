@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import api, { tokenStore, userStore } from '@/api/apiClient';
+import { applyTheme, notifyThemeChange } from '@/lib/theme';
 
 const AuthContext = /** @type {import('react').Context<import('@/types/app').AuthContextValue | null>} */ (
   createContext(/** @type {import('@/types/app').AuthContextValue | null} */ (null))
@@ -23,8 +24,10 @@ const navigateToAuth = (tab, redirectTo = getCurrentLocation()) => {
  * @param {{ children: import('react').ReactNode }} props
  */
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(/** @type {import('@/types/app').UserProfile | null} */ (userStore.get()));
-  const [isAuthenticated, setIsAuthenticated] = useState(!!tokenStore.get() && !!userStore.get());
+  const initialUser = userStore.get();
+  const initialToken = tokenStore.get();
+  const [user, setUser] = useState(/** @type {import('@/types/app').UserProfile | null} */ (initialUser));
+  const [isAuthenticated, setIsAuthenticated] = useState(!!initialToken);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
   const [authError, setAuthError] = useState(/** @type {import('@/types/app').AuthError} */ (null));
@@ -32,6 +35,8 @@ export const AuthProvider = ({ children }) => {
   const checkUserAuth = useCallback(async () => {
     const token = tokenStore.get();
     if (!token) {
+      applyTheme();
+      notifyThemeChange();
       setUser(null);
       setIsAuthenticated(false);
       setAuthChecked(true);
@@ -41,9 +46,14 @@ export const AuthProvider = ({ children }) => {
     }
 
     setIsLoadingAuth(true);
+    const cachedUser = userStore.get();
+    if (cachedUser) {
+      setUser(cachedUser);
+      setIsAuthenticated(true);
+    }
     try {
       const me = await api.me();
-      userStore.set(me, !!localStorage.getItem('pdr_user'));
+      userStore.set(me, tokenStore.hasPersistent());
       setUser(me);
       setIsAuthenticated(true);
       setAuthError(null);
@@ -58,9 +68,8 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setIsAuthenticated(false);
       } else {
-        const cachedUser = userStore.get();
         setUser(cachedUser);
-        setIsAuthenticated(!!tokenStore.get() && !!cachedUser);
+        setIsAuthenticated(!!tokenStore.get());
       }
       setAuthError({
         type: status === 401 || blocked ? 'auth_required' : 'auth_temporary_unavailable',
@@ -97,6 +106,8 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(() => {
     tokenStore.clear();
     userStore.clear();
+    applyTheme();
+    notifyThemeChange();
     setUser(null);
     setIsAuthenticated(false);
     setAuthError(null);

@@ -7,23 +7,35 @@ import re
 import shutil
 import smtplib
 import string
+import base64
+import hashlib
 from collections import defaultdict
-from uuid import uuid4
 from datetime import date, datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from html import escape as html_escape
 from pathlib import Path
 from typing import Any, Optional
+from uuid import uuid4
 
 import bcrypt
 import jwt
 import psycopg
+from psycopg import errors as psycopg_errors
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from psycopg.rows import dict_row
 from pydantic import BaseModel, Field
+from parsers.theory_sources import THEORY_CATEGORY_SEEDS, THEORY_SOURCE_MAP
+from services.ticket_service import get_ticket_questions, list_tickets
+from services.theory_service import (
+    get_theory_section,
+    list_theory_categories,
+    list_theory_sections,
+    list_theory_topics,
+)
 
 load_dotenv()
 
@@ -34,7 +46,11 @@ JWT_REMEMBER_DAYS = int(os.getenv("JWT_REMEMBER_DAYS", "90"))
 JWT_SESSION_DAYS = int(os.getenv("JWT_SESSION_DAYS", "1"))
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 SUPPORT_EMAIL = "pdr.preparation@gmail.com"
-SUPPORT_NAME = "PDRPrep Support"
+SUPPORT_NAME = "DrivePrep Support"
+LIQPAY_PUBLIC_KEY = os.getenv("LIQPAY_PUBLIC_KEY", "")
+LIQPAY_PRIVATE_KEY = os.getenv("LIQPAY_PRIVATE_KEY", "")
+PAYMENT_MODE = os.getenv("PAYMENT_MODE", "mock" if not LIQPAY_PUBLIC_KEY or not LIQPAY_PRIVATE_KEY else "liqpay").strip().lower()
+BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", f"http://localhost:{os.getenv('PORT', '8000')}")
 ADMIN_EMAILS = {
     item.strip().lower()
     for item in os.getenv("ADMIN_EMAILS", SUPPORT_EMAIL).split(",")
@@ -48,7 +64,6 @@ PORT = int(os.getenv("PORT", "8000"))
 UPLOAD_DIR = BASE_DIR / "uploads" / "avatars"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 PUBLIC_IMAGES_DIR = BASE_DIR.parent / "frontend" / "public" / "images" / "questions_img"
-DEFAULT_IMPORT_FILE = BASE_DIR / "pdr_final_fixed.json"
 USERNAME_RE = re.compile(r"^[a-z][a-z0-9_]{2,31}$")
 
 COMMON_SECTIONS = list(range(1, 40))
@@ -75,8 +90,46 @@ CATEGORY_ALIASES = {
     "D / D1": "D",
     "BE / C1E / CE / D1E / DE": "BE",
 }
+MVS_TICKET_COUNT = 30
+MVS_BLOCKS = {
+    "pdr": {
+        "label": "ПДР",
+        "count": 10,
+        "sections": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 33, 34, 39],
+    },
+    "safety": {"label": "Безпека", "count": 4, "sections": [35, 36, 38]},
+    "vehicle": {"label": "Будова", "count": 4, "sections": [31]},
+    "medicine": {"label": "Домедична допомога", "count": 2, "sections": [37]},
+}
+MVS_CATEGORY_BLOCKS = {
+    "A": {"pdr": [40, 42], "vehicle": [41], "safety": [43]},
+    "A1": {"pdr": [40, 42], "vehicle": [41], "safety": [43]},
+    "B": {"pdr": [44, 46], "vehicle": [45], "safety": [47]},
+    "B1": {"pdr": [44, 46], "vehicle": [45], "safety": [47]},
+    "C": {"pdr": [48, 50], "vehicle": [49], "safety": [51]},
+    "C1": {"pdr": [48, 50], "vehicle": [49], "safety": [51]},
+    "D": {"pdr": [52, 54], "vehicle": [], "safety": [55]},
+    "D1": {"pdr": [52, 54], "vehicle": [], "safety": [55]},
+    "BE": {"pdr": [56, 58], "vehicle": [57], "safety": [59]},
+    "C1E": {"pdr": [56, 58], "vehicle": [57], "safety": [59]},
+    "CE": {"pdr": [56, 58], "vehicle": [57], "safety": [59]},
+    "D1E": {"pdr": [56, 58], "vehicle": [57], "safety": [59]},
+    "DE": {"pdr": [56, 58], "vehicle": [57], "safety": [59]},
+    "T": {"pdr": [60, 62], "vehicle": [61], "safety": [63]},
+}
 BROKEN_OPTION_RE = re.compile(r"(?:^|[.!?])\s*\d{1,3}[.)]?\s*[A-ZА-ЯІЇЄҐ]")
+EMBEDDED_OPTION_RE = re.compile(r"\s+(?:1|A|А)[.)]\s+")
 QUESTION_UI_MARKERS = ("Ілюстрація до питання", "Аналіз ситуації")
+IMAGE_REQUIRED_MARKERS = (
+    "зображений дорожній знак",
+    "зображений знак",
+    "зображено дорожній знак",
+    "зображено знак",
+    "на малюнку",
+    "на рисунку",
+    "на зображенні",
+    "ілюстрація до питання",
+)
 FRAME_SHOP: dict[str, dict[str, Any]] = {
     "fire": {"price": 0, "achievement_id": "streak_28", "label": "Вогняна"},
     "sun": {"price": 0, "achievement_id": "streak_90", "label": "Сонячна"},
@@ -151,6 +204,40 @@ HANDBOOK_TOPIC_CATEGORY_MAP: dict[str, str] = {
     for topic in HANDBOOK_TOPICS
 }
 
+THEORY_CATEGORY_FALLBACKS: list[dict[str, Any]] = [dict(item) for item in THEORY_CATEGORY_SEEDS]
+MULTI_TOPIC_CATEGORY_SLUGS = {"library", "academy"}
+
+PREMIUM_PLANS: dict[str, dict[str, Any]] = {
+    "1": {"code": "1", "slug": "monthly", "title": "Premium на 1 місяць", "months": 1},
+    "3": {"code": "3", "slug": "quarterly", "title": "Premium на 3 місяці", "months": 3},
+    "6": {"code": "6", "slug": "half_year", "title": "Premium на 6 місяців", "months": 6},
+    "12": {"code": "12", "slug": "yearly", "title": "Premium на 1 рік", "months": 12},
+}
+PREMIUM_PLAN_ALIASES: dict[str, str] = {
+    "1": "1",
+    "monthly": "1",
+    "month": "1",
+    "3": "3",
+    "quarterly": "3",
+    "quarter": "3",
+    "6": "6",
+    "half_year": "6",
+    "half-year": "6",
+    "12": "12",
+    "yearly": "12",
+    "year": "12",
+}
+DEFAULT_IMPORT_FILE = BASE_DIR / "data" / "questions" / "pdr_final_fixed.json"
+PROMO_SETTINGS_FILE = BASE_DIR / "config" / "promo_settings.json"
+PROMO_ADMIN_KEY = os.getenv("PROMO_ADMIN_KEY", "").strip()
+DEFAULT_PROMO_SETTINGS: dict[str, Any] = {
+    "is_active": False,
+    "started_at": None,
+    "duration_days": 15,
+    "promo_prices": {"1": 159, "3": 469, "6": 950, "12": 1900},
+    "regular_prices": {"1": 300, "3": 900, "6": 1800, "12": 3600},
+}
+
 app = FastAPI(title="PDRPrep API", version="3.0.0")
 app.add_middleware(
     CORSMiddleware,
@@ -212,19 +299,254 @@ realtime_hub = RealtimeHub()
 
 
 def db():
-    return psycopg.connect(DB_URL, row_factory=dict_row)
+    conn = psycopg.connect(DB_URL, row_factory=dict_row)
+    conn.execute("SET lock_timeout TO '2000ms'")
+    conn.execute("SET statement_timeout TO '20000ms'")
+    return conn
 
 
-def ensure_schema() -> None:
-    sql_path = BASE_DIR / "create_tables.sql"
+def _json_dumps(value: Any) -> str:
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+
+
+def _normalize_plan_code(plan_code: Any) -> str:
+    normalized = PREMIUM_PLAN_ALIASES.get(str(plan_code or "").strip().lower())
+    if not normalized:
+        raise HTTPException(400, "Невідомий тариф Premium")
+    return normalized
+
+
+def _normalize_price_map(raw: Any, fallback: dict[str, int]) -> dict[str, int]:
+    prices: dict[str, int] = {}
+    source = raw if isinstance(raw, dict) else {}
+    for code, default_value in fallback.items():
+        candidate = source.get(code, default_value)
+        try:
+            prices[code] = max(0, int(float(candidate)))
+        except (TypeError, ValueError):
+            prices[code] = int(default_value)
+    return prices
+
+
+def _normalize_promo_settings(raw: Any) -> dict[str, Any]:
+    data = raw if isinstance(raw, dict) else {}
+    return {
+        "is_active": bool(data.get("is_active", DEFAULT_PROMO_SETTINGS["is_active"])),
+        "started_at": data.get("started_at") or None,
+        "duration_days": max(1, int(data.get("duration_days") or DEFAULT_PROMO_SETTINGS["duration_days"])),
+        "promo_prices": _normalize_price_map(data.get("promo_prices"), DEFAULT_PROMO_SETTINGS["promo_prices"]),
+        "regular_prices": _normalize_price_map(data.get("regular_prices"), DEFAULT_PROMO_SETTINGS["regular_prices"]),
+    }
+
+
+def _save_promo_settings(settings: dict[str, Any]) -> None:
+    PROMO_SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PROMO_SETTINGS_FILE.write_text(_json_dumps(_normalize_promo_settings(settings)), encoding="utf-8")
+
+
+def _load_promo_settings() -> dict[str, Any]:
+    if not PROMO_SETTINGS_FILE.exists():
+        settings = _normalize_promo_settings(DEFAULT_PROMO_SETTINGS)
+        _save_promo_settings(settings)
+        return settings
+    try:
+        raw = json.loads(PROMO_SETTINGS_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        raw = DEFAULT_PROMO_SETTINGS
+    settings = _normalize_promo_settings(raw)
+    if settings != raw:
+        _save_promo_settings(settings)
+    return settings
+
+
+def _plan_catalog_from_prices(current_prices: dict[str, int], original_prices: dict[str, int]) -> list[dict[str, Any]]:
+    plans: list[dict[str, Any]] = []
+    for code in ("1", "3", "6", "12"):
+        meta = PREMIUM_PLANS[code]
+        plans.append(
+            {
+                "code": code,
+                "slug": meta["slug"],
+                "title": meta["title"],
+                "months": meta["months"],
+                "current_price": int(current_prices[code]),
+                "original_price": int(original_prices[code]),
+            }
+        )
+    return plans
+
+
+def _compute_promo_status(settings: Optional[dict[str, Any]] = None, *, persist: bool = True) -> dict[str, Any]:
+    payload = _normalize_promo_settings(settings or _load_promo_settings())
+    now = datetime.utcnow()
+    started_at_raw = payload.get("started_at")
+    started_at = None
+    if started_at_raw:
+        try:
+            started_at = datetime.fromisoformat(str(started_at_raw))
+        except ValueError:
+            started_at = None
+
+    is_active = bool(payload["is_active"] and started_at)
+    seconds_left = 0
+    if is_active and started_at:
+        elapsed_seconds = int((now - started_at).total_seconds())
+        seconds_left = max(0, int(payload["duration_days"]) * 86400 - max(0, elapsed_seconds))
+        if seconds_left <= 0:
+            payload["is_active"] = False
+            payload["started_at"] = None
+            is_active = False
+            if persist:
+                _save_promo_settings(payload)
+
+    current_prices = payload["promo_prices"] if is_active else payload["regular_prices"]
+    original_prices = payload["regular_prices"]
+    return {
+        "is_active": bool(is_active),
+        "started_at": payload.get("started_at"),
+        "duration_days": int(payload["duration_days"]),
+        "seconds_left": int(seconds_left),
+        "show_strikethrough": bool(is_active),
+        "current_prices": {key: int(value) for key, value in current_prices.items()},
+        "original_prices": {key: int(value) for key, value in original_prices.items()},
+        "promo_prices": {key: int(value) for key, value in payload["promo_prices"].items()},
+        "regular_prices": {key: int(value) for key, value in payload["regular_prices"].items()},
+        "plans": _plan_catalog_from_prices(current_prices, original_prices),
+    }
+
+
+def _get_premium_plan(plan_code: str) -> dict[str, Any]:
+    normalized_code = _normalize_plan_code(plan_code)
+    meta = PREMIUM_PLANS[normalized_code]
+    promo_status = _compute_promo_status()
+    price_uah = int(promo_status["current_prices"][normalized_code])
+    return {
+        **meta,
+        "code": normalized_code,
+        "currency": "UAH",
+        "amount": price_uah * 100,
+        "display_price": price_uah,
+    }
+
+
+def _build_liqpay_payload(*, order_id: str, plan: dict[str, Any], result_url: str) -> dict[str, Any]:
+    return {
+        "version": 3,
+        "public_key": LIQPAY_PUBLIC_KEY,
+        "action": "pay",
+        "amount": plan["amount"] / 100,
+        "currency": plan["currency"],
+        "description": plan["title"],
+        "order_id": order_id,
+        "result_url": result_url,
+        "server_url": f"{BACKEND_PUBLIC_URL.rstrip('/')}/payment/liqpay-callback",
+        "sandbox": 1 if LIQPAY_PUBLIC_KEY.startswith("sandbox_") else 0,
+    }
+
+
+def _encode_liqpay_payload(payload: dict[str, Any]) -> tuple[str, str]:
+    encoded = base64.b64encode(_json_dumps(payload).encode("utf-8")).decode("utf-8")
+    signature = base64.b64encode(
+        hashlib.sha1(f"{LIQPAY_PRIVATE_KEY}{encoded}{LIQPAY_PRIVATE_KEY}".encode("utf-8")).digest()
+    ).decode("utf-8")
+    return encoded, signature
+
+
+def _verify_liqpay_signature(data: str, signature: str) -> bool:
+    if not LIQPAY_PRIVATE_KEY:
+        return False
+    expected = base64.b64encode(
+        hashlib.sha1(f"{LIQPAY_PRIVATE_KEY}{data}{LIQPAY_PRIVATE_KEY}".encode("utf-8")).digest()
+    ).decode("utf-8")
+    return expected == signature
+
+
+def _decode_liqpay_data(data: str) -> dict[str, Any]:
+    raw = base64.b64decode(data).decode("utf-8")
+    return json.loads(raw)
+
+
+def _add_months(base_value: datetime, months: int) -> datetime:
+    month_index = base_value.month - 1 + months
+    year = base_value.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(base_value.day, 28)
+    return base_value.replace(year=year, month=month, day=day)
+
+
+def _activate_premium_order(conn: psycopg.Connection, order_row: dict[str, Any], provider_payment_id: Optional[str] = None) -> dict[str, Any]:
+    plan = _get_premium_plan(order_row["plan_code"])
+    now = datetime.utcnow()
+    expires_at = _add_months(now, int(plan["months"]))
+    conn.execute(
+        """
+        UPDATE premium_orders
+        SET status = 'paid',
+            provider_payment_id = COALESCE(%s, provider_payment_id),
+            activated_at = %s,
+            expires_at = %s,
+            updated_at = %s
+        WHERE id = %s
+        """,
+        (provider_payment_id, now, expires_at, now, order_row["id"]),
+    )
+    conn.execute(
+        """
+        UPDATE users
+        SET is_premium = TRUE
+        WHERE id = %s
+        """,
+        (order_row["user_id"],),
+    )
+    updated_order = conn.execute("SELECT * FROM premium_orders WHERE id = %s", (order_row["id"],)).fetchone()
+    return dict(updated_order) if updated_order else {}
+
+
+def _schema_sql_path() -> Path:
+    migration_path = BASE_DIR / "migrations" / "001_base_schema.sql"
+    if migration_path.exists():
+        return migration_path
+    return BASE_DIR / "create_tables.sql"
+
+
+def _schema_statements() -> list[str]:
+    sql_path = _schema_sql_path()
     if not sql_path.exists():
-        return
+        return []
 
     raw_sql = sql_path.read_text(encoding="utf-8")
-    statements = [statement.strip() for statement in raw_sql.split(";") if statement.strip()]
+    return [statement.strip() for statement in raw_sql.split(";") if statement.strip()]
+
+
+def ensure_schema_tables() -> None:
+    statements = [
+        statement
+        for statement in _schema_statements()
+        if statement.upper().startswith("CREATE TABLE")
+    ]
     with db() as conn:
         for statement in statements:
             conn.execute(statement)
+        conn.commit()
+
+
+def ensure_schema_indexes() -> None:
+    statements = [
+        statement
+        for statement in _schema_statements()
+        if not statement.upper().startswith("CREATE TABLE")
+    ]
+    if not statements:
+        return
+
+    with db() as conn:
+        for statement in statements:
+            try:
+                conn.execute(statement)
+            except (psycopg_errors.UndefinedColumn, psycopg_errors.UndefinedTable):
+                if statement.upper().startswith("CREATE INDEX"):
+                    continue
+                raise
         conn.commit()
 
 
@@ -290,6 +612,24 @@ def ensure_runtime_migrations() -> None:
         END $$;
         """,
         "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_username ON users (LOWER(username))",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS section_name TEXT",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS num_in_section INT",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS ticket_number INT",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS question_number INT",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS category TEXT",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS difficulty TEXT",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS explanation TEXT",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS explanation_html TEXT",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS source_rule_slug TEXT",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS theory_section_id INT",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS page INT",
+        "CREATE INDEX IF NOT EXISTS idx_questions_section ON questions(section)",
+        "CREATE INDEX IF NOT EXISTS idx_questions_category ON questions(category)",
+        "CREATE INDEX IF NOT EXISTS idx_questions_ticket_number ON questions(ticket_number)",
+        "CREATE INDEX IF NOT EXISTS idx_questions_ticket_question ON questions(ticket_number, question_number)",
+        "CREATE INDEX IF NOT EXISTS idx_questions_text ON questions USING gin (to_tsvector('simple', question_text))",
         """
         DO $$
         BEGIN
@@ -355,6 +695,103 @@ def ensure_runtime_migrations() -> None:
         "CREATE INDEX IF NOT EXISTS idx_handbook_sort_order ON handbook_data(sort_order)",
         "CREATE INDEX IF NOT EXISTS idx_handbook_category ON handbook_data(category)",
         "CREATE INDEX IF NOT EXISTS idx_handbook_search_vector ON handbook_data USING gin(search_vector)",
+        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS comment_html TEXT",
+        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS video_url TEXT",
+        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS embed_url TEXT",
+        """
+        CREATE TABLE IF NOT EXISTS theory_categories (
+            id SERIAL PRIMARY KEY,
+            slug TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            description TEXT,
+            sort_order INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS theory_topics (
+            id SERIAL PRIMARY KEY,
+            category_id INT NOT NULL REFERENCES theory_categories(id) ON DELETE CASCADE,
+            slug TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            description TEXT,
+            topic_type TEXT NOT NULL DEFAULT 'topic',
+            sort_order INT NOT NULL DEFAULT 0,
+            source_url TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS theory_sections (
+            id SERIAL PRIMARY KEY,
+            topic_id INT NOT NULL REFERENCES theory_topics(id) ON DELETE CASCADE,
+            slug TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            description TEXT,
+            comment_html TEXT,
+            content_html TEXT NOT NULL DEFAULT '',
+            content_text TEXT NOT NULL DEFAULT '',
+            video_url TEXT,
+            embed_url TEXT,
+            chapter_num INT,
+            sort_order INT NOT NULL DEFAULT 0,
+            source_url TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS theory_assets (
+            id SERIAL PRIMARY KEY,
+            section_id INT NOT NULL REFERENCES theory_sections(id) ON DELETE CASCADE,
+            asset_type TEXT NOT NULL DEFAULT 'image',
+            asset_url TEXT NOT NULL,
+            alt_text TEXT,
+            caption TEXT,
+            sort_order INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+        """,
+        "ALTER TABLE theory_sections ADD COLUMN IF NOT EXISTS comment_html TEXT",
+        "ALTER TABLE theory_sections ADD COLUMN IF NOT EXISTS video_url TEXT",
+        "ALTER TABLE theory_sections ADD COLUMN IF NOT EXISTS embed_url TEXT",
+        "ALTER TABLE theory_sections ADD COLUMN IF NOT EXISTS chapter_num INT",
+        "ALTER TABLE theory_assets ADD COLUMN IF NOT EXISTS caption TEXT",
+        "CREATE INDEX IF NOT EXISTS idx_theory_topics_category_id ON theory_topics(category_id)",
+        "CREATE INDEX IF NOT EXISTS idx_theory_topics_sort_order ON theory_topics(sort_order)",
+        "CREATE INDEX IF NOT EXISTS idx_theory_sections_topic_id ON theory_sections(topic_id)",
+        "CREATE INDEX IF NOT EXISTS idx_theory_sections_sort_order ON theory_sections(sort_order)",
+        "CREATE INDEX IF NOT EXISTS idx_theory_assets_section_id ON theory_assets(section_id)",
+        "CREATE INDEX IF NOT EXISTS idx_theory_assets_sort_order ON theory_assets(sort_order)",
+        """
+        CREATE TABLE IF NOT EXISTS premium_orders (
+            id SERIAL PRIMARY KEY,
+            user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            plan_code TEXT NOT NULL,
+            amount INT NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'UAH',
+            provider TEXT NOT NULL DEFAULT 'liqpay',
+            status TEXT NOT NULL DEFAULT 'pending',
+            provider_order_id TEXT UNIQUE,
+            provider_payment_id TEXT,
+            checkout_url TEXT,
+            provider_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+            activated_at TIMESTAMP,
+            expires_at TIMESTAMP,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+        """,
+        "ALTER TABLE premium_orders ADD COLUMN IF NOT EXISTS provider_payload JSONB NOT NULL DEFAULT '{}'::jsonb",
+        "ALTER TABLE premium_orders ADD COLUMN IF NOT EXISTS activated_at TIMESTAMP",
+        "ALTER TABLE premium_orders ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP",
+        "ALTER TABLE premium_orders ADD COLUMN IF NOT EXISTS provider_payment_id TEXT",
+        "ALTER TABLE premium_orders ADD COLUMN IF NOT EXISTS checkout_url TEXT",
+        "CREATE INDEX IF NOT EXISTS idx_premium_orders_user_id ON premium_orders(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_premium_orders_status ON premium_orders(status)",
+        """
+        CREATE INDEX IF NOT EXISTS idx_theory_sections_search
+        ON theory_sections USING gin (to_tsvector('simple', COALESCE(title, '') || ' ' || COALESCE(content_text, '')))
+        """,
         """
         UPDATE handbook_data
         SET content_html = regexp_replace(
@@ -508,8 +945,19 @@ def ensure_runtime_migrations() -> None:
 
 @app.on_event("startup")
 def on_startup() -> None:
-    ensure_schema()
-    ensure_runtime_migrations()
+    tasks = [
+        ("schema tables", ensure_schema_tables),
+        ("runtime migrations", ensure_runtime_migrations),
+        ("schema indexes", ensure_schema_indexes),
+        ("theory seed", ensure_theory_seed_data),
+        ("theory sync", sync_theory_data),
+        ("question metadata", ensure_question_metadata),
+    ]
+    for label, task in tasks:
+        try:
+            task()
+        except (psycopg_errors.DeadlockDetected, psycopg_errors.LockNotAvailable):
+            print(f"[startup] {label} skipped temporarily because another database task is holding locks", flush=True)
 
 
 def _clean_text(value: Any) -> str:
@@ -517,6 +965,34 @@ def _clean_text(value: Any) -> str:
     for marker in QUESTION_UI_MARKERS:
         text = text.replace(marker, " ")
     return re.sub(r"\s+", " ", text).strip()
+
+
+def _strip_embedded_options_from_question(value: Any) -> str:
+    text = _clean_text(value)
+    match = EMBEDDED_OPTION_RE.search(text)
+    if not match:
+        return text
+    question_part = text[: match.start()].strip()
+    if question_part.endswith("?") or len(question_part.split()) >= 8:
+        return question_part
+    return text
+
+
+def _question_requires_image(question: dict[str, Any]) -> bool:
+    text = f"{question.get('question_text') or ''} {question.get('section_name') or ''}".casefold()
+    return any(marker in text for marker in IMAGE_REQUIRED_MARKERS)
+
+
+def _question_has_available_image(question: dict[str, Any]) -> bool:
+    for image in question.get("images") or []:
+        image_ref = str(image or "").strip()
+        if not image_ref:
+            continue
+        if image_ref.startswith(("http://", "https://")):
+            return True
+        if (PUBLIC_IMAGES_DIR / Path(image_ref.split("?")[0]).name).exists():
+            return True
+    return False
 
 
 def _sanitize_handbook_text(value: Any) -> str:
@@ -705,11 +1181,12 @@ def _frame_shop_payload(user: dict[str, Any], earned_achievement_ids: list[str],
 def _sanitize_question_row(row: dict[str, Any]) -> dict[str, Any]:
     options = [_clean_text(option) for option in (row.get("options") or []) if _clean_text(option)]
     images = [str(image) for image in (row.get("images") or []) if str(image).strip()]
+    question_text = _strip_embedded_options_from_question(row.get("question_text"))
     return {
         **row,
         "section": str(row.get("section") or ""),
         "section_name": _clean_text(row.get("section_name")),
-        "question_text": _clean_text(row.get("question_text")),
+        "question_text": question_text,
         "difficulty": _clean_text(row.get("difficulty")) or "medium",
         "explanation": _clean_text(row.get("explanation")),
         "options": options,
@@ -726,6 +1203,8 @@ def _question_is_usable(row: dict[str, Any]) -> bool:
     if correct_ans < 1 or correct_ans > len(options):
         return False
     if any(BROKEN_OPTION_RE.search(option) for option in options):
+        return False
+    if _question_requires_image(question) and not _question_has_available_image(question):
         return False
     return True
 
@@ -749,6 +1228,70 @@ def _dedupe_and_filter_questions(rows: list[dict[str, Any]], count: Optional[int
         if count and len(prepared) >= count:
             break
     return prepared
+
+
+def _mvs_block_sections(category: Optional[str], block_key: str) -> list[int]:
+    normalized = _normalize_category(category) or "B"
+    common_sections = list(MVS_BLOCKS.get(block_key, {}).get("sections") or [])
+    category_sections = list((MVS_CATEGORY_BLOCKS.get(normalized) or {}).get(block_key) or [])
+    return common_sections + category_sections
+
+
+def _fetch_mvs_block_questions(
+    conn: psycopg.Connection,
+    sections: list[int],
+    count: int,
+    excluded_ids: set[int],
+    seed: str,
+    block_key: str,
+) -> list[dict[str, Any]]:
+    if not sections or count <= 0:
+        return []
+
+    conds = [f"{_section_number_sql('q.section')} = ANY(%s)"]
+    params: list[Any] = [sections]
+    if excluded_ids:
+        conds.append("NOT (q.id = ANY(%s))")
+        params.append(list(excluded_ids))
+
+    rows = conn.execute(
+        f"""
+        SELECT *
+        FROM questions q
+        WHERE {' AND '.join(conds)}
+        ORDER BY md5(q.id::text || %s)
+        LIMIT %s
+        """,
+        params + [f"{seed}:{block_key}", max(count * 40, 120)],
+    ).fetchall()
+
+    prepared = _dedupe_and_filter_questions([dict(row) for row in rows], count=count)
+    label = MVS_BLOCKS.get(block_key, {}).get("label") or block_key
+    for question in prepared:
+        question["exam_block"] = block_key
+        question["exam_block_label"] = label
+    return prepared
+
+
+def _build_mvs_exam_questions(conn: psycopg.Connection, category: Optional[str], seed: Optional[str] = None) -> list[dict[str, Any]]:
+    normalized = _normalize_category(category) or "B"
+    stable_seed = seed or f"mvs:{normalized}:{uuid4().hex}"
+    questions: list[dict[str, Any]] = []
+    excluded_ids: set[int] = set()
+
+    for block_key, meta in MVS_BLOCKS.items():
+        block_questions = _fetch_mvs_block_questions(
+            conn,
+            _mvs_block_sections(normalized, block_key),
+            int(meta["count"]),
+            excluded_ids,
+            stable_seed,
+            block_key,
+        )
+        questions.extend(block_questions)
+        excluded_ids.update(int(item["id"]) for item in block_questions if item.get("id") is not None)
+
+    return questions
 
 
 def _user_public(user: dict[str, Any]) -> dict[str, Any]:
@@ -783,6 +1326,7 @@ def _user_public(user: dict[str, Any]) -> dict[str, Any]:
         "font_size": int(user.get("font_size") or 16),
         "sound_enabled": bool(user.get("sound_enabled", True)),
         "push_enabled": bool(user.get("push_enabled", False)),
+        "is_premium": bool(user.get("is_premium", False)),
         "is_admin": _is_admin_email(user.get("email")),
         "is_blocked": bool(user.get("is_blocked", False)),
         "featured_achievements": [str(item) for item in featured_achievements if item],
@@ -911,6 +1455,17 @@ def require_admin(user=Depends(get_current_user)) -> dict[str, Any]:
     if not _is_admin_email(user.get("email")):
         raise HTTPException(403, "Потрібні права адміністратора")
     return user
+
+
+def require_promo_admin(
+    x_admin_key: Optional[str] = Header(default=None, alias="x-admin-key"),
+    user=Depends(get_optional_user),
+) -> Optional[dict[str, Any]]:
+    if PROMO_ADMIN_KEY and x_admin_key and x_admin_key == PROMO_ADMIN_KEY:
+        return {"source": "secret-key"}
+    if user and _is_admin_email(user.get("email")):
+        return user
+    raise HTTPException(403, "Потрібні права адміністратора або коректний promo key")
 
 
 def _resolve_user_from_token(token: str) -> Optional[dict[str, Any]]:
@@ -1254,12 +1809,24 @@ class FramePurchaseRequest(BaseModel):
     frame_id: str
 
 
+class PremiumCheckoutRequest(BaseModel):
+    plan_code: str
+    return_url: Optional[str] = None
+
+
+class PromoConfigRequest(BaseModel):
+    duration_days: Optional[int] = Field(default=15, ge=1, le=60)
+    promo_prices: Optional[dict[str, int]] = None
+    regular_prices: Optional[dict[str, int]] = None
+
+
 class AdminSupportReplyRequest(BaseModel):
     content: str
 
 
 class AdminUserUpdateRequest(BaseModel):
     is_blocked: Optional[bool] = None
+    is_premium: Optional[bool] = None
     total_tests: Optional[int] = None
     total_correct: Optional[int] = None
     total_answers: Optional[int] = None
@@ -1557,6 +2124,215 @@ def auth_me(user=Depends(get_current_user)):
     return _user_public(user)
 
 
+@app.get("/promo/status")
+@app.get("/api/promo/status", include_in_schema=False)
+def get_promo_status():
+    return _compute_promo_status()
+
+
+@app.patch("/admin/promo/config")
+@app.patch("/api/admin/promo/config", include_in_schema=False)
+def update_promo_config(req: PromoConfigRequest, admin=Depends(require_promo_admin)):
+    settings = _load_promo_settings()
+    if req.duration_days is not None:
+        settings["duration_days"] = max(1, int(req.duration_days))
+    if req.promo_prices is not None:
+        settings["promo_prices"] = _normalize_price_map(req.promo_prices, settings["promo_prices"])
+    if req.regular_prices is not None:
+        settings["regular_prices"] = _normalize_price_map(req.regular_prices, settings["regular_prices"])
+    _save_promo_settings(settings)
+    return {
+        "message": "Налаштування акції збережено",
+        "status": _compute_promo_status(settings, persist=False),
+    }
+
+
+@app.post("/admin/promo/start")
+@app.post("/api/admin/promo/start", include_in_schema=False)
+def start_promo(req: PromoConfigRequest, admin=Depends(require_promo_admin)):
+    settings = _load_promo_settings()
+    if req.duration_days is not None:
+        settings["duration_days"] = max(1, int(req.duration_days))
+    if req.promo_prices is not None:
+        settings["promo_prices"] = _normalize_price_map(req.promo_prices, settings["promo_prices"])
+    if req.regular_prices is not None:
+        settings["regular_prices"] = _normalize_price_map(req.regular_prices, settings["regular_prices"])
+    settings["is_active"] = True
+    settings["started_at"] = datetime.utcnow().isoformat()
+    _save_promo_settings(settings)
+    return {
+        "message": f"Акцію запущено на {settings['duration_days']} днів",
+        "status": _compute_promo_status(settings, persist=False),
+    }
+
+
+@app.post("/admin/promo/stop")
+@app.post("/api/admin/promo/stop", include_in_schema=False)
+def stop_promo(admin=Depends(require_promo_admin)):
+    settings = _load_promo_settings()
+    settings["is_active"] = False
+    settings["started_at"] = None
+    _save_promo_settings(settings)
+    return {
+        "message": "Акцію зупинено",
+        "status": _compute_promo_status(settings, persist=False),
+    }
+
+
+@app.post("/payment/checkout")
+def create_premium_checkout(req: PremiumCheckoutRequest, user=Depends(get_current_user)):
+    plan = _get_premium_plan(req.plan_code)
+    provider = "liqpay" if PAYMENT_MODE == "liqpay" and LIQPAY_PUBLIC_KEY and LIQPAY_PRIVATE_KEY else "mock"
+    order_uuid = f"premium_{user['id']}_{uuid4().hex[:16]}"
+    result_url = req.return_url or f"{FRONTEND_URL.rstrip('/')}/pricing?checkout=success"
+    separator = "&" if "?" in result_url else "?"
+    result_url = f"{result_url}{separator}orderId={order_uuid}"
+
+    with db() as conn:
+        created = conn.execute(
+            """
+            INSERT INTO premium_orders (
+                user_id, plan_code, amount, currency, provider, status,
+                provider_order_id, checkout_url, provider_payload, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, 'pending', %s, %s, %s::jsonb, NOW(), NOW())
+            RETURNING *
+            """,
+            (
+                user["id"],
+                plan["code"],
+                int(plan["amount"]),
+                plan["currency"],
+                provider,
+                order_uuid,
+                "https://www.liqpay.ua/api/3/checkout" if provider == "liqpay" else None,
+                _json_dumps({}),
+            ),
+        ).fetchone()
+        order = dict(created)
+        response_payload: dict[str, Any] = {
+            "provider": provider,
+            "order_id": order_uuid,
+            "order_db_id": order["id"],
+            "status": order["status"],
+            "plan_code": plan["code"],
+            "amount": int(plan["amount"]),
+            "currency": plan["currency"],
+            "is_premium": bool(user.get("is_premium", False)),
+        }
+        if provider == "liqpay":
+            liqpay_payload = _build_liqpay_payload(order_id=order_uuid, plan=plan, result_url=result_url)
+            data, signature = _encode_liqpay_payload(liqpay_payload)
+            conn.execute(
+                """
+                UPDATE premium_orders
+                SET provider_payload = %s::jsonb, checkout_url = %s, updated_at = NOW()
+                WHERE id = %s
+                """,
+                (_json_dumps(liqpay_payload), "https://www.liqpay.ua/api/3/checkout", order["id"]),
+            )
+            conn.commit()
+            response_payload.update(
+                {
+                    "checkout_action": "https://www.liqpay.ua/api/3/checkout",
+                    "data": data,
+                    "signature": signature,
+                    "public_key": LIQPAY_PUBLIC_KEY,
+                }
+            )
+            return response_payload
+
+        conn.commit()
+        response_payload["mock_checkout"] = True
+        return response_payload
+
+
+@app.get("/payment/status/{order_id}")
+def get_payment_status(order_id: str, user=Depends(get_current_user)):
+    with db() as conn:
+        order = conn.execute(
+            """
+            SELECT *
+            FROM premium_orders
+            WHERE provider_order_id = %s AND user_id = %s
+            """,
+            (order_id, user["id"]),
+        ).fetchone()
+        if not order:
+            raise HTTPException(404, "Замовлення не знайдено")
+        refreshed_user = conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone()
+        return {
+            "order": dict(order),
+            "is_premium": bool(refreshed_user["is_premium"]) if refreshed_user else False,
+        }
+
+
+@app.post("/payment/mock/activate/{order_id}")
+def activate_mock_payment(order_id: str, user=Depends(get_current_user)):
+    if PAYMENT_MODE == "liqpay" and LIQPAY_PUBLIC_KEY and LIQPAY_PRIVATE_KEY:
+        raise HTTPException(403, "Mock-активація вимкнена у production-режимі")
+    with db() as conn:
+        order = conn.execute(
+            """
+            SELECT *
+            FROM premium_orders
+            WHERE provider_order_id = %s AND user_id = %s
+            """,
+            (order_id, user["id"]),
+        ).fetchone()
+        if not order:
+            raise HTTPException(404, "Замовлення не знайдено")
+        activated = _activate_premium_order(conn, dict(order), provider_payment_id=f"mock_{uuid4().hex[:12]}")
+        conn.commit()
+        refreshed_user = conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone()
+        return {
+            "status": "paid",
+            "order": activated,
+            "user": _user_public(dict(refreshed_user)) if refreshed_user else None,
+        }
+
+
+@app.post("/payment/liqpay-callback")
+def handle_liqpay_callback(data: str = Form(...), signature: str = Form(...)):
+    if not data or not signature:
+        raise HTTPException(400, "Missing data or signature")
+    if not _verify_liqpay_signature(data, signature):
+        raise HTTPException(400, "Invalid signature")
+    payload = _decode_liqpay_data(data)
+    order_id = str(payload.get("order_id") or "").strip()
+    status = str(payload.get("status") or "").strip().lower()
+    payment_id = payload.get("payment_id") or payload.get("transaction_id")
+    if not order_id:
+        raise HTTPException(400, "Відсутній order_id")
+
+    with db() as conn:
+        order = conn.execute(
+            "SELECT * FROM premium_orders WHERE provider_order_id = %s",
+            (order_id,),
+        ).fetchone()
+        if not order:
+            raise HTTPException(404, "Замовлення не знайдено")
+
+        if status in {"success", "subscribed", "sandbox"}:
+            updated = _activate_premium_order(conn, dict(order), provider_payment_id=str(payment_id) if payment_id else None)
+            conn.commit()
+            return {"ok": True, "status": "paid", "order": updated}
+
+        conn.execute(
+            """
+            UPDATE premium_orders
+            SET status = %s,
+                provider_payment_id = COALESCE(%s, provider_payment_id),
+                provider_payload = %s::jsonb,
+                updated_at = NOW()
+            WHERE id = %s
+            """,
+            (status or "failed", str(payment_id) if payment_id else None, _json_dumps(payload), order["id"]),
+        )
+        conn.commit()
+    return {"ok": True, "status": status or "accepted"}
+
+
 @app.patch("/users/me")
 def update_profile(req: UpdateProfileRequest, user=Depends(get_current_user)):
     fields: list[str] = []
@@ -1651,8 +2427,284 @@ def update_profile(req: UpdateProfileRequest, user=Depends(get_current_user)):
     with db() as conn:
         conn.execute(f"UPDATE users SET {', '.join(fields)} WHERE id = %s", params)
         conn.commit()
-        updated = conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone()
-    return _user_public(dict(updated))
+
+
+def ensure_theory_seed_data() -> None:
+    with db() as conn:
+        for item in THEORY_CATEGORY_FALLBACKS:
+            conn.execute(
+                """
+                INSERT INTO theory_categories (slug, title, description, sort_order)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (slug) DO UPDATE
+                SET title = EXCLUDED.title,
+                    description = EXCLUDED.description,
+                    sort_order = EXCLUDED.sort_order
+                """,
+                (
+                    item["slug"],
+                    item["title"],
+                    item.get("description"),
+                    int(item.get("sort_order", 0)),
+                ),
+            )
+        conn.commit()
+
+
+def _canonical_theory_topic(topic_key: Any, category: Any, source_url: Any) -> str | None:
+    raw_topic = _clean_text(topic_key)
+    if raw_topic in THEORY_SOURCE_MAP:
+        return raw_topic
+
+    raw_category = _clean_text(category)
+    if raw_category in THEORY_SOURCE_MAP:
+        return raw_category
+    if raw_category == "signs":
+        return "road-signs"
+    if raw_category == "markings":
+        return "road-markings"
+    if raw_category in {"lectures", "video-lectures", "videos"}:
+        return "video-lectures"
+
+    url = str(source_url or "")
+    for candidate in THEORY_SOURCE_MAP:
+        if f"/theory/{candidate}" in url:
+            return candidate
+    return None
+
+
+def _plain_to_html(text: str) -> str:
+    cleaned = _sanitize_handbook_text(text)
+    if not cleaned:
+        return ""
+    parts = [part.strip() for part in re.split(r"(?<=[.!?])\s+", cleaned) if part.strip()]
+    if not parts:
+        return ""
+    return "".join(f"<p>{html_escape(part)}</p>" for part in parts[:2])
+
+
+def _extract_handbook_description(row: dict[str, Any]) -> str:
+    for candidate in [_sanitize_handbook_text(row.get("content_text")), _sanitize_handbook_text(row.get("section_title"))]:
+        if not candidate:
+            continue
+        if len(candidate) <= 280:
+            return candidate
+        shortened = candidate[:277].rstrip(" ,.;:")
+        return f"{shortened}..."
+    return ""
+
+
+def _extract_handbook_comment_html(row: dict[str, Any]) -> str:
+    raw_comment = str(row.get("comment_html") or "").strip()
+    if raw_comment:
+        return raw_comment
+    plain = _sanitize_handbook_text(row.get("content_text"))
+    return _plain_to_html(plain)
+
+
+def _extract_handbook_video_url(row: dict[str, Any]) -> str | None:
+    value = str(row.get("video_url") or "").strip()
+    return value or None
+
+
+def _extract_handbook_embed_url(row: dict[str, Any]) -> str | None:
+    value = str(row.get("embed_url") or "").strip()
+    return value or None
+
+
+def sync_theory_data() -> None:
+    with db() as conn:
+        category_map = {
+            row["slug"]: row["id"]
+            for row in conn.execute("SELECT id, slug FROM theory_categories").fetchall()
+        }
+
+        for item in THEORY_CATEGORY_FALLBACKS:
+            if item["slug"] in MULTI_TOPIC_CATEGORY_SLUGS:
+                continue
+            category_id = category_map.get(item["slug"])
+            if not category_id:
+                continue
+            conn.execute(
+                """
+                INSERT INTO theory_topics (category_id, slug, title, description, topic_type, sort_order, source_url)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (slug) DO UPDATE
+                SET category_id = EXCLUDED.category_id,
+                    title = EXCLUDED.title,
+                    description = EXCLUDED.description,
+                    topic_type = EXCLUDED.topic_type,
+                    sort_order = EXCLUDED.sort_order,
+                    source_url = EXCLUDED.source_url
+                """,
+                (
+                    category_id,
+                    item["slug"],
+                    item["title"],
+                    item.get("description"),
+                    "video" if item["slug"] == "video-lectures" else "topic",
+                    int(item.get("sort_order", 0)),
+                    THEORY_SOURCE_MAP.get(item["slug"]),
+                ),
+            )
+
+        topic_map = {
+            row["slug"]: row["id"]
+            for row in conn.execute("SELECT id, slug FROM theory_topics").fetchall()
+        }
+
+        handbook_rows = conn.execute(
+            """
+            SELECT id, topic_key, category, chapter_num, sort_order, section_title, source_url, source_slug, comment_html, content_html, content_text, video_url, embed_url, image_paths
+            FROM handbook_data
+            ORDER BY topic_key, sort_order, chapter_num, id
+            """
+        ).fetchall()
+
+        seen_section_slugs: set[str] = set()
+        seen_topic_ids: set[int] = set()
+        for handbook_row in handbook_rows:
+            row = dict(handbook_row)
+            topic_slug = _canonical_theory_topic(row.get("topic_key"), row.get("category"), row.get("source_url"))
+            if not topic_slug:
+                continue
+            topic_id = topic_map.get(topic_slug)
+            if not topic_id:
+                continue
+            seen_topic_ids.add(int(topic_id))
+
+            section_slug = (
+                _clean_text(row.get("source_slug"))
+                or f"{topic_slug}-{int(row.get('chapter_num') or row.get('sort_order') or row['id'])}"
+            )
+            seen_section_slugs.add(section_slug)
+            description = _extract_handbook_description(row)
+            comment_html = _extract_handbook_comment_html(row)
+            video_url = _extract_handbook_video_url(row)
+            embed_url = _extract_handbook_embed_url(row)
+            source_url = row.get("source_url")
+            conn.execute(
+                """
+                INSERT INTO theory_sections (
+                    topic_id, slug, title, description, comment_html, content_html, content_text,
+                    video_url, embed_url, chapter_num, sort_order, source_url
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (slug) DO UPDATE
+                SET topic_id = EXCLUDED.topic_id,
+                    title = EXCLUDED.title,
+                    description = EXCLUDED.description,
+                    comment_html = EXCLUDED.comment_html,
+                    content_html = EXCLUDED.content_html,
+                    content_text = EXCLUDED.content_text,
+                    video_url = EXCLUDED.video_url,
+                    embed_url = EXCLUDED.embed_url,
+                    chapter_num = EXCLUDED.chapter_num,
+                    sort_order = EXCLUDED.sort_order,
+                    source_url = EXCLUDED.source_url
+                """,
+                (
+                    topic_id,
+                    section_slug,
+                    _sanitize_handbook_text(row.get("section_title")),
+                    description,
+                    comment_html,
+                    _sanitize_handbook_html(row.get("content_html"), str(row.get("section_title") or "")),
+                    _sanitize_handbook_text(row.get("content_text")),
+                    video_url,
+                    embed_url,
+                    row.get("chapter_num"),
+                    int(row.get("sort_order") or 0),
+                    source_url,
+                ),
+            )
+            section_id = conn.execute("SELECT id FROM theory_sections WHERE slug = %s", (section_slug,)).fetchone()["id"]
+            conn.execute("DELETE FROM theory_assets WHERE section_id = %s", (section_id,))
+
+            image_paths = _coerce_json_list(row.get("image_paths"))
+            for index, asset_url in enumerate(image_paths):
+                if not str(asset_url or "").strip():
+                    continue
+                conn.execute(
+                    """
+                    INSERT INTO theory_assets (section_id, asset_type, asset_url, alt_text, caption, sort_order)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        section_id,
+                        "image",
+                        str(asset_url),
+                        _sanitize_handbook_text(row.get("section_title")),
+                        None,
+                        index,
+                    ),
+                )
+
+        if seen_section_slugs and seen_topic_ids:
+            conn.execute(
+                """
+                DELETE FROM theory_sections
+                WHERE topic_id = ANY(%s)
+                  AND slug IS NOT NULL
+                  AND slug <> ''
+                  AND slug <> ALL(%s)
+                """,
+                (list(seen_topic_ids), list(seen_section_slugs)),
+            )
+        conn.commit()
+
+
+def ensure_question_metadata() -> None:
+    with db() as conn:
+        rules_sections = conn.execute(
+            """
+            SELECT s.id, s.slug, s.chapter_num
+            FROM theory_sections s
+            JOIN theory_topics t ON t.id = s.topic_id
+            WHERE t.slug = 'rules' AND chapter_num IS NOT NULL
+            """
+        ).fetchall()
+        section_map = {str(row["chapter_num"]): row for row in rules_sections if row.get("chapter_num") is not None}
+
+        question_rows = conn.execute(
+            """
+            SELECT id, section, explanation, explanation_html, ticket_number, question_number, theory_section_id, source_rule_slug, num_in_section, page
+            FROM questions
+            ORDER BY COALESCE(page, 999999), COALESCE(question_number, num_in_section, id), id
+            """
+        ).fetchall()
+
+        for index, question in enumerate(question_rows):
+            qid = question["id"]
+            updates: list[str] = []
+            params: list[Any] = []
+
+            if question.get("ticket_number") is None:
+                updates.append("ticket_number = %s")
+                params.append((index // 20) + 1)
+            if question.get("question_number") is None:
+                updates.append("question_number = %s")
+                params.append((index % 20) + 1)
+
+            section_key = _clean_text(question.get("section"))
+            section_ref = section_map.get(section_key)
+            if section_ref:
+                if question.get("theory_section_id") is None:
+                    updates.append("theory_section_id = %s")
+                    params.append(section_ref["id"])
+                if not _clean_text(question.get("source_rule_slug")):
+                    updates.append("source_rule_slug = %s")
+                    params.append(section_ref["slug"])
+
+            if not _clean_text(question.get("explanation_html")) and _clean_text(question.get("explanation")):
+                updates.append("explanation_html = %s")
+                params.append(_plain_to_html(str(question.get("explanation") or "")))
+
+            if updates:
+                params.append(qid)
+                conn.execute(f"UPDATE questions SET {', '.join(updates)} WHERE id = %s", params)
+
+        conn.commit()
 
 
 @app.post("/users/me/avatar")
@@ -1701,7 +2753,8 @@ def get_user_profile(user_id: int, viewer=Depends(get_optional_user)):
         if not _is_admin_email(viewer_email) and viewer_email != user_dict.get("email"):
             raise HTTPException(404, "Користувача не знайдено")
     payload = _user_public(user_dict)
-    if not payload.get("email_visible"):
+    viewer_email = (viewer or {}).get("email")
+    if not payload.get("email_visible") and viewer_email != user_dict.get("email"):
         payload["email"] = None
     return {
         **payload,
@@ -1731,7 +2784,8 @@ def get_user_profile_by_username(username: str, viewer=Depends(get_optional_user
         if not _is_admin_email(viewer_email) and viewer_email != user_dict.get("email"):
             raise HTTPException(404, "Користувача не знайдено")
     payload = _user_public(user_dict)
-    if not payload.get("email_visible"):
+    viewer_email = (viewer or {}).get("email")
+    if not payload.get("email_visible") and viewer_email != user_dict.get("email"):
         payload["email"] = None
     return {
         **payload,
@@ -1825,6 +2879,30 @@ def get_random_questions(
         ).fetchall()
     prepared = _dedupe_and_filter_questions([dict(row) for row in rows], count=count)
     return prepared[:count]
+
+
+@app.get("/questions/mvs-exam")
+def get_mvs_exam_questions(
+    category: Optional[str] = "B",
+    seed: Optional[str] = None,
+):
+    normalized = _normalize_category(category) or "B"
+    with db() as conn:
+        questions = _build_mvs_exam_questions(conn, normalized, seed=seed)
+    return {
+        "category": normalized,
+        "questions_count": len(questions),
+        "blocks": [
+            {
+                "key": key,
+                "label": meta["label"],
+                "required_count": int(meta["count"]),
+                "actual_count": sum(1 for question in questions if question.get("exam_block") == key),
+            }
+            for key, meta in MVS_BLOCKS.items()
+        ],
+        "questions": questions,
+    }
 
 
 @app.get("/questions/{question_id}")
@@ -1996,11 +3074,13 @@ def submit_test_result(data: TestResultSubmit, user=Depends(get_current_user)):
     return {
         "result_id": result_id,
         "streak": streak_days,
+        "streak_days": streak_days,
         "streak_status": "active",
         "streak_restored": streak_restored,
         "streak_restores_left": restores_left,
         "earned_star": data.total > 0 and data.correct == data.total,
         "total_stars": int(total_stars or 0),
+        "available_stars": int(total_stars or 0),
         "new_achievements": new_achievements,
     }
 
@@ -2246,6 +3326,156 @@ def leaderboard():
             (list(ADMIN_EMAILS),)
         ).fetchall()
         return [dict(row) for row in rows]
+
+
+@app.get("/theory/categories")
+def get_theory_categories_endpoint():
+    with db() as conn:
+        rows = list_theory_categories(conn)
+    return rows or THEORY_CATEGORY_FALLBACKS
+
+
+@app.get("/theory/topics")
+def get_theory_topics_endpoint(category: str = Query(..., min_length=1)):
+    with db() as conn:
+        rows = list_theory_topics(conn, category)
+    if rows:
+        return rows
+
+    fallback = next((item for item in THEORY_CATEGORY_FALLBACKS if item["slug"] == category), None)
+    if not fallback:
+        return []
+    if category in MULTI_TOPIC_CATEGORY_SLUGS:
+        return []
+    return [
+        {
+            "id": 0,
+            "slug": category,
+            "title": fallback["title"],
+            "description": fallback.get("description"),
+            "topic_type": "video" if category == "video-lectures" else "topic",
+            "sort_order": int(fallback.get("sort_order", 0)),
+            "source_url": THEORY_SOURCE_MAP.get(category),
+        }
+    ]
+
+
+@app.get("/theory/sections")
+def get_theory_sections_endpoint(topic: str = Query(..., min_length=1)):
+    with db() as conn:
+        rows = list_theory_sections(conn, topic)
+        if rows:
+            return rows
+        fallback_rows = _handbook_rows_for_topic(conn, topic)
+    return [
+        {
+            "id": row["id"],
+            "slug": row.get("source_slug") or f"{topic}-{row['id']}",
+            "title": _sanitize_handbook_text(row.get("section_title")),
+            "description": _extract_handbook_description(dict(row)) or None,
+            "sort_order": int(row.get("sort_order") or 0),
+            "source_url": row.get("source_url"),
+            "chapter_num": row.get("chapter_num"),
+        }
+        for row in fallback_rows
+    ]
+
+
+@app.get("/theory/sections/{section_id}")
+def get_theory_section_endpoint(section_id: int):
+    with db() as conn:
+        section = get_theory_section(conn, section_id)
+        if section:
+            assets = conn.execute(
+                """
+                SELECT asset_type, asset_url, alt_text, caption, sort_order
+                FROM theory_assets
+                WHERE section_id = %s
+                ORDER BY sort_order, id
+                """,
+                (section_id,),
+            ).fetchall()
+            return {
+                **section,
+                "assets": [dict(asset) for asset in assets],
+            }
+
+        row = conn.execute(
+            """
+            SELECT id, topic_key, chapter_num, sort_order, section_title, source_url, source_slug, comment_html, content_html, content_text, video_url, embed_url, image_paths
+            FROM handbook_data
+            WHERE id = %s
+            """,
+            (section_id,),
+        ).fetchone()
+    if not row:
+        raise HTTPException(404, "Розділ довідника не знайдено")
+
+    return {
+        "id": row["id"],
+        "slug": row.get("source_slug") or f"legacy-{row['id']}",
+        "title": _sanitize_handbook_text(row.get("section_title")),
+        "description": _extract_handbook_description(dict(row)) or None,
+        "comment_html": _extract_handbook_comment_html(dict(row)) or None,
+        "content_html": _sanitize_handbook_html(row.get("content_html"), str(row.get("section_title") or "")),
+        "content_text": _sanitize_handbook_text(row.get("content_text")),
+        "chapter_num": row.get("chapter_num"),
+        "sort_order": int(row.get("sort_order") or 0),
+        "source_url": row.get("source_url"),
+        "topic_slug": _canonical_theory_topic(row.get("topic_key"), None, row.get("source_url")) or "rules",
+        "category_slug": _canonical_theory_topic(row.get("topic_key"), None, row.get("source_url")) or "rules",
+        "video_url": _extract_handbook_video_url(dict(row)),
+        "embed_url": _extract_handbook_embed_url(dict(row)),
+        "assets": [
+            {"asset_type": "image", "asset_url": item, "alt_text": None, "caption": None, "sort_order": index}
+            for index, item in enumerate(row.get("image_paths") or [], start=1)
+        ],
+    }
+
+
+@app.get("/tickets")
+def get_tickets(category: Optional[str] = None):
+    normalized = _normalize_category(category)
+    if normalized:
+        tickets = [
+            {
+                "ticket_number": number,
+                "questions_count": 20,
+                "category": normalized,
+                "source": "mvs_exam",
+            }
+            for number in range(1, MVS_TICKET_COUNT + 1)
+        ]
+        return {"tickets": tickets, "total": len(tickets), "category": normalized}
+    with db() as conn:
+        return list_tickets(conn)
+
+
+@app.get("/tickets/{ticket_number}")
+def get_ticket(ticket_number: int, category: Optional[str] = None):
+    normalized = _normalize_category(category)
+    if normalized:
+        if ticket_number < 1 or ticket_number > MVS_TICKET_COUNT:
+            raise HTTPException(404, "Білет не знайдено")
+        with db() as conn:
+            prepared = _build_mvs_exam_questions(conn, normalized, seed=f"ticket:{normalized}:{ticket_number}")
+        return {
+            "ticket_number": ticket_number,
+            "category": normalized,
+            "source": "mvs_exam",
+            "questions_count": len(prepared),
+            "questions": prepared,
+        }
+    with db() as conn:
+        rows = get_ticket_questions(conn, ticket_number)
+    if not rows:
+        raise HTTPException(404, "Білет не знайдено")
+    prepared = [_sanitize_question_row(row) for row in rows]
+    return {
+        "ticket_number": ticket_number,
+        "questions_count": len(prepared),
+        "questions": prepared,
+    }
 
 
 @app.get("/handbook/topics")
@@ -3068,6 +4298,9 @@ def admin_update_user(user_id: int, req: AdminUserUpdateRequest, admin=Depends(r
                 continue
             fields.append(f"{key} = %s")
             params.append(max(0, int(value)))
+        if req.is_premium is not None:
+            fields.append("is_premium = %s")
+            params.append(bool(req.is_premium))
         if req.is_blocked is not None:
             fields.append("is_blocked = %s")
             params.append(bool(req.is_blocked))

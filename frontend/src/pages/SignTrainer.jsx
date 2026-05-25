@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -446,20 +446,20 @@ export default function SignTrainer() {
 
           <Dialog open={!!selectedSign} onOpenChange={(open) => !open && setSelectedSign(null)}>
             {selectedSign ? (
-              <DialogContent className="w-[calc(100vw-24px)] max-w-3xl rounded-[28px] border-slate-200 p-4 sm:p-6">
+              <DialogContent className="w-[calc(100vw-24px)] max-w-3xl rounded-xl border-slate-200 bg-card p-4 dark:border-slate-800 sm:p-6">
                 <DialogHeader className="pr-8 text-left">
                   <div className="flex flex-wrap items-center gap-3">
                     <Badge variant="outline" className="text-xs">{selectedSign.code}</Badge>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Перегляд знака</p>
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Перегляд знака</p>
                   </div>
-                  <DialogTitle className="text-xl font-black text-slate-950 sm:text-2xl">{selectedSign.name}</DialogTitle>
-                  <DialogDescription className="text-sm leading-6 text-slate-500">
+                  <DialogTitle className="text-xl font-semibold text-slate-950 dark:text-white sm:text-2xl">{selectedSign.name}</DialogTitle>
+                  <DialogDescription className="text-sm leading-6 text-slate-500 dark:text-slate-300">
                     Знак відкрито у збільшеному вигляді, щоб його було зручно роздивитися на будь-якому екрані.
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="rounded-[26px] border border-slate-100 bg-[linear-gradient(135deg,rgba(248,250,252,1),rgba(239,246,255,0.96))] p-4 sm:p-8">
-                  <div className={cn('mx-auto flex aspect-square w-full max-w-[420px] items-center justify-center rounded-[30px] border bg-white shadow-[0_22px_60px_rgba(15,23,42,0.08)]', CATEGORY_ACCENT[selectedSign.category] || 'border-primary/30')}>
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/70 sm:p-8">
+                  <div className={cn('mx-auto flex aspect-square w-full max-w-[420px] items-center justify-center rounded-xl border bg-white shadow-sm dark:bg-slate-950', CATEGORY_ACCENT[selectedSign.category] || 'border-primary/30')}>
                     <img src={selectedSign.image} alt={selectedSign.name} className="h-[70%] w-[70%] object-contain" />
                   </div>
                 </div>

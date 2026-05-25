@@ -1,20 +1,33 @@
-// @ts-nocheck
-import { useEffect, useMemo, useState } from 'react';
+﻿// @ts-nocheck
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Headset, LifeBuoy, Mail, Send } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import LoginPrompt from '@/components/auth/LoginPrompt';
-import { useAuth } from '@/lib/AuthContext';
+import ProtectedScreenFallback from '@/components/auth/ProtectedScreenFallback';
+import { useProtectedScreen } from '@/lib/useProtectedScreen';
 import api from '@/api/apiClient';
+import { playTone } from '@/lib/soundEffects';
 
 const SUPPORT_EMAIL = 'pdr.preparation@gmail.com';
 
+function formatDateHeader(value) {
+  if (!value) return '';
+  return new Intl.DateTimeFormat('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(value));
+}
+
+function formatMessageTime(value) {
+  if (!value) return '';
+  return new Intl.DateTimeFormat('uk-UA', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+}
+
 export default function Support() {
-  const { user, isLoadingAuth } = useAuth();
+  const { user, isCheckingAccess, isTemporaryAuthFailure, canAccess, checkUserAuth } = useProtectedScreen();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState('');
+  const seenThreadSizeRef = useRef(null);
 
   const supportQuery = useQuery({
     queryKey: ['support-messages'],
@@ -46,11 +59,27 @@ export default function Support() {
     }
   }, [queryClient, supportQuery.isSuccess, user]);
 
-  if (isLoadingAuth) {
-    return <div className="flex justify-center py-24"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" /></div>;
+  useEffect(() => {
+    if (!user || !supportQuery.isSuccess) return;
+    const previousSize = seenThreadSizeRef.current;
+    seenThreadSizeRef.current = sortedThread.length;
+    if (previousSize === null || sortedThread.length <= previousSize) return;
+    const last = sortedThread[sortedThread.length - 1];
+    const mine = last?.from_email?.toLowerCase() === user.email?.toLowerCase();
+    if (!mine) {
+      playTone('finish');
+    }
+  }, [sortedThread, supportQuery.isSuccess, user]);
+
+  if (isCheckingAccess) {
+    return <ProtectedScreenFallback loading />;
   }
 
-  if (!user) {
+  if (isTemporaryAuthFailure) {
+    return <ProtectedScreenFallback temporary onRetry={checkUserAuth} />;
+  }
+
+  if (!canAccess || !user) {
     return (
       <LoginPrompt
         title="Підтримка"
@@ -69,7 +98,7 @@ export default function Support() {
                 <Headset className="h-7 w-7" />
               </div>
               <div>
-                <h2 className="text-2xl font-black tracking-[-0.03em] text-slate-950 dark:text-white">Підтримка PDRPrep</h2>
+                <h2 className="text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">Підтримка DrivePrep</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
                   Напишіть сюди питання, баг або побажання. Це працює як маленький чат: ваші повідомлення й офіційні відповіді підтримки зберігаються прямо в цьому розділі.
                 </p>
@@ -92,33 +121,44 @@ export default function Support() {
             <CardTitle>Діалог із підтримкою</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="max-h-[460px] space-y-3 overflow-y-auto rounded-[24px] border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/70">
+            <div className="max-h-[460px] space-y-3 overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/70 sm:p-4">
               {sortedThread.length > 0 ? sortedThread.map((item) => {
+                const index = sortedThread.findIndex((entry) => entry.id === item.id);
+                const previous = index > 0 ? sortedThread[index - 1] : null;
+                const showDate = !previous || formatDateHeader(previous.created_at) !== formatDateHeader(item.created_at);
                 const mine = item.from_email?.toLowerCase() === user.email?.toLowerCase();
                 const isSupport = item.from_email?.toLowerCase() === SUPPORT_EMAIL.toLowerCase();
                 return (
-                  <div
-                    key={item.id}
-                    className={`max-w-[92%] rounded-[22px] px-4 py-3 text-sm leading-6 shadow-sm ${
-                      mine
-                        ? 'ml-auto bg-primary text-primary-foreground'
-                        : isSupport
-                          ? 'border border-sky-100 bg-sky-50 text-slate-800 dark:border-sky-500/25 dark:bg-sky-950/35 dark:text-slate-100'
-                          : 'bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold">{mine ? 'Ви' : 'Підтримка'}</p>
-                      {isSupport && !mine ? (
-                        <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-primary-foreground">
-                          Support
+                  <div key={item.id} className="space-y-2">
+                    {showDate ? (
+                      <div className="flex justify-center">
+                        <span className="rounded-lg bg-white px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm dark:bg-slate-950 dark:text-slate-400">
+                          {formatDateHeader(item.created_at)}
                         </span>
-                      ) : null}
+                      </div>
+                    ) : null}
+                    <div
+                      className={`max-w-[86%] rounded-xl px-4 py-2.5 text-sm leading-6 shadow-sm ${
+                        mine
+                          ? 'ml-auto bg-primary text-primary-foreground'
+                          : isSupport
+                            ? 'border border-sky-100 bg-sky-50 text-slate-800 dark:border-sky-500/25 dark:bg-sky-950/35 dark:text-slate-100'
+                            : 'bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{mine ? 'Ви' : 'Підтримка'}</p>
+                        {isSupport && !mine ? (
+                          <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-primary-foreground">
+                            Support
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 whitespace-pre-wrap break-words">{item.content}</p>
+                      <p className={`mt-1.5 text-[11px] ${mine ? 'text-primary-foreground/75' : 'text-slate-400 dark:text-slate-500'}`}>
+                        {formatMessageTime(item.created_at)}
+                      </p>
                     </div>
-                    <p className="mt-1 whitespace-pre-wrap break-words">{item.content}</p>
-                    <p className={`mt-2 text-xs ${mine ? 'text-primary-foreground/80' : 'text-slate-400 dark:text-slate-500'}`}>
-                      {item.created_at ? new Date(item.created_at).toLocaleString('uk-UA') : ''}
-                    </p>
                   </div>
                 );
               }) : (
@@ -128,13 +168,13 @@ export default function Support() {
               )}
             </div>
 
-            <div className="rounded-[24px] border border-sky-100 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="rounded-xl border border-sky-100 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
               <Textarea
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
-                rows={5}
+                rows={3}
                 placeholder="Опишіть проблему або питання простими словами..."
-                className="resize-none"
+                className="min-h-[92px] resize-none"
               />
               <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs text-slate-500 dark:text-slate-400">Підтримка відповідає прямо в цей розділ, тому можна просто повернутися сюди пізніше.</p>

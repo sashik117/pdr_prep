@@ -3,11 +3,11 @@ import { cn } from '@/lib/utils';
 /** @param {import('@/types/questions').QuestionNavigatorProps} props */
 export default function QuestionNavigator({ questions, answers, currentIndex, onNavigate, showResults = false }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="grid grid-cols-5 gap-2 min-[420px]:grid-cols-7 sm:flex sm:flex-wrap">
       {questions.map((question, index) => {
         const hasAnswer = answers[question.id] !== undefined;
         const isCurrent = index === currentIndex;
-        const isCorrect = showResults && answers[question.id] === question.correct_answer;
+        const isCorrect = showResults && hasAnswer && answers[question.id] === question.correct_answer;
         const isWrong = showResults && hasAnswer && answers[question.id] !== question.correct_answer;
 
         return (
@@ -15,17 +15,15 @@ export default function QuestionNavigator({ questions, answers, currentIndex, on
             key={question.id}
             onClick={() => onNavigate(index)}
             className={cn(
-              'w-10 h-10 rounded-lg text-sm font-semibold transition-all',
+              'h-10 w-full rounded-lg text-sm font-medium transition-colors sm:w-10',
               isCurrent && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
-              showResults
-                ? isCorrect
-                  ? 'bg-success text-success-foreground'
-                  : isWrong
-                    ? 'bg-destructive text-destructive-foreground'
-                    : 'bg-muted text-muted-foreground'
-                : hasAnswer
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              isCorrect
+                ? 'bg-success text-success-foreground'
+                : isWrong
+                  ? 'bg-destructive text-destructive-foreground'
+                  : hasAnswer
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
             )}
           >
             {index + 1}

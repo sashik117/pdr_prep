@@ -2,23 +2,23 @@ import { useState } from 'react';
 import { ZoomIn, ZoomOut, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-/** @param {import('@/types/questions').SituationAnalysisModalProps} props */
+/** @param {import('@/types/questions').SituationAnalysisModalProps & { revealAnswer?: boolean }} props */
 export default function SituationAnalysisModal({ question, onClose, revealAnswer = false }) {
   const [zoom, setZoom] = useState(1);
 
   if (!question) return null;
 
   const keywords = [];
-  const explanation = question.explanation || '';
-  if (/знак/i.test(explanation)) keywords.push('дорожній знак');
-  if (/пріоритет|перевага/i.test(explanation)) keywords.push('пріоритет');
-  if (/піш|перехід/i.test(explanation)) keywords.push('пішохідний перехід');
+  const analysisSource = `${question.text || ''} ${question.topic || ''}`;
+  if (/знак/i.test(analysisSource)) keywords.push('дорожній знак');
+  if (/пріоритет|переваг/i.test(analysisSource)) keywords.push('пріоритет');
+  if (/піш|перехід/i.test(analysisSource)) keywords.push('пішохідний перехід');
 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="w-full max-w-2xl overflow-hidden p-0">
         <DialogHeader className="border-b border-border px-6 pb-4 pt-6">
-          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+          <DialogTitle className="flex items-center gap-2 text-lg font-medium">
             <ZoomIn className="h-5 w-5 text-primary" />
             Аналіз ситуації
           </DialogTitle>
@@ -45,20 +45,26 @@ export default function SituationAnalysisModal({ question, onClose, revealAnswer
             {question.image_url ? (
               <div className="absolute right-3 top-3 flex gap-2">
                 <button
+                  type="button"
                   onClick={() => setZoom((value) => Math.min(value + 0.3, 3))}
                   className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card/90 hover:bg-muted"
+                  aria-label="Збільшити"
                 >
                   <ZoomIn className="h-4 w-4" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => setZoom((value) => Math.max(value - 0.3, 0.5))}
                   className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card/90 hover:bg-muted"
+                  aria-label="Зменшити"
                 >
                   <ZoomOut className="h-4 w-4" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => setZoom(1)}
                   className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card/90 hover:bg-muted"
+                  aria-label="Скинути масштаб"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -72,10 +78,10 @@ export default function SituationAnalysisModal({ question, onClose, revealAnswer
 
           {keywords.length > 0 ? (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ключові обʼєкти ситуації:</p>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">На що звернути увагу:</p>
               <div className="flex flex-wrap gap-2">
-                {keywords.map((keyword, index) => (
-                  <span key={index} className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                {keywords.map((keyword) => (
+                  <span key={keyword} className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                     {keyword}
                   </span>
                 ))}
@@ -88,10 +94,14 @@ export default function SituationAnalysisModal({ question, onClose, revealAnswer
             </div>
           ) : null}
 
-          {question.explanation ? (
+          {revealAnswer && question.explanation ? (
             <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary">Пояснення:</p>
+              <p className="mb-1 text-xs font-medium uppercase tracking-wider text-primary">Пояснення:</p>
               <p className="text-sm leading-relaxed text-foreground">{question.explanation}</p>
+            </div>
+          ) : !revealAnswer ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
+              Уважно розгляньте ситуацію та поверніться до відповіді. Пояснення і правильна відповідь відкриються після завершення тесту.
             </div>
           ) : null}
         </div>

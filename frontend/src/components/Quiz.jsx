@@ -56,17 +56,17 @@ export default function Quiz() {
   };
 
   if (loading) {
-    return <div className="flex justify-center p-20">Завантаження тестів...</div>;
+    return <div className="flex justify-center p-12 text-sm text-muted-foreground">Завантаження тестів...</div>;
   }
 
   if (!questions.length) {
-    return <div className="text-center p-20">Питання не знайдені. Перевір бекенд!</div>;
+    return <div className="p-12 text-center text-sm text-muted-foreground">Питання не знайдені. Перевір бекенд.</div>;
   }
 
   if (currentIndex >= questions.length) {
     return (
-      <div className="max-w-md mx-auto text-center p-10 bg-white rounded-3xl shadow-xl">
-        <h2 className="text-3xl font-bold mb-4">Тест завершено!</h2>
+      <div className="mx-auto max-w-md rounded-xl border border-slate-200 bg-card p-8 text-center shadow-sm dark:border-slate-800">
+        <h2 className="mb-4 text-3xl font-semibold">Тест завершено!</h2>
         <p className="text-xl mb-6">Твій результат: {score} з {questions.length}</p>
         <Button onClick={() => window.location.reload()} className="gap-2">
           <RefreshCcw className="w-4 h-4" /> Почати заново
@@ -80,8 +80,8 @@ export default function Quiz() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-6">
-      <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+    <div className="mx-auto max-w-2xl space-y-5 p-4 sm:p-6">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
         <motion.div
           className="bg-blue-600 h-full"
           initial={{ width: 0 }}
@@ -102,9 +102,9 @@ export default function Quiz() {
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3 }}
         >
-          <Card className="overflow-hidden border-none shadow-2xl rounded-3xl">
+          <Card className="overflow-hidden rounded-xl border-slate-200 shadow-sm dark:border-slate-800">
             {currentQuestion.image_url ? (
-              <div className="w-full aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
+              <div className="flex aspect-video w-full items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-900">
                 <img
                   src={currentQuestion.image_url}
                   alt="Ситуація на дорозі"
@@ -117,14 +117,14 @@ export default function Quiz() {
                 />
               </div>
             ) : (
-              <div className="p-4 bg-blue-50/50 flex items-center gap-2 text-blue-400">
+              <div className="flex items-center gap-2 bg-blue-50/50 p-4 text-blue-500 dark:bg-blue-950/20 dark:text-blue-300">
                 <ImageIcon className="w-4 h-4" />
                 <span className="text-xs italic">Питання без ілюстрації</span>
               </div>
             )}
 
             <CardContent className="p-6 sm:p-8">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-800 leading-snug mb-8">
+              <h2 className="mb-8 text-lg font-medium leading-snug text-foreground sm:text-xl">
                 {currentQuestion.text || currentQuestion.question_text}
               </h2>
 
@@ -133,11 +133,11 @@ export default function Quiz() {
                   const isCorrect = option.label === currentQuestion.correct_answer;
                   const isSelected = option.label === selectedOption;
 
-                  let variant = 'border-gray-100 bg-gray-50/50 hover:border-blue-200 hover:bg-blue-50/30';
+                  let variant = 'border-slate-200 bg-background hover:border-blue-200 hover:bg-blue-50/30 dark:border-slate-800 dark:hover:bg-blue-950/20';
                   if (isAnswered) {
-                    if (isCorrect) variant = 'border-green-500 bg-green-50 text-green-700';
-                    else if (isSelected) variant = 'border-red-500 bg-red-50 text-red-700';
-                    else variant = 'opacity-50 border-gray-100';
+                    if (isCorrect) variant = 'border-green-500 bg-green-50 text-green-700 dark:bg-green-950/25 dark:text-green-200';
+                    else if (isSelected) variant = 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950/25 dark:text-red-200';
+                    else variant = 'border-slate-200 opacity-50 dark:border-slate-800';
                   }
 
                   return (
@@ -145,13 +145,13 @@ export default function Quiz() {
                       key={option.label}
                       disabled={isAnswered}
                       onClick={() => handleAnswer(option.label)}
-                      className={`w-full flex items-center p-4 rounded-2xl border-2 transition-all duration-200 text-left ${variant}`}
+                      className={`flex w-full items-center rounded-lg border p-4 text-left transition-colors duration-200 ${variant}`}
                     >
                       <span
-                        className={`w-8 h-8 shrink-0 flex items-center justify-center rounded-full mr-4 font-bold text-sm ${
+                        className={`mr-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
                           isSelected || (isAnswered && isCorrect)
                             ? 'bg-current text-white'
-                            : 'bg-white border text-gray-400'
+                            : 'border bg-background text-slate-400'
                         }`}
                       >
                         {option.label}
@@ -170,11 +170,11 @@ export default function Quiz() {
                   animate={{ opacity: 1, y: 0 }}
                   className="mt-8 flex flex-col gap-4"
                 >
-                  <div className="p-4 rounded-2xl bg-blue-50 text-blue-800 text-sm italic border border-blue-100">
+                  <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm italic text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/25 dark:text-blue-100">
                     <strong>Пояснення:</strong>{' '}
                     {currentQuestion.explanation || 'Правила дорожнього руху вимагають саме такої поведінки в цій ситуації.'}
                   </div>
-                  <Button onClick={nextQuestion} className="w-full h-12 rounded-2xl text-lg font-bold gap-2">
+                  <Button onClick={nextQuestion} className="h-12 w-full gap-2 rounded-lg text-lg font-medium">
                     Наступне питання <ChevronRight className="w-5 h-5" />
                   </Button>
                 </motion.div>

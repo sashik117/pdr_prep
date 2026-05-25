@@ -12,9 +12,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent
 DATABASE_URL = os.environ.get("DATABASE_URL")
-QUESTIONS_FILE = BASE_DIR / "pdr_final_category.json"
-SCHEMA_FILE = BASE_DIR / "create_tables.sql"
+QUESTIONS_FILE = PROJECT_ROOT / "data" / "questions" / "pdr_final_category.json"
+SCHEMA_FILE = PROJECT_ROOT / "create_tables.sql"
 BATCH_SIZE = 200
 
 

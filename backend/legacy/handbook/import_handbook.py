@@ -15,6 +15,7 @@ import_handbook.py — PDR Handbook Importer v3.0
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import re
@@ -324,6 +325,22 @@ def strip_external_links(soup: BeautifulSoup, keep_domain: str = SOURCE_BASE) ->
             a.replace_with(a.get_text(" ", strip=True))
 
 
+def markdownish_to_html(value: str) -> str:
+    text = (value or "").replace("\r", "\n")
+    text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
+    blocks = [part.strip() for part in re.split(r"\n\s*\n+", text) if part.strip()]
+    html_parts: list[str] = []
+    for block in blocks:
+        block = block.replace("\n", "<br>")
+        html_parts.append(f"<p>{block}</p>")
+    return "".join(html_parts)
+
+
+def markdownish_to_text(value: str) -> str:
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", value or "")
+    return clean_text(text)
+
+
 def insert_entry(
     conn: psycopg.Connection,
     *,
@@ -334,8 +351,11 @@ def insert_entry(
     section_title: str,
     source_url: str,
     source_slug: str,
+    comment_html: str | None = None,
     content_html: str,
     content_text: str,
+    video_url: str | None = None,
+    embed_url: str | None = None,
     image_paths: list[str],
 ) -> None:
     conn.execute(
@@ -343,9 +363,9 @@ def insert_entry(
         INSERT INTO handbook_data (
             topic_key, category, chapter_num, sort_order,
             section_title, source_url, source_slug,
-            content_html, content_text, image_paths
+            comment_html, content_html, content_text, video_url, embed_url, image_paths
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
         ON CONFLICT (source_url) DO UPDATE SET
             topic_key      = EXCLUDED.topic_key,
             category       = EXCLUDED.category,
@@ -353,14 +373,17 @@ def insert_entry(
             sort_order     = EXCLUDED.sort_order,
             section_title  = EXCLUDED.section_title,
             source_slug    = EXCLUDED.source_slug,
+            comment_html   = EXCLUDED.comment_html,
             content_html   = EXCLUDED.content_html,
             content_text   = EXCLUDED.content_text,
+            video_url      = EXCLUDED.video_url,
+            embed_url      = EXCLUDED.embed_url,
             image_paths    = EXCLUDED.image_paths
         """,
         (
             topic_key, category, chapter_num, sort_order,
             section_title, source_url, source_slug,
-            content_html, content_text,
+            comment_html, content_html, content_text, video_url, embed_url,
             json.dumps(image_paths, ensure_ascii=False),
         ),
     )
@@ -401,6 +424,7 @@ def parse_rules_entry(
     heading = main.find(["h1", "h2"])
     blocks: list[str] = []
     texts: list[str] = []
+    seen_block_texts: set[str] = set()
 
     nodes_iter = heading.find_all_next() if isinstance(heading, Tag) else main.descendants
     for node in nodes_iter:
@@ -419,9 +443,14 @@ def parse_rules_entry(
             continue
         if not node_text and not node.find("img"):
             continue
+        cleaned_node_text = clean_text(node_text)
+        if cleaned_node_text:
+            signature = re.sub(r"\s+", " ", cleaned_node_text.lower()).strip()
+            if signature in seen_block_texts:
+                continue
+            seen_block_texts.add(signature)
+            texts.append(cleaned_node_text)
         blocks.append(str(node))
-        if node_text:
-            texts.append(node_text)
 
     # Якщо нічого не зібрали — fallback до всього main
     if not blocks:
@@ -433,9 +462,14 @@ def parse_rules_entry(
                 break
             if node.name in {"script", "style", "nav", "footer"}:
                 continue
+            cleaned_node_text = clean_text(node_text)
+            if cleaned_node_text:
+                signature = re.sub(r"\s+", " ", cleaned_node_text.lower()).strip()
+                if signature in seen_block_texts:
+                    continue
+                seen_block_texts.add(signature)
+                texts.append(cleaned_node_text)
             blocks.append(str(node))
-            if node_text:
-                texts.append(node_text)
 
     content_soup = BeautifulSoup("".join(blocks), "html.parser")
     strip_external_links(content_soup)
@@ -450,6 +484,74 @@ def parse_rules_entry(
     html = content_soup.decode()
     text = clean_text(content_soup.get_text(" ", strip=True))
     return html, text, image_paths
+
+
+def parse_visual_detail_page(
+    session: requests.Session,
+    url: str,
+    title_fallback: str,
+    slug: str,
+    download: bool,
+) -> tuple[str, str, list[str]]:
+    """
+    Парсить detail-page знаку/розмітки:
+    бере заголовок, текстові блоки та всі релевантні зображення,
+    прибирає сторонню навігацію і зовнішні посилання.
+    """
+    soup = fetch_html(session, url)
+    strip_noise(soup)
+
+    main = soup.select_one("main") or soup.body or soup
+    heading = main.find(["h1", "h2", "h3"])
+    title = clean_text(heading.get_text(" ", strip=True)) if isinstance(heading, Tag) else clean_text(title_fallback)
+
+    content_parts: list[str] = []
+    seen_signatures: set[str] = set()
+    started = heading is None
+
+    for node in main.children:
+        if not isinstance(node, Tag):
+            continue
+        if node.name in {"script", "style", "nav", "footer", "header", "form"}:
+            continue
+
+        node_text = clean_text(node.get_text(" ", strip=True))
+        if should_stop(node_text):
+            break
+
+        if not started:
+            if heading is not None and node is heading:
+                started = True
+            continue
+
+        if node.name in {"h1", "h2"}:
+            continue
+
+        if not node_text and not node.find("img"):
+            continue
+
+        signature = re.sub(r"\s+", " ", node_text.lower()).strip() if node_text else ""
+        if signature and signature in seen_signatures:
+            continue
+        if signature:
+            seen_signatures.add(signature)
+        content_parts.append(str(node))
+
+    if not content_parts and isinstance(main, Tag):
+        content_parts.append(str(main))
+
+    fragment = BeautifulSoup("".join(content_parts), "html.parser")
+    strip_external_links(fragment)
+    image_paths = rewrite_images(fragment, session, slug, url, download)
+
+    for dup_heading in fragment.find_all(["h1", "h2", "h3"]):
+        dup_text = clean_text(dup_heading.get_text(" ", strip=True))
+        if dup_text and clean_text(dup_text).lower() == clean_text(title).lower():
+            dup_heading.decompose()
+
+    html = fragment.decode().strip()
+    text = clean_text(fragment.get_text(" ", strip=True))
+    return title or title_fallback, html, text, image_paths
 
 
 # ─── Signs / Markings grouped parser ─────────────────────────────────────────
@@ -517,40 +619,59 @@ def _build_group_html(
     text_parts: list[str] = []
     image_paths: list[str] = []
 
-    # Опис групи
     html_parts.append(f"<p>{group['description']}</p>")
     text_parts.append(group["description"])
 
-    # Галерея знаків
-    html_parts.append('<div class="signs-grid">')
     slug = f"theory-{sign_type}-{group['slug_suffix']}"
 
     for idx, code in enumerate(codes, start=1):
-        img_url = _find_sign_img_url(code, sign_type)
         detail_url = f"{SOURCE_BASE}/theory/{sign_type}/{code}"
+        img_url = _find_sign_img_url(code, sign_type)
 
+        fallback_image = None
         if download:
-            local_path = download_image(session, img_url, slug, idx)
-            src = local_path if local_path else img_url
-            if local_path:
-                image_paths.append(local_path)
-            else:
-                image_paths.append(img_url)
+            fallback_image = download_image(session, img_url, slug, idx)
         else:
-            src = img_url
-            image_paths.append(img_url)
+            fallback_image = img_url
+
+        try:
+            title, detail_html, detail_text, detail_images = parse_visual_detail_page(
+                session=session,
+                url=detail_url,
+                title_fallback=code,
+                slug=f"{slug}-{code.replace('.', '-')}",
+                download=download,
+            )
+        except Exception:
+            title = code
+            detail_html = ""
+            detail_text = code
+            detail_images = []
+
+        merged_images = []
+        if fallback_image:
+            merged_images.append(fallback_image)
+        for path in detail_images:
+            if path not in merged_images:
+                merged_images.append(path)
+        image_paths.extend([path for path in merged_images if path not in image_paths])
+
+        image_block = ""
+        if merged_images:
+            image_block = "".join(
+                f'<img src="{src}" alt="{title}" loading="lazy">'
+                for src in merged_images
+            )
 
         html_parts.append(
-            f'<figure class="sign-item">'
-            f'<a href="{detail_url}" target="_blank" rel="noopener noreferrer">'
-            f'<img src="{src}" alt="{code}" loading="lazy">'
-            f'</a>'
-            f'<figcaption>{code}</figcaption>'
-            f'</figure>'
+            '<article class="sign-detail">'
+            f'<h3>{title}</h3>'
+            f'<div class="sign-detail__media">{image_block}</div>'
+            f'<div class="sign-detail__body">{detail_html or f"<p>{detail_text}</p>"}</div>'
+            '</article>'
         )
-        text_parts.append(code)
+        text_parts.append(f"{title} {detail_text}".strip())
 
-    html_parts.append("</div>")
     html = "\n".join(html_parts)
     text = clean_text(" ".join(text_parts))
     return html, text, image_paths
@@ -852,12 +973,88 @@ def import_traffic_light(
     return 1
 
 
+def import_video_lectures(
+    session: requests.Session,
+    conn: psycopg.Connection,
+    download: bool,
+) -> int:
+    url = f"{SOURCE_BASE}/theory/list-of-lectures"
+    print(f"  Importing lectures: {url}")
+    soup = fetch_html(session, url)
+    next_data = soup.find("script", id="__NEXT_DATA__")
+    if not next_data or not next_data.string:
+        raise RuntimeError("Cannot find __NEXT_DATA__ for lectures")
+
+    data = json.loads(next_data.string)
+    lectures = (
+        data.get("props", {})
+        .get("pageProps", {})
+        .get("initialState", {})
+        .get("theory", {})
+        .get("lecturesTrafficRules", {})
+        .get("list", [])
+    )
+    if not lectures:
+        raise RuntimeError("Lectures list is empty")
+
+    count = 0
+    for order, lecture in enumerate(lectures, start=1):
+        lecture_id = int(lecture.get("id") or order)
+        title = clean_text((lecture.get("name") or {}).get("uk") or f"Відеолекція {lecture_id}")
+        short_description = (lecture.get("short_description") or {}).get("uk") or ""
+        description = (lecture.get("description") or {}).get("uk") or short_description or title
+        comment_html = markdownish_to_html(short_description)
+        content_html = markdownish_to_html(description)
+        content_text = markdownish_to_text(description)
+
+        raw_video_url = html.unescape(str(lecture.get("video_url") or "")).strip()
+        embed_url = raw_video_url or None
+        video_url = None if embed_url else raw_video_url or None
+
+        image_paths: list[str] = []
+        image_url = str(lecture.get("image_url") or "").strip()
+        if image_url:
+            if download:
+                local_path = download_image(session, image_url, f"theory-video-lecture-{lecture_id}", 1)
+                image_paths.append(local_path or image_url)
+            else:
+                image_paths.append(image_url)
+
+        price = int(lecture.get("price") or 0)
+        duration = clean_text(str(lecture.get("validity") or ""))
+        label_bits = ["Безкоштовно" if price <= 0 else f"{price} грн"]
+        if duration:
+            label_bits.append(duration)
+        lead_html = f"<p><strong>{' • '.join(label_bits)}</strong></p>" if label_bits else ""
+
+        insert_entry(
+            conn,
+            topic_key="video-lectures",
+            category="lectures",
+            chapter_num=None,
+            sort_order=order,
+            section_title=title,
+            source_url=f"{url}#{lecture_id}",
+            source_slug=f"theory-video-lecture-{lecture_id}",
+            comment_html=comment_html or None,
+            content_html=f"{lead_html}{content_html}",
+            content_text=content_text,
+            video_url=video_url,
+            embed_url=embed_url,
+            image_paths=image_paths,
+        )
+        count += 1
+
+    return count
+
+
 IMPORTERS: dict[str, Any] = {
     "rules": import_rules,
     "road-signs": import_signs,
     "road-markings": import_markings,
     "regulator": import_regulator,
     "traffic-light": import_traffic_light,
+    "video-lectures": import_video_lectures,
 }
 
 

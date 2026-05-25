@@ -1,5 +1,5 @@
 param(
-  [string]$JsonPath = ".\pdr_final_fixed.json",
+  [string]$JsonPath = "..\data\questions\pdr_final_fixed.json",
   [string]$ApiUrl = "http://127.0.0.1:8000/questions/import"
 )
 

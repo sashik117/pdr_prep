@@ -1,7 +1,7 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BellRing, Flame, KeyRound, LogOut, MessageCircleMore, PencilLine, Search, Shield, Star, Trash2, UserCog, Users } from 'lucide-react';
+import { BellRing, Clock3, Crown, Flame, KeyRound, LogOut, MessageCircleMore, PencilLine, Search, Shield, Star, Trash2, UserCog, Users } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,11 @@ export default function AdminPanel() {
   const [questionDrafts, setQuestionDrafts] = useState({});
   const [userDrafts, setUserDrafts] = useState({});
   const [achievementDrafts, setAchievementDrafts] = useState({});
+  const [promoDraft, setPromoDraft] = useState({
+    duration_days: 15,
+    promo_prices: { '1': 159, '3': 469, '6': 950, '12': 1900 },
+    regular_prices: { '1': 300, '3': 900, '6': 1800, '12': 3600 },
+  });
 
   const supportConversationsQuery = useQuery({
     queryKey: ['admin-support-conversations'],
@@ -58,6 +63,11 @@ export default function AdminPanel() {
     queryFn: () => api.searchAdminQuestions({ section: selectedSection, search: questionSearch }),
   });
 
+  const promoStatusQuery = useQuery({
+    queryKey: ['admin-promo-status'],
+    queryFn: () => api.getPromoStatus(),
+  });
+
   useEffect(() => {
     if (!selectedSupportUserId && supportConversationsQuery.data?.length) {
       setSelectedSupportUserId(supportConversationsQuery.data[0].user.id);
@@ -75,6 +85,16 @@ export default function AdminPanel() {
       queryClient.invalidateQueries({ queryKey: ['notification-summary'] });
     }
   }, [queryClient, supportThreadQuery.isSuccess]);
+
+  useEffect(() => {
+    const status = promoStatusQuery.data;
+    if (!status) return;
+    setPromoDraft({
+      duration_days: Number(status.duration_days || 15),
+      promo_prices: { ...(status.promo_prices || {}) },
+      regular_prices: { ...(status.regular_prices || {}) },
+    });
+  }, [promoStatusQuery.data]);
 
   const replyMutation = useMutation({
     mutationFn: () => api.replyAdminSupport(selectedSupportUserId, reply),
@@ -132,6 +152,27 @@ export default function AdminPanel() {
     },
   });
 
+  const promoConfigMutation = useMutation({
+    mutationFn: (payload) => api.updatePromoConfig(payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin-promo-status'] });
+    },
+  });
+
+  const promoStartMutation = useMutation({
+    mutationFn: (payload) => api.startPromo(payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin-promo-status'] });
+    },
+  });
+
+  const promoStopMutation = useMutation({
+    mutationFn: () => api.stopPromo(),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin-promo-status'] });
+    },
+  });
+
   const filteredUsers = useMemo(() => {
     const search = userSearch.trim().toLowerCase();
     if (!search) return adminUsersQuery.data || [];
@@ -141,14 +182,24 @@ export default function AdminPanel() {
     });
   }, [adminUsersQuery.data, userSearch]);
 
+  const updatePromoField = (group, plan, value) => {
+    setPromoDraft((current) => ({
+      ...current,
+      [group]: {
+        ...current[group],
+        [plan]: value,
+      },
+    }));
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <Card className="border-white/90 bg-[linear-gradient(135deg,rgba(20,107,255,0.12),rgba(255,255,255,1)_48%,rgba(224,242,254,0.92))] shadow-[0_24px_60px_rgba(37,99,235,0.08)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96),rgba(15,23,42,0.98))]">
         <CardContent className="p-5 sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">Суперкористувач</p>
-              <h2 className="mt-2 text-3xl font-black tracking-[-0.04em] text-slate-950 dark:text-white">Панель керування</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">Суперкористувач</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">Панель керування</h2>
               <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
                 Тут зібрані звернення в підтримку, аудит користувачів і зручний менеджер тестових питань по розділах.
               </p>
@@ -170,6 +221,7 @@ export default function AdminPanel() {
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-5">
         <TabsList className="h-auto flex-wrap rounded-2xl p-1">
+          <TabsTrigger value="promo" className="rounded-xl">Premium / Акція</TabsTrigger>
           <TabsTrigger value="support" className="rounded-xl">Підтримка</TabsTrigger>
           <TabsTrigger value="users" className="rounded-xl">Користувачі</TabsTrigger>
           <TabsTrigger value="questions" className="rounded-xl">Питання</TabsTrigger>
@@ -202,7 +254,7 @@ export default function AdminPanel() {
                         <p className="mt-2 truncate text-xs text-slate-500 dark:text-slate-400">{item.last_message?.content || 'Без повідомлень'}</p>
                       </div>
                       {item.unread_count ? (
-                        <span className="inline-flex min-h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-2 text-xs font-black text-white">
+                        <span className="inline-flex min-h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-2 text-xs font-semibold text-white">
                           {item.unread_count}
                         </span>
                       ) : null}
@@ -239,7 +291,7 @@ export default function AdminPanel() {
                             <div className="flex items-center gap-2">
                               <p className="font-semibold">{isSupport ? 'Підтримка' : `@${supportThreadQuery.data.user.username || 'user'}`}</p>
                               {isSupport ? (
-                                <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-white">
+                                <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
                                   Support
                                 </span>
                               ) : null}
@@ -269,6 +321,101 @@ export default function AdminPanel() {
                     Оберіть чат ліворуч, щоб відповісти користувачу.
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="promo" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
+            <Card className="dark:border-slate-800 dark:bg-slate-950/92">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Crown className="h-5 w-5 text-amber-500" />Premium / Акція</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Поточний стан</p>
+                  <p className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
+                    {promoStatusQuery.data?.is_active ? 'Акція активна' : 'Акція вимкнена'}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    {promoStatusQuery.data?.is_active
+                      ? `Залишилось: ${Math.max(0, Number(promoStatusQuery.data?.seconds_left || 0))} сек.`
+                      : 'Після запуску таймер працюватиме від серверного часу.'}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">Тривалість акції, днів</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={promoDraft.duration_days}
+                    onChange={(event) =>
+                      setPromoDraft((current) => ({
+                        ...current,
+                        duration_days: Number(event.target.value || 15),
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <Button className="rounded-xl" disabled={promoStartMutation.isPending} onClick={() => promoStartMutation.mutate(promoDraft)}>
+                    <Clock3 className="mr-2 h-4 w-4" />
+                    Запустити акцію
+                  </Button>
+                  <Button variant="secondary" className="rounded-xl" disabled={promoConfigMutation.isPending} onClick={() => promoConfigMutation.mutate(promoDraft)}>
+                    Зберегти ціни
+                  </Button>
+                  <Button variant="destructive" className="rounded-xl" disabled={promoStopMutation.isPending} onClick={() => promoStopMutation.mutate()}>
+                    Зупинити акцію
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="dark:border-slate-800 dark:bg-slate-950/92">
+              <CardHeader>
+                <CardTitle>Ціни по планах</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[
+                  ['1', '1 місяць'],
+                  ['3', '3 місяці'],
+                  ['6', '6 місяців'],
+                  ['12', '12 місяців'],
+                ].map(([planCode, label]) => (
+                  <div key={planCode} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <p className="font-semibold text-slate-950 dark:text-white">{label}</p>
+                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">
+                        Plan {planCode}
+                      </span>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Акційна ціна</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={promoDraft.promo_prices?.[planCode] ?? ''}
+                          onChange={(event) => updatePromoField('promo_prices', planCode, event.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Звичайна ціна</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={promoDraft.regular_prices?.[planCode] ?? ''}
+                          onChange={(event) => updatePromoField('regular_prices', planCode, event.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           </div>
@@ -310,6 +457,7 @@ export default function AdminPanel() {
                         <span className="rounded-full bg-sky-100 px-3 py-1 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">Тестів: {item.total_tests || 0}</span>
                         <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Зірок: {item.total_stars || 0}</span>
                         <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">Стрік: {item.streak_days || 0}</span>
+                        {item.is_premium ? <span className="rounded-full bg-violet-100 px-3 py-1 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">Premium</span> : null}
                       </div>
                     </button>
                   ))}
@@ -489,7 +637,7 @@ function CompactMetric({ icon: Icon, label, value, tone }) {
       <div className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl ${toneMap[tone] || toneMap.sky}`}>
         <Icon className="h-5 w-5" />
       </div>
-      <p className="mt-3 text-2xl font-black text-slate-950 dark:text-white">{value}</p>
+      <p className="mt-3 text-2xl font-semibold text-slate-950 dark:text-white">{value}</p>
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</p>
     </div>
   );
@@ -514,21 +662,30 @@ function AuditHeader({
     marathon_best: user.marathon_best || 0,
     streak_days: user.streak_days || 0,
     manual_star_adjustment: user.manual_star_adjustment || 0,
+    is_premium: !!user.is_premium,
   };
 
   return (
     <div className="space-y-4 rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-2xl font-black text-slate-950 dark:text-white">{user.full_name || `${user.name || ''} ${user.surname || ''}`.trim()}</p>
+          <p className="text-2xl font-semibold text-slate-950 dark:text-white">{user.full_name || `${user.name || ''} ${user.surname || ''}`.trim()}</p>
           <p className="text-sm text-slate-500 dark:text-slate-400">@{user.username || 'user'} • {user.email}</p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
             <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Зірок: {user.total_stars || 0}</span>
             <span className="rounded-full bg-orange-100 px-3 py-1 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300">Вогників: {user.streak_days || 0}</span>
             <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">Досягнень: {audit.achievements.length}</span>
+            {user.is_premium ? <span className="rounded-full bg-violet-100 px-3 py-1 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">Premium активний</span> : null}
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button
+            variant={draft.is_premium ? 'default' : 'outline'}
+            className="rounded-xl"
+            onClick={() => userMutation.mutate({ userId: user.id, payload: { is_premium: !draft.is_premium } })}
+          >
+            {draft.is_premium ? 'Зняти Premium' : 'Видати Premium'}
+          </Button>
           <Button
             variant={user.is_blocked ? 'default' : 'outline'}
             className="rounded-xl"

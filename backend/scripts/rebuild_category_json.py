@@ -5,8 +5,10 @@ import json
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-SOURCE_FILE = BASE_DIR / "pdr_final.json"
-TARGET_FILE = BASE_DIR / "pdr_final_category.json"
+PROJECT_ROOT = BASE_DIR.parent
+QUESTIONS_DIR = PROJECT_ROOT / "data" / "questions"
+SOURCE_FILE = QUESTIONS_DIR / "pdr_final.json"
+TARGET_FILE = QUESTIONS_DIR / "pdr_final_category.json"
 
 COMMON_SECTIONS = list(range(1, 40))
 CATEGORY_SECTION_RULES = {

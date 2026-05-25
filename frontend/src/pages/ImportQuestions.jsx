@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import { useRef, useState } from 'react';
 import { CheckCircle2, Download, FileJson, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -117,7 +117,7 @@ export default function ImportQuestions() {
             onClick={() => inputRef.current?.click()}
           >
             <Upload className="mb-4 h-12 w-12 text-primary" />
-            <p className="text-lg font-black text-slate-900">Оберіть JSON-файл з питаннями</p>
+            <p className="text-lg font-semibold text-slate-900">Оберіть JSON-файл з питаннями</p>
             <p className="mt-2 text-sm text-slate-500">Підтримується масив питань або об’єкт виду `{` questions: [...] `}`.</p>
             {fileName ? <p className="mt-4 text-sm font-semibold text-primary">{fileName}</p> : null}
           </button>

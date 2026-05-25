@@ -1,5 +1,5 @@
 ﻿import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Menu, X, ClipboardCheck, UserCircle2, BookMarked, Trophy, Flame, Swords, BarChart3, Settings, MessageCircleMore, Wifi, WifiOff } from 'lucide-react';
+import { Crown, LifeBuoy, LogOut, Menu, MessageCircleMore, Settings, UserCircle2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,27 +8,26 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
 import InternalBackButton from '@/components/layout/InternalBackButton';
+import { desktopSidebarGroups } from '@/components/layout/navigation-config';
+import SiteFooter from '@/components/layout/SiteFooter';
 import api, { resolveApiUrl, resolveWsUrl, tokenStore } from '@/api/apiClient';
 import { getPendingTestResults, removePendingTestResult } from '@/lib/offlineProgress';
+import { applyTheme, getStoredTheme } from '@/lib/theme';
 
 const CONNECTIVITY_CHECK_URL = 'https://www.gstatic.com/generate_204';
-
-const primaryNavItems = [
-  { path: '/tests', label: 'Тести', icon: ClipboardCheck },
-  { path: '/signs', label: 'Знаки', icon: BookMarked },
-  { path: '/marathon', label: 'Марафон', icon: Flame },
-  { path: '/leaderboard', label: 'Рейтинг', icon: Trophy },
-  { path: '/battle', label: 'Батли', icon: Swords, badgeKey: 'battles' },
-  { path: '/analytics', label: 'Аналітика', icon: BarChart3 },
-];
 
 /** @type {Record<string, string>} */
 const pageTitles = {
   '/tests': 'Тести',
+  '/section-tests': 'Тести по розділах',
   '/test': 'Проходження тесту',
   '/daily': 'Виклик дня',
   '/signs': 'Дорожні знаки',
-  '/study': 'Бібліотека',
+  '/study': 'Теорія',
+  '/lectures': 'Відеолекції',
+  '/tickets': 'Білети',
+  '/saved-questions': 'Збережені запитання',
+  '/pricing': 'Premium',
   '/mistakes': 'Помилки',
   '/marathon': 'Марафон',
   '/analytics': 'Аналітика',
@@ -38,6 +37,7 @@ const pageTitles = {
   '/cabinet': 'Профіль',
   '/u/': 'Профіль користувача',
   '/privacy': 'Конфіденційність',
+  '/terms': 'Угода підписника',
   '/settings': 'Налаштування',
   '/support': 'Підтримка',
   '/achievements': 'Досягнення',
@@ -49,7 +49,9 @@ const pageTitles = {
  * @returns {string}
  */
 function resolveTitle(pathname) {
-  const directMatch = Object.entries(pageTitles).find(([path]) => pathname.startsWith(path));
+  const directMatch = Object.entries(pageTitles)
+    .sort((a, b) => b[0].length - a[0].length)
+    .find(([path]) => pathname.startsWith(path));
   return directMatch?.[1] || '';
 }
 
@@ -67,7 +69,7 @@ function shouldShowBackButton(pathname) {
 function Badge({ value }) {
   if (!value) return null;
   return (
-    <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-black text-white">
+    <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold text-white">
       {Math.min(value, 9)}
     </span>
   );
@@ -76,11 +78,12 @@ function Badge({ value }) {
 export default function AppLayout() {
   const location = useLocation();
   const queryClient = useQueryClient();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSection, setMobileSection] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
   const networkBootRef = useRef(true);
   const previousOnlineRef = useRef(/** @type {boolean | null} */ (null));
-  const { isAuthenticated, navigateToLogin, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const { toast } = useToast();
 
   const notificationsQuery = useQuery({
@@ -93,6 +96,35 @@ export default function AppLayout() {
 
   const notificationSummary = notificationsQuery.data || { friends: 0, battles: 0, support: 0 };
   const isAdminUser = /** @type {any} */ (user)?.is_admin;
+  const profileAvatar = user?.avatar_url || null;
+  const desktopMenuGroups = useMemo(
+    () =>
+      desktopSidebarGroups
+        .map((group) => ({
+          ...group,
+          items: group.items.filter((item) => {
+            if (item.path === '/pricing' && (!isAuthenticated || user?.is_premium)) return false;
+            if (!isAuthenticated && item.premium) return false;
+            return item.path !== '/cabinet' && item.path !== '/support';
+          }),
+        }))
+        .filter((group) => group.items.length > 0),
+    [isAuthenticated, user?.is_premium],
+  );
+  const mobileMenuGroups = useMemo(
+    () =>
+      desktopSidebarGroups
+        .map((group) => ({
+          ...group,
+          items: group.items.filter((item) => {
+            if (item.path === '/pricing' && (!isAuthenticated || user?.is_premium)) return false;
+            if (!isAuthenticated && item.premium) return false;
+            return item.path !== '/cabinet';
+          }),
+        }))
+        .filter((group) => group.items.length > 0),
+    [isAuthenticated, user?.is_premium],
+  );
 
   const pageTitle = useMemo(() => {
     if (location.pathname === '/cabinet' && isAdminUser) {
@@ -105,12 +137,36 @@ export default function AppLayout() {
   const showPageHeader = location.pathname !== '/' && !!pageTitle;
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'system';
     const savedFontSize = parseInt(localStorage.getItem('fontSize') || '16', 10);
-    const isDark = savedTheme === 'dark' || (savedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    document.documentElement.classList.toggle('dark', isDark);
+    applyTheme(getStoredTheme());
     document.documentElement.style.fontSize = `${savedFontSize}px`;
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleTheme = () => applyTheme(getStoredTheme());
+    const handleStorage = (event) => {
+      if (!event.key || event.key === 'theme') {
+        handleTheme();
+      }
+      if (!event.key || event.key === 'fontSize') {
+        document.documentElement.style.fontSize = `${parseInt(localStorage.getItem('fontSize') || '16', 10)}px`;
+      }
+    };
+
+    window.addEventListener('driveprep:theme-change', handleTheme);
+    window.addEventListener('storage', handleStorage);
+    media.addEventListener('change', handleTheme);
+
+    return () => {
+      window.removeEventListener('driveprep:theme-change', handleTheme);
+      window.removeEventListener('storage', handleStorage);
+      media.removeEventListener('change', handleTheme);
+    };
   }, []);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    setMobileSection('');
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     const syncPendingResults = async () => {
@@ -257,50 +313,40 @@ export default function AppLayout() {
   }, [isAuthenticated, queryClient]);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(96,165,250,0.18),_transparent_38%),linear-gradient(180deg,#f8fbff_0%,#eef5ff_52%,#f8fbff_100%)] text-foreground dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.2),_transparent_38%),linear-gradient(180deg,#071120_0%,#0b1730_52%,#071120_100%)]">
-      <header className="sticky top-0 z-50 border-b border-sky-100/90 bg-white/92 shadow-[0_16px_45px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/88">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-5 sm:px-6 lg:gap-6 lg:py-6">
-          <Link to="/" className="shrink-0 transition-transform duration-200 hover:scale-[1.01]">
-            <img
-              src="/logo-wordmark.png"
-              alt="PDRPrep"
-              className="h-12 w-auto object-contain sm:h-14 lg:h-16"
-              style={{ imageRendering: 'auto' }}
-            />
+    <div className="min-h-screen bg-page-gradient pt-16 text-foreground">
+      <header className="fixed inset-x-0 top-0 z-50 h-16 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex h-full w-full items-center gap-3 px-3 sm:px-4">
+          <Link
+            to={isAuthenticated ? '/cabinet' : '/auth'}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-transparent text-slate-700 transition-colors hover:bg-slate-100 sm:hidden dark:text-slate-100 dark:hover:bg-slate-900"
+            aria-label={isAuthenticated ? 'Профіль' : 'Увійти'}
+          >
+            {profileAvatar ? (
+              <img src={profileAvatar} alt="Профіль" className="h-11 w-11 rounded-full object-cover" />
+            ) : (
+              <UserCircle2 className="!h-8 !w-8" />
+            )}
           </Link>
 
-          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-2 lg:flex">
-            {primaryNavItems.map((item) => {
-              const active = location.pathname.startsWith(item.path);
-              const badgeCount = item.badgeKey ? notificationSummary[item.badgeKey] : 0;
-              return (
-                <motion.div key={item.path} whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }}>
-                  <Link
-                    to={item.path}
-                    className={cn(
-                      'relative inline-flex items-center rounded-2xl px-5 py-3 text-sm font-bold transition-all duration-200',
-                      active
-                        ? 'bg-primary text-primary-foreground shadow-[0_18px_34px_rgba(20,107,255,0.25)]'
-                        : 'text-slate-600 hover:bg-sky-50 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white',
-                    )}
-                  >
-                    {item.label}
-                    <Badge value={badgeCount} />
-                  </Link>
-                </motion.div>
-              );
-            })}
-          </nav>
+          <Link to="/" className="flex h-11 shrink-0 items-center rounded-xl transition-transform duration-200 hover:scale-[1.01]" aria-label="DrivePrep">
+            <img src="/logo.png" alt="DrivePrep" className="h-11 w-11 rounded-xl object-contain sm:hidden" style={{ imageRendering: 'auto' }} />
+            <img src="/logo-wordmark.png" alt="DrivePrep" className="hidden h-11 w-auto max-w-[190px] object-contain sm:block" style={{ imageRendering: 'auto' }} />
+          </Link>
 
-          <div className="ml-auto flex items-center gap-2">
-            <div className={cn(
-              'inline-flex h-12 min-w-12 items-center justify-center rounded-2xl border px-3',
-              isOnline
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300'
-                : 'border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300',
-            )} title={isOnline ? 'Онлайн: прогрес синхронізується' : 'Офлайн: прогрес збережеться локально'}>
-              {isOnline ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
-            </div>
+          <div className="ml-auto flex items-center gap-0.5 sm:gap-2">
+            {isAuthenticated ? (
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 rounded-full border-transparent bg-transparent text-amber-600 shadow-none hover:bg-amber-50 dark:text-amber-200 dark:hover:bg-amber-950/30 sm:rounded-lg sm:border-amber-200 sm:bg-amber-50 sm:shadow-sm dark:sm:border-amber-500/30 dark:sm:bg-amber-950/25"
+              >
+                <Link to="/pricing" aria-label="Premium">
+                  <Crown className="h-5 w-5" />
+                </Link>
+              </Button>
+            ) : null}
 
             {isAuthenticated ? (
               <Button
@@ -308,142 +354,235 @@ export default function AppLayout() {
                 type="button"
                 variant="outline"
                 size="icon"
-                className="relative hidden h-12 w-12 rounded-2xl border-slate-200 bg-white text-slate-700 shadow-none sm:inline-flex dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                className="relative h-10 w-10 rounded-full border-transparent bg-transparent text-slate-700 shadow-none hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-900 sm:rounded-lg sm:border-slate-200 sm:bg-background sm:shadow-sm dark:sm:border-slate-700"
               >
                 <Link to="/friends" aria-label="Повідомлення">
-                  <MessageCircleMore className="h-4 w-4" />
+                  <MessageCircleMore className="h-5 w-5" />
                   <Badge value={notificationSummary.friends} />
                 </Link>
               </Button>
             ) : null}
 
-            {isAuthenticated ? (
-              <Button
-                asChild
-                type="button"
-                variant="outline"
-                size="icon"
-                className="hidden h-12 w-12 rounded-2xl border-slate-200 bg-white text-slate-700 shadow-none sm:inline-flex dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-              >
-                <Link to="/settings" aria-label="Налаштування">
-                  <Settings className="h-4 w-4" />
-                </Link>
-              </Button>
-            ) : null}
+            <Button
+              asChild
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-10 w-10 rounded-full border-transparent bg-transparent text-slate-700 shadow-none hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-900 sm:rounded-lg sm:border-slate-200 sm:bg-background sm:shadow-sm dark:sm:border-slate-700"
+            >
+              <Link to="/settings" aria-label="Налаштування">
+                <Settings className="h-5 w-5" />
+              </Link>
+            </Button>
 
             <Button
+              asChild
               type="button"
               variant={isAuthenticated ? 'default' : 'outline'}
-              className="hidden rounded-2xl px-5 py-3 text-sm font-bold shadow-none sm:inline-flex"
-              onClick={() => {
-                if (isAuthenticated) {
-                  window.location.href = '/cabinet';
-                } else {
-                  navigateToLogin('/cabinet');
-                }
-              }}
+              size="icon"
+              className="hidden h-10 w-10 rounded-lg sm:inline-flex sm:w-auto sm:px-4 sm:py-2.5"
             >
-              <UserCircle2 className="mr-2 h-4 w-4" />
-              {isAuthenticated ? 'Профіль' : 'Увійти'}
+              <Link to={isAuthenticated ? '/cabinet' : '/auth'}>
+                <UserCircle2 className="!h-7 !w-7 sm:mr-2" />
+                <span className="hidden sm:inline">{isAuthenticated ? 'Профіль' : 'Увійти'}</span>
+              </Link>
             </Button>
 
             <button
               type="button"
-              className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition-colors hover:bg-slate-50 lg:hidden dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-              onClick={() => setMobileOpen((value) => !value)}
-              aria-label="Відкрити меню"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-transparent bg-transparent text-slate-700 transition-colors hover:bg-slate-100 sm:hidden dark:text-slate-100 dark:hover:bg-slate-900"
+              onClick={() => setMobileMenuOpen((value) => !value)}
+              aria-label={mobileMenuOpen ? 'Закрити меню' : 'Відкрити меню'}
             >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
 
-        {mobileOpen ? (
-          <div className="border-t border-slate-200 bg-white px-4 py-4 lg:hidden dark:border-slate-800 dark:bg-slate-950">
-            <div className="grid gap-2">
-              {primaryNavItems.map((item) => {
-                const active = location.pathname.startsWith(item.path);
-                const badgeCount = item.badgeKey ? notificationSummary[item.badgeKey] : 0;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      'relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-colors',
-                      active ? 'bg-primary text-primary-foreground' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800',
-                    )}
+        {mobileMenuOpen ? (
+          <div className="max-h-[calc(100dvh-64px)] overflow-y-auto border-t border-slate-200/70 bg-white px-3 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.12)] sm:hidden dark:border-slate-800 dark:bg-slate-950">
+            <div className="space-y-3">
+              {mobileMenuGroups.map((group) => (
+                <div key={group.title} className="rounded-xl border border-slate-200 bg-slate-50/80 p-2 dark:border-slate-800 dark:bg-slate-900/70">
+                  <div className="flex items-center gap-2 px-2 py-1.5 text-sm font-semibold text-slate-900 dark:text-white">
+                    <group.icon className="h-5 w-5 text-primary" />
+                    {group.title}
+                  </div>
+                  <div className="mt-1 grid gap-1">
+                    {group.items.map((item) => {
+                      const active = location.pathname.startsWith(item.path);
+                      const badgeCount = item.badgeKey ? notificationSummary[item.badgeKey] : 0;
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={cn(
+                            'relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                            active
+                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200'
+                              : 'text-slate-600 hover:bg-white hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-950 dark:hover:text-white',
+                          )}
+                        >
+                          <item.icon className="h-5 w-5 shrink-0" />
+                          <span>{item.label}</span>
+                          {item.premium && !user?.is_premium ? (
+                            <span className="ml-auto rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">
+                              Pro
+                            </span>
+                          ) : badgeCount ? (
+                            <span className="ml-auto inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold text-white">
+                              {Math.min(badgeCount, 9)}
+                            </span>
+                          ) : null}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              <div className="grid gap-2">
+                {isAuthenticated ? (
+                  <button
+                    type="button"
+                    className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-semibold text-red-600 dark:border-red-500/20 dark:bg-red-950/25 dark:text-red-300"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
                   >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                    {badgeCount ? (
-                      <span className="ml-auto inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-black text-white">
-                        {Math.min(badgeCount, 9)}
-                      </span>
-                    ) : null}
-                  </Link>
-                );
-              })}
-
-              {isAuthenticated ? (
-                <Link
-                  to="/friends"
-                  onClick={() => setMobileOpen(false)}
-                  className="relative flex items-center justify-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                >
-                  <MessageCircleMore className="h-4 w-4" />
-                  Повідомлення
-                  {notificationSummary.friends ? (
-                    <span className="ml-auto inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-black text-white">
-                      {Math.min(notificationSummary.friends, 9)}
-                    </span>
-                  ) : null}
-                </Link>
-              ) : null}
-
-              {isAuthenticated ? (
-                <Button asChild type="button" variant="outline" className="rounded-2xl">
-                  <Link to="/settings" onClick={() => setMobileOpen(false)}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Налаштування
-                  </Link>
-                </Button>
-              ) : null}
-
-              <Button
-                type="button"
-                className="rounded-2xl"
-                onClick={() => {
-                  setMobileOpen(false);
-                  if (isAuthenticated) {
-                    window.location.href = '/cabinet';
-                  } else {
-                    navigateToLogin('/cabinet');
-                  }
-                }}
-              >
-                <UserCircle2 className="mr-2 h-4 w-4" />
-                {isAuthenticated ? 'Профіль' : 'Увійти'}
-              </Button>
+                    <LogOut className="h-5 w-5" />
+                    Вийти
+                  </button>
+                ) : null}
+              </div>
             </div>
           </div>
         ) : null}
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+      <aside className="group/sidebar fixed bottom-0 left-0 top-16 z-40 hidden w-16 overflow-visible border-r border-slate-200 bg-white transition-[width] duration-200 hover:w-36 dark:border-slate-800 dark:bg-slate-950 xl:block">
+        <div className="flex h-full flex-col justify-between px-2 py-3">
+          <div className="flex w-full flex-col gap-2">
+            {desktopMenuGroups.map((group, groupIndex) => {
+              const GroupIcon = group.icon;
+              const activeGroup = group.items.some((item) => location.pathname.startsWith(item.path));
+              const openSection = mobileSection === group.title;
+              return (
+                <motion.div
+                  key={group.title}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: groupIndex * 0.04 }}
+                  className="group relative before:absolute before:left-full before:top-0 before:hidden before:h-full before:w-4 before:content-[''] group-hover/sidebar:before:block"
+                  onMouseEnter={() => setMobileSection(group.title)}
+                  onMouseLeave={() => setMobileSection('')}
+                >
+                  <button
+                    type="button"
+                    className={cn(
+                      'flex h-11 w-full items-center gap-3 overflow-hidden rounded-lg px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-sky-50 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white',
+                      activeGroup && 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200',
+                    )}
+                    onClick={() => setMobileSection((value) => (value === group.title ? '' : group.title))}
+                    aria-label={group.title}
+                  >
+                    <GroupIcon className="h-6 w-6 shrink-0" />
+                    <span className="whitespace-nowrap opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100">{group.title}</span>
+                  </button>
+
+                  <div
+                    className={cn(
+                      'absolute left-[132px] top-0 hidden w-[248px] rounded-xl border border-slate-200 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.14)] dark:border-slate-800 dark:bg-slate-950',
+                      'group-hover:block group-focus-within:block',
+                      openSection && 'block',
+                    )}
+                  >
+                    <p className="px-3 pb-2 pt-1 text-xs font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{group.title}</p>
+                    <div className="space-y-1">
+                      {group.items.map((item) => {
+                        const active = location.pathname.startsWith(item.path);
+                        const badgeCount = item.badgeKey ? notificationSummary[item.badgeKey] : 0;
+                        return (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            onClick={() => setMobileSection('')}
+                            className={cn(
+                              'relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                              active
+                                ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200'
+                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white',
+                            )}
+                          >
+                            <item.icon className="h-5 w-5 shrink-0" />
+                            <span>{item.label}</span>
+                            {item.premium && !user?.is_premium ? (
+                              <span className="ml-auto rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">
+                                Pro
+                              </span>
+                            ) : badgeCount ? (
+                              <span className="ml-auto inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold text-white">
+                                {Math.min(badgeCount, 9)}
+                              </span>
+                            ) : null}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          <div className="flex w-full flex-col gap-2">
+            <Link
+              to="/support"
+              className="relative flex h-11 w-full items-center gap-3 overflow-hidden rounded-lg px-3 text-sm font-medium text-slate-500 transition-colors hover:bg-sky-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white"
+              aria-label="Підтримка"
+            >
+              <LifeBuoy className="h-6 w-6 shrink-0" />
+              <span className="whitespace-nowrap opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100">Підтримка</span>
+              {notificationSummary.support ? (
+                <span className="absolute right-2 top-2 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold text-white">
+                  {Math.min(notificationSummary.support, 9)}
+                </span>
+              ) : null}
+            </Link>
+
+            {isAuthenticated ? (
+              <button
+                type="button"
+                className="flex h-11 w-full items-center gap-3 overflow-hidden rounded-lg px-3 text-sm font-medium text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-slate-300 dark:hover:bg-red-950/30 dark:hover:text-red-300"
+                onClick={logout}
+                aria-label="Вийти"
+              >
+                <LogOut className="h-6 w-6 shrink-0" />
+                <span className="whitespace-nowrap opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100">Вийти</span>
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </aside>
+
+      <div className="w-full px-3 py-5 sm:px-5 sm:py-7 xl:pl-24">
         {showPageHeader ? (
-          <div className="mb-6 rounded-[28px] border border-white/85 bg-white/92 px-6 py-5 shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/80">
+          <div className="mb-5 px-1 py-2 sm:px-2">
             {showBackButton ? <InternalBackButton className="mb-4" /> : null}
-            <h1 className="text-3xl font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-4xl">
+            <h1 className="text-2xl font-semibold text-slate-950 dark:text-white sm:text-3xl">
               {pageTitle}
             </h1>
           </div>
         ) : null}
 
-        <main>
+        <main className="app-content">
           <Outlet />
         </main>
       </div>
+
+      <SiteFooter />
     </div>
   );
 }

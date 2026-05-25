@@ -9,13 +9,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useAuth } from '@/lib/AuthContext';
+import { useProtectedScreen } from '@/lib/useProtectedScreen';
 import LoginPrompt from '@/components/auth/LoginPrompt';
+import ProtectedScreenFallback from '@/components/auth/ProtectedScreenFallback';
 import api, { resolveApiUrl } from '@/api/apiClient';
 import { normalizeQuestion } from '@/api/questionsApi';
 import { cn } from '@/lib/utils';
 import QuestionCard from '@/components/test/QuestionCard';
 import { useToast } from '@/components/ui/use-toast';
+import { canStartFreeBattle, registerFreeBattleStart } from '@/lib/accessLimits';
 
 const battleCategoryOptions = ['A', 'B', 'C', 'D', 'T', 'BE'];
 
@@ -23,7 +25,7 @@ export default function Battle() {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isCheckingAccess, isTemporaryAuthFailure, canAccess, checkUserAuth } = useProtectedScreen();
   const { toast } = useToast();
 
   const [opponentUser, setOpponentUser] = useState('');
@@ -125,10 +127,26 @@ export default function Battle() {
     navigate('/battle');
   };
 
+  const handleCreateBattle = (username) => {
+    if (!user?.is_premium && !canStartFreeBattle(user)) {
+      toast({
+        title: 'Денний trial для батлів вичерпано',
+        description: 'Безкоштовно доступні лише 3 батли на день. Для більшої кількості відкрийте Premium.',
+        variant: 'destructive',
+      });
+      navigate('/pricing');
+      return;
+    }
+    createMutation.mutate({ opponent_user: username, category });
+  };
+
   const createMutation = useMutation({
     mutationFn: ({ opponent_user, category: battleCategory }) =>
       api.createBattle({ opponent_user: String(opponent_user || '').trim().replace(/^@/, ''), category: battleCategory }),
     onSuccess: async (battle) => {
+      if (!user?.is_premium) {
+        registerFreeBattleStart(user);
+      }
       setOpponentUser('');
       setSelectedBattleId(battle.id);
       await queryClient.invalidateQueries({ queryKey: ['battles'] });
@@ -206,7 +224,15 @@ export default function Battle() {
     closeOverlay();
   };
 
-  if (!user) {
+  if (isCheckingAccess) {
+    return <ProtectedScreenFallback loading />;
+  }
+
+  if (isTemporaryAuthFailure) {
+    return <ProtectedScreenFallback temporary onRetry={checkUserAuth} />;
+  }
+
+  if (!canAccess || !user) {
     return (
       <LoginPrompt
         title="Батли"
@@ -233,7 +259,7 @@ export default function Battle() {
                 <Button
                   className="rounded-xl"
                   disabled={!normalizedOpponentUsername || createMutation.isPending || userPreviewQuery.isFetching || !previewUser}
-                  onClick={() => createMutation.mutate({ opponent_user: normalizedOpponentUsername, category })}
+                  onClick={() => handleCreateBattle(normalizedOpponentUsername)}
                 >
                   <PlayCircle className="mr-2 h-4 w-4" />
                   Викликати
@@ -311,7 +337,7 @@ export default function Battle() {
                         onClick={() => {
                           const username = friend.user?.username || '';
                           setOpponentUser(`@${username}`);
-                          createMutation.mutate({ opponent_user: username, category });
+                          handleCreateBattle(username);
                         }}
                       >
                         <Avatar user={friend.user} />
@@ -444,8 +470,8 @@ export default function Battle() {
                   <Swords className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-black uppercase tracking-[0.18em] text-sky-600 dark:text-sky-300">PVP-батл</p>
-                  <p className="text-2xl font-black tracking-[-0.04em] text-slate-950 dark:text-white">@{battleDetails?.opponent_username || 'unknown'}</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-600 dark:text-sky-300">PVP-батл</p>
+                  <p className="text-2xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">@{battleDetails?.opponent_username || 'unknown'}</p>
                 </div>
               </div>
 
@@ -489,7 +515,7 @@ export default function Battle() {
                     size="xl"
                     centered
                   />
-                  <h3 className="text-3xl font-black tracking-[-0.04em] text-slate-950 dark:text-white">
+                  <h3 className="text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
                     {battleDetails.role === 'opponent' ? `@${battleDetails.opponent_username} викликає вас на батл` : `Виклик для @${battleDetails.opponent_username} вже відправлено`}
                   </h3>
                   <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -523,7 +549,7 @@ export default function Battle() {
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <span className="inline-flex h-3 w-3 animate-pulse rounded-full bg-rose-500 shadow-[0_0_14px_rgba(244,63,94,0.7)]" />
-                        <p className="text-sm font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">У бою</p>
+                        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">У бою</p>
                       </div>
                       <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">@{battleDetails.opponent_username || 'unknown'}</p>
                     </div>
@@ -659,7 +685,7 @@ function BattleFinishCard({ battleDetails, onBackToLobby, onCompare }) {
       )}
     >
       <div className="text-6xl">{iWon ? '🏆' : '💥'}</div>
-      <h3 className={cn('mt-5 text-4xl font-black tracking-[-0.05em]', iWon ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-100')}>
+      <h3 className={cn('mt-5 text-4xl font-semibold tracking-[-0.05em]', iWon ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-100')}>
         {iWon ? 'Ура! Ви рознесли суперника!' : 'О ні! Переміг @' + winnerUsername + ', але наступного разу вам точно пощастить!'}
       </h3>
       <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -703,7 +729,7 @@ function BattleComparison({ battleDetails }) {
         return (
           <div key={question.id} className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950/80">
             <div className="mb-4">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Питання {index + 1}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Питання {index + 1}</p>
               <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{normalizedQuestion?.text || question.question_text || question.name}</p>
             </div>
 
@@ -724,9 +750,9 @@ function AnswerColumn({ title, answer, correct, isCorrect }) {
       'rounded-2xl border p-4',
       isCorrect ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/25' : 'border-rose-200 bg-rose-50 dark:border-rose-900/50 dark:bg-rose-950/25',
     )}>
-      <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{title}</p>
       <div className={cn(
-        'mt-3 inline-flex h-11 min-w-11 items-center justify-center rounded-2xl px-4 text-lg font-black',
+        'mt-3 inline-flex h-11 min-w-11 items-center justify-center rounded-2xl px-4 text-lg font-semibold',
         isCorrect ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
       )}>
         {answer}
@@ -743,7 +769,7 @@ function InfoBox({ icon: Icon, label, value }) {
         <Icon className="h-5 w-5" />
       </div>
       <p className="text-sm text-slate-500 dark:text-slate-300">{label}</p>
-      <p className="text-base font-black text-slate-900 dark:text-white">{value}</p>
+      <p className="text-base font-semibold text-slate-900 dark:text-white">{value}</p>
     </div>
   );
 }

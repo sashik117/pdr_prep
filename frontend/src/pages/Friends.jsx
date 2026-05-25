@@ -6,7 +6,7 @@ import { ArrowLeft, AtSign, Check, CheckCheck, MessageCircleMore, Send, Swords, 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/lib/AuthContext';
+import { useProtectedScreen } from '@/lib/useProtectedScreen';
 import LoginPrompt from '@/components/auth/LoginPrompt';
 import api, { resolveApiUrl } from '@/api/apiClient';
 import { cn } from '@/lib/utils';
@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 export default function Friends() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isCheckingAccess, canAccess } = useProtectedScreen();
   const [inviteUsername, setInviteUsername] = useState('');
   const [inviteInfo, setInviteInfo] = useState('');
   const [inviteError, setInviteError] = useState('');
@@ -126,7 +126,11 @@ export default function Friends() {
     },
   });
 
-  if (!user) {
+  if (isCheckingAccess) {
+    return <div className="flex justify-center py-24"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" /></div>;
+  }
+
+  if (!canAccess || !user) {
     return (
       <LoginPrompt
         title="Друзі та повідомлення"

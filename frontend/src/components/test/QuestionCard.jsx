@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { BadgeAlert, BookOpen, Bookmark, BookmarkCheck, ChevronDown, Lightbulb, ZoomIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { BadgeAlert, Bookmark, BookmarkCheck, ChevronDown, Lightbulb, ZoomIn } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
-/** @param {import('@/types/questions').QuestionCardProps} props */
+/** @param {import('@/types/questions').QuestionCardProps & { question: any; revealAnswer?: boolean }} props */
 export default function QuestionCard({
   question,
   index = 0,
@@ -13,118 +14,135 @@ export default function QuestionCard({
   isFavorite = false,
   onToggleFavorite,
   onAnalyzeSituation = null,
+  revealAnswer = false,
 }) {
   const [showExplanation, setShowExplanation] = useState(false);
   const options = question.options || [];
   const hasAnswered = selectedAnswer !== undefined && selectedAnswer !== null;
   const isCorrect = selectedAnswer === question.correct_answer;
+  const theoryLink = question.theory_section_id ? `/study/section/${question.theory_section_id}` : null;
+  const hasImage = Boolean(question.image_url);
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <span className="text-sm font-medium text-muted-foreground">Питання {index + 1} з {totalQuestions}</span>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <span className="text-sm font-medium text-muted-foreground">
+            Питання {index + 1} з {totalQuestions}
+          </span>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-medium uppercase tracking-[0.16em] text-primary">
               <BadgeAlert className="h-3.5 w-3.5" />
               Складність: {question.difficulty || 'medium'}
             </span>
             {question.topic ? (
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+              <span className="rounded-full border border-border bg-transparent px-3 py-1 text-xs font-medium text-slate-500 dark:text-slate-300">
                 {question.topic}
               </span>
             ) : null}
+            {question.ticket_number ? (
+              <span className="rounded-full border border-border bg-transparent px-3 py-1 text-xs font-medium text-slate-500 dark:text-slate-300">
+                Білет {question.ticket_number}
+              </span>
+            ) : null}
           </div>
-          <h2 className="mt-2 text-lg font-semibold leading-relaxed text-foreground sm:text-xl">{question.text}</h2>
+          <h2 className="mt-3 text-lg font-medium leading-relaxed text-foreground sm:text-xl">{question.text}</h2>
         </div>
-        {onToggleFavorite && (
-          <button onClick={onToggleFavorite} className="shrink-0 rounded-lg p-2 transition-colors hover:bg-muted">
-            {isFavorite ? <BookmarkCheck className="h-5 w-5 text-accent" /> : <Bookmark className="h-5 w-5 text-muted-foreground" />}
+
+        {onToggleFavorite ? (
+          <button
+            type="button"
+            onClick={onToggleFavorite}
+            className="shrink-0 rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+            aria-label={isFavorite ? 'Прибрати зі збережених' : 'Зберегти питання'}
+            title={isFavorite ? 'Прибрати зі збережених' : 'Зберегти питання'}
+          >
+            {isFavorite ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
           </button>
-        )}
+        ) : null}
       </div>
 
-      {question.image_url && (
-        <div className="group relative overflow-hidden rounded-xl border border-border bg-muted/50">
-          <img src={question.image_url} alt="Ілюстрація до питання" className="max-h-72 w-full object-contain" />
-          {onAnalyzeSituation && (
-            <button
-              onClick={() => onAnalyzeSituation(question)}
-              className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground opacity-90 shadow transition-opacity hover:opacity-100"
-            >
-              <ZoomIn className="h-3.5 w-3.5" />
-              Аналіз ситуації
-            </button>
-          )}
-        </div>
-      )}
+      <div className={cn(hasImage && 'lg:grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:items-start lg:gap-6')}>
+        {hasImage ? (
+          <div className="group relative mb-4 overflow-hidden rounded-xl border border-border bg-slate-50/70 dark:bg-slate-900/50 lg:mb-0">
+            <img src={question.image_url} alt="Ілюстрація до питання" className="max-h-[300px] w-full object-contain sm:max-h-[360px]" />
+            {onAnalyzeSituation ? (
+              <button
+                type="button"
+                onClick={() => onAnalyzeSituation(question)}
+                className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground opacity-90 shadow transition-opacity hover:opacity-100"
+              >
+                <ZoomIn className="h-3.5 w-3.5" />
+                Аналіз ситуації
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
-      <div className="space-y-2.5">
-        {options.map((option) => {
-          const isSelected = selectedAnswer === option.label;
-          const isOptionCorrect = option.label === question.correct_answer;
-          const isWrong = hasAnswered && isSelected && !isOptionCorrect;
-          const showGreen = hasAnswered && isOptionCorrect;
-          const disabled = hasAnswered;
+        <div className="space-y-3">
+          {options.map((option) => {
+            const isSelected = selectedAnswer === option.label;
+            const isOptionCorrect = option.label === question.correct_answer;
+            const isWrong = revealAnswer && hasAnswered && isSelected && !isOptionCorrect;
+            const showGreen = revealAnswer && hasAnswered && isOptionCorrect;
+            const disabled = hasAnswered;
 
-          return (
-            <motion.button
-              key={option.label}
-              onClick={() => !disabled && onSelectAnswer(option.label)}
-              disabled={disabled}
-              whileTap={!disabled ? { scale: 0.98 } : {}}
-              className={cn(
-                'flex w-full items-start gap-3 rounded-xl border-2 p-4 text-left transition-all duration-200',
-                showGreen
-                  ? 'border-success bg-success/8'
-                  : isWrong
-                    ? 'border-destructive bg-destructive/8'
-                    : isSelected
-                      ? 'border-primary bg-primary/5'
-                      : disabled
-                        ? 'cursor-default border-border bg-card opacity-50'
-                        : 'cursor-pointer border-border bg-card hover:border-primary/40 hover:bg-primary/3',
-              )}
-            >
-              <div
+            return (
+              <motion.button
+                key={option.label}
+                type="button"
+                onClick={() => !disabled && onSelectAnswer?.(option.label)}
+                disabled={disabled}
+                whileTap={!disabled ? { scale: 0.98 } : {}}
                 className={cn(
-                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold transition-colors',
+                  'flex w-full items-start gap-3 rounded-lg border p-4 text-left transition-colors duration-200',
                   showGreen
-                    ? 'bg-success text-success-foreground'
+                    ? 'border-success/60 bg-success/10'
                     : isWrong
-                      ? 'bg-destructive text-destructive-foreground'
+                      ? 'border-destructive/60 bg-destructive/10'
                       : isSelected
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground',
+                        ? 'border-primary/60 bg-primary/10'
+                        : disabled
+                          ? 'cursor-default border-border bg-transparent opacity-70'
+                          : 'cursor-pointer border-border bg-transparent hover:border-primary/40 hover:bg-primary/5',
                 )}
               >
-                {option.label}
-              </div>
-              <span className="pt-1 text-sm leading-relaxed text-foreground sm:text-base">{option.text}</span>
-              {showGreen && <span className="ml-auto shrink-0 text-lg text-success">✓</span>}
-              {isWrong && <span className="ml-auto shrink-0 text-lg text-destructive">✕</span>}
-            </motion.button>
-          );
-        })}
+                <div
+                  className={cn(
+                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm font-semibold transition-colors',
+                    showGreen
+                      ? 'bg-success text-success-foreground'
+                      : isWrong
+                        ? 'bg-destructive text-destructive-foreground'
+                        : isSelected
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted/70 text-muted-foreground',
+                  )}
+                >
+                  {option.label}
+                </div>
+                <span className="pt-1 text-sm leading-relaxed text-foreground sm:text-base">{option.text}</span>
+                {showGreen ? <span className="ml-auto shrink-0 text-lg text-success">✓</span> : null}
+                {isWrong ? <span className="ml-auto shrink-0 text-lg text-destructive">×</span> : null}
+              </motion.button>
+            );
+          })}
+        </div>
       </div>
 
       <AnimatePresence>
-        {hasAnswered && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
-            <div
-              className={cn(
-                'rounded-xl px-4 py-2.5 text-sm font-semibold',
-                isCorrect ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive',
-              )}
-            >
-              {isCorrect ? '✓ Правильно!' : `✕ Неправильно. Правильна відповідь: ${question.correct_answer}`}
+        {hasAnswered && revealAnswer ? (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+            <div className={cn('rounded-lg px-4 py-3 text-sm font-medium', isCorrect ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive')}>
+              {isCorrect ? '✓ Правильно!' : `× Неправильно. Правильна відповідь: ${question.correct_answer}`}
             </div>
 
-            {question.explanation ? (
+            {question.explanation || question.explanation_html ? (
               <div>
                 <button
+                  type="button"
                   onClick={() => setShowExplanation((value) => !value)}
-                  className="flex w-full items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+                  className="flex w-full items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
                 >
                   <Lightbulb className="h-4 w-4 shrink-0" />
                   <span className="flex-1 text-left">Пояснення відповіді</span>
@@ -132,18 +150,32 @@ export default function QuestionCard({
                 </button>
 
                 <AnimatePresence>
-                  {showExplanation && (
+                  {showExplanation ? (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                      <div className="mt-2 rounded-xl border border-primary/20 bg-primary/5 p-4">
-                        <p className="text-sm leading-relaxed text-foreground">{question.explanation}</p>
+                      <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+                        {question.explanation_html ? (
+                          <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: question.explanation_html }} />
+                        ) : (
+                          <p className="text-sm leading-relaxed text-foreground">{question.explanation}</p>
+                        )}
                       </div>
                     </motion.div>
-                  )}
+                  ) : null}
                 </AnimatePresence>
               </div>
             ) : null}
+
+            {theoryLink ? (
+              <Link
+                to={theoryLink}
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:border-primary/30 hover:text-primary dark:text-slate-100"
+              >
+                <BookOpen className="h-4 w-4" />
+                Читати правило
+              </Link>
+            ) : null}
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
     </div>
   );

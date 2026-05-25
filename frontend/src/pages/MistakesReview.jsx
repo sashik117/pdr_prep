@@ -5,14 +5,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { XCircle, ArrowRight, BookOpen, AlertTriangle, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useAuth } from '@/lib/AuthContext';
+import { useProtectedScreen } from '@/lib/useProtectedScreen';
 import api from '@/api/apiClient';
 import { fetchQuestions, normalizeQuestion } from '@/api/questionsApi';
 import LoginPrompt from '@/components/auth/LoginPrompt';
 
 export default function MistakesReview() {
   const navigate = useNavigate();
-  const { user, isLoadingAuth } = useAuth();
+  const { user, isCheckingAccess, canAccess } = useProtectedScreen();
 
   /** @type {{ data: import('@/types/app').StatsResponse | undefined, isLoading: boolean }} */
   const { data: stats, isLoading } = useQuery({
@@ -34,12 +34,12 @@ export default function MistakesReview() {
   });
   const mistakeQuestions = /** @type {import('@/types/questions').QuestionViewModel[]} */ (mistakeQuestionsQuery.data || []);
 
-  if (isLoadingAuth || (!!user && isLoading)) {
+  if (isCheckingAccess || (!!user && isLoading)) {
     return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" /></div>;
   }
 
-  if (!user) {
-    return <LoginPrompt title="Робота над помилками" description="Увійдіть, щоб бачити свої помилки та тренуватися саме на слабких темах." />;
+  if (!canAccess || !user) {
+    return <LoginPrompt title="Мої помилки" description="Увійдіть, щоб бачити свої помилки та тренуватися саме на слабких темах." />;
   }
 
   /** @type {Record<string, import('@/types/questions').QuestionViewModel[]>} */
@@ -77,7 +77,7 @@ export default function MistakesReview() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
           <XCircle className="w-8 h-8 text-destructive" />
-          Робота над помилками
+          Мої помилки
         </h1>
         <p className="text-muted-foreground mt-1">Знайдено <span className="font-bold text-foreground">{mistakeQuestions.length}</span> питань для повторення</p>
       </motion.div>

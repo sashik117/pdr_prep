@@ -1,6 +1,6 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AtSign, CopyCheck, Eye, EyeOff, Lock, LogIn, Mail, User, UserPlus } from 'lucide-react';
 import api from '@/api/apiClient';
 import { useAuth } from '@/lib/AuthContext';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
  * @typedef {'login' | 'register' | 'verify' | 'forgot' | 'reset'} AuthView
  */
 
-const usernameHint = 'Тільки латиниця, цифри та _';
+const usernameHint = 'Тільки латиниця, цифри та символ _';
 
 function looksLikeEmail(value) {
   return /@/.test(String(value || '').trim());
@@ -24,26 +24,28 @@ function isEmailVerificationError(error) {
 function normalizeAuthError(error, context = 'generic') {
   const message = (error instanceof Error ? error.message : String(error || '')).toLowerCase();
 
-  if (message.includes('цей нікнейм вже зайнятий')) return 'Цей нікнейм вже зайнятий';
+  if (message.includes('цей нікнейм вже зайнятий')) return 'Цей нікнейм уже зайнятий';
   if (message.includes('ця пошта вже зареєстрована')) return 'Ця пошта вже зареєстрована';
-  if (message.includes('username уже зайнятий')) return 'Цей нікнейм вже зайнятий';
+  if (message.includes('username уже зайнятий')) return 'Цей нікнейм уже зайнятий';
   if (message.includes('email уже зареєстровано')) return 'Ця пошта вже зареєстрована';
-  if (message.includes('такого e-mail не існує')) return 'Такого E-mail не існує';
-  if (message.includes('такого нікнейму не існує')) return 'Такого нікнейму не існує';
+  if (message.includes('такого e-mail не існує')) return 'Такої пошти не існує';
+  if (message.includes('такого нікнейму не існує')) return 'Такого нікнейма не існує';
   if (message.includes('невірний пароль')) return 'Невірний пароль';
   if (message.includes('невірний email або пароль')) {
-    return looksLikeEmail(context) ? 'Невірний пароль або такої пошти не існує' : 'Невірний пароль або такого нікнейму не існує';
+    return looksLikeEmail(context)
+      ? 'Невірний пароль або такої пошти не існує'
+      : 'Невірний пароль або такого нікнейма не існує';
   }
   if (message.includes('невірний код')) return 'Невірний код підтвердження';
-  if (message.includes('код застарів')) return 'Код вже застарів, запросіть новий';
+  if (message.includes('код застарів')) return 'Код уже застарів, запросіть новий';
   if (message.includes('невалідний email')) return 'Вкажіть коректну пошту';
-  if (message.includes('підтвердьте email')) return 'Спочатку підтвердіть пошту';
+  if (message.includes('підтвердіть email')) return 'Спочатку підтвердіть пошту';
   if (message.includes('пароль має містити')) return 'Пароль має містити щонайменше 6 символів';
   if (message.includes("вкажіть ім'я")) return "Вкажіть ім'я";
   if (message.includes('вкажіть прізвище')) return 'Вкажіть прізвище';
   if (message.includes('username має містити')) return 'Нікнейм має бути латиницею, можна цифри та _';
   if (message.includes('користувача не знайдено')) return 'Такого користувача не існує';
-  if (message.includes('failed to fetch') || message.includes('підключитися до сервер')) return 'Не вдалося підключитися до сервера';
+  if (message.includes('failed to fetch') || message.includes('підключитися до сервера')) return 'Не вдалося підключитися до сервера';
 
   return 'Не вдалося виконати дію. Спробуйте ще раз.';
 }
@@ -67,6 +69,7 @@ export default function Auth() {
   const [code, setCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
@@ -143,6 +146,10 @@ export default function Auth() {
     }
     if (!normalizedUsername) {
       setError('Нікнейм має бути латиницею, можна цифри та _');
+      return;
+    }
+    if (!acceptedPrivacy) {
+      setError('Підтвердьте, що ознайомилися з політикою конфіденційності');
       return;
     }
     setLoading(true);
@@ -237,11 +244,11 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,_#f8fbff_0%,_#eef4ff_100%)] px-4 py-10">
+    <div className="min-h-screen bg-[linear-gradient(180deg,_#f8fbff_0%,_#eef4ff_100%)] px-4 py-10 dark:bg-[linear-gradient(180deg,_#020617_0%,_#0b1220_100%)]">
       <div className="mx-auto max-w-md">
         <button
           type="button"
-          className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm"
+          className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
           onClick={() => navigate('/')}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -249,13 +256,13 @@ export default function Auth() {
         </button>
 
         <div className="mb-8 text-center">
-          <img src="/logo-wordmark.png" alt="PDRPrep" className="mx-auto h-12 w-auto object-contain" />
-          <h1 className="mt-4 text-2xl font-black tracking-[-0.03em] text-slate-950">{titleMap[view]}</h1>
+          <img src="/logo-wordmark.png" alt="DrivePrep" className="mx-auto h-12 w-auto object-contain" />
+          <h1 className="mt-4 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">{titleMap[view]}</h1>
         </div>
 
-        <div className="overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.08)]">
+        <div className="overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-950">
           {(view === 'login' || view === 'register') && (
-            <div className="grid grid-cols-2 border-b border-slate-100">
+            <div className="grid grid-cols-2 border-b border-slate-100 dark:border-slate-800">
               {[
                 ['login', 'Увійти'],
                 ['register', 'Реєстрація'],
@@ -263,7 +270,7 @@ export default function Auth() {
                 <button
                   key={next}
                   type="button"
-                  className={`px-4 py-4 text-sm font-bold transition-colors ${tab === next ? 'bg-primary text-primary-foreground' : 'text-slate-600'}`}
+                  className={`px-4 py-4 text-sm font-bold transition-colors ${tab === next ? 'bg-primary text-primary-foreground' : 'text-slate-600 dark:text-slate-300'}`}
                   onClick={() => switchTab(next)}
                 >
                   {label}
@@ -280,9 +287,9 @@ export default function Auth() {
               <form className="space-y-4" onSubmit={(event) => void handleLogin(event)}>
                 <Field icon={Mail} label="Пошта або нікнейм" value={identifier} onChange={setIdentifier} />
                 <PasswordField label="Пароль" value={password} onChange={setPassword} show={showPassword} onToggle={() => setShowPassword((value) => !value)} />
-                <label className="flex items-center gap-2 text-sm text-slate-500">
+                <label className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-300">
                   <input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} />
-                  Запам'ятати мене
+                  Запам’ятати мене
                 </label>
                 <Button type="submit" className="h-11 w-full rounded-full" disabled={loading}>
                   <LogIn className="mr-2 h-4 w-4" />
@@ -296,7 +303,7 @@ export default function Auth() {
 
             {view === 'register' && (
               <form className="space-y-4" onSubmit={(event) => void handleRegister(event)}>
-                <Field icon={User} label="Ім'я" value={name} onChange={setName} />
+                <Field icon={User} label="Ім’я" value={name} onChange={setName} />
                 <Field icon={User} label="Прізвище" value={surname} onChange={setSurname} />
                 <Field icon={AtSign} label="Нікнейм" value={username} onChange={(value) => setUsername(value.replace(/\s+/g, ''))} />
                 <p className="-mt-2 text-xs text-slate-400">{usernameHint}</p>
@@ -307,6 +314,21 @@ export default function Auth() {
                 ) : null}
                 <Field icon={Mail} label="Пошта" type="email" value={email} onChange={setEmail} />
                 <PasswordField label="Пароль" value={password} onChange={setPassword} show={showPassword} onToggle={() => setShowPassword((value) => !value)} />
+                <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={acceptedPrivacy}
+                    onChange={(event) => setAcceptedPrivacy(event.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                  />
+                  <span>
+                    Я ознайомився/ознайомилася з{' '}
+                    <Link to="/privacy" className="font-semibold text-primary underline-offset-4 hover:underline">
+                      політикою конфіденційності
+                    </Link>{' '}
+                    і погоджуюся на обробку даних для роботи профілю та прогресу.
+                  </span>
+                </label>
                 <Button type="submit" className="h-11 w-full rounded-full" disabled={loading}>
                   <UserPlus className="mr-2 h-4 w-4" />
                   {loading ? 'Створення...' : 'Створити акаунт'}
@@ -350,7 +372,7 @@ export default function Auth() {
             {view !== tab && (
               <button
                 type="button"
-                className="mx-auto block text-sm font-semibold text-slate-500"
+                className="mx-auto block text-sm font-semibold text-slate-500 dark:text-slate-300"
                 onClick={() => {
                   clearStatus();
                   setView(tab);
@@ -362,12 +384,14 @@ export default function Auth() {
           </div>
         </div>
 
-        <div className="mt-6 rounded-[28px] border border-white/70 bg-white/80 p-5 shadow-[0_18px_45px_rgba(15,23,42,0.05)]">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <div className="mt-6 rounded-[28px] border border-white/70 bg-white/80 p-5 shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/85">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
             <CopyCheck className="h-4 w-4 text-primary" />
             Нікнейм буде вашим публічним @іменем
           </div>
-          <p className="mt-2 text-sm leading-6 text-slate-500">Його можна буде копіювати в профілі для друзів, чатів і батлів.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-300">
+            Його можна буде копіювати в профілі для друзів, чатів і батлів.
+          </p>
         </div>
       </div>
     </div>
@@ -379,17 +403,17 @@ function Field({ icon: Icon, label, onChange, ...props }) {
   if (!placeholder && props.type === 'email') placeholder = 'johndoe@example.com';
   if (!placeholder && Icon === AtSign) placeholder = 'Тільки англійська, мінімум 3 символи';
   if (!placeholder && Icon === Mail && props.type !== 'email') placeholder = 'johndoe@example.com або @johndoe';
-  if (!placeholder && Icon === User) placeholder = label === "Ім'я" ? 'Іван' : label === 'Прізвище' ? 'Петренко' : '';
+  if (!placeholder && Icon === User) placeholder = label === "Ім’я" ? 'Іван' : label === 'Прізвище' ? 'Петренко' : '';
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-slate-600">{label}</span>
+      <span className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">{label}</span>
       <div className="relative">
         {Icon ? <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /> : null}
         <input
           {...props}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className={`h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-primary focus:bg-white ${Icon ? 'pl-10' : ''}`}
+          className={`h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:bg-slate-950 ${Icon ? 'pl-10' : ''}`}
         />
       </div>
     </label>
@@ -399,7 +423,7 @@ function Field({ icon: Icon, label, onChange, ...props }) {
 function PasswordField({ label, value, onChange, show, onToggle, placeholder = 'Мінімум 6 символів' }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-slate-600">{label}</span>
+      <span className="mb-2 block text-sm font-semibold text-slate-600 dark:text-slate-300">{label}</span>
       <div className="relative">
         <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
@@ -407,7 +431,7 @@ function PasswordField({ label, value, onChange, show, onToggle, placeholder = '
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-10 text-sm outline-none transition focus:border-primary focus:bg-white"
+          className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-10 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:bg-slate-950"
         />
         <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" onClick={onToggle}>
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

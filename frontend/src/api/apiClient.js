@@ -65,6 +65,8 @@ function normalizeUsers(rows = []) {
 
 export const tokenStore = {
   get: () => localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || getCookie(TOKEN_COOKIE),
+  hasPersistent: () => !!localStorage.getItem(TOKEN_KEY),
+  hasSession: () => !!sessionStorage.getItem(TOKEN_KEY),
   /**
    * @param {string} token
    * @param {boolean} [rememberMe=true]
@@ -99,6 +101,8 @@ export const userStore = {
       return null;
     }
   },
+  hasPersistent: () => !!localStorage.getItem(USER_KEY),
+  hasSession: () => !!sessionStorage.getItem(USER_KEY),
   /**
    * @param {import('@/types/app').UserProfile} user
    * @param {boolean} [rememberMe=true]
@@ -232,6 +236,11 @@ export const api = {
     return request(`/questions/random${query ? `?${query}` : ''}`);
   },
 
+  getMvsExamQuestions: (params = {}) => {
+    const query = toQueryString(params);
+    return request(`/questions/mvs-exam${query ? `?${query}` : ''}`);
+  },
+
   getSections: (category) => {
     const query = toQueryString({ category });
     return request(`/sections${query ? `?${query}` : ''}`);
@@ -247,6 +256,52 @@ export const api = {
     const query = toQueryString({ q, topic });
     return request(`/handbook/search${query ? `?${query}` : ''}`);
   },
+  getTheoryCategories: () => request('/theory/categories'),
+  getTheoryTopics: (category) => {
+    const query = toQueryString({ category });
+    return request(`/theory/topics${query ? `?${query}` : ''}`);
+  },
+  getTheorySections: (topic) => {
+    const query = toQueryString({ topic });
+    return request(`/theory/sections${query ? `?${query}` : ''}`);
+  },
+  getTheorySection: (sectionId) => request(`/theory/sections/${sectionId}`),
+  getPromoStatus: () => request('/promo/status'),
+  updatePromoConfig: (payload, adminKey) =>
+    request('/admin/promo/config', {
+      method: 'PATCH',
+      headers: adminKey ? { 'x-admin-key': adminKey } : undefined,
+      body: JSON.stringify(payload),
+    }),
+  startPromo: (payload = {}, adminKey) =>
+    request('/admin/promo/start', {
+      method: 'POST',
+      headers: adminKey ? { 'x-admin-key': adminKey } : undefined,
+      body: JSON.stringify(payload),
+    }),
+  stopPromo: (adminKey) =>
+    request('/admin/promo/stop', {
+      method: 'POST',
+      headers: adminKey ? { 'x-admin-key': adminKey } : undefined,
+    }),
+  getTickets: (category) => {
+    const query = toQueryString({ category });
+    return request(`/tickets${query ? `?${query}` : ''}`);
+  },
+  getTicket: (ticketNumber, category) => {
+    const query = toQueryString({ category });
+    return request(`/tickets/${ticketNumber}${query ? `?${query}` : ''}`);
+  },
+  createPremiumCheckout: (plan_code, return_url) =>
+    request('/payment/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ plan_code, return_url }),
+    }),
+  getPaymentStatus: (orderId) => request(`/payment/status/${encodeURIComponent(orderId)}`),
+  mockActivatePremium: (orderId) =>
+    request(`/payment/mock/activate/${encodeURIComponent(orderId)}`, {
+      method: 'POST',
+    }),
 
   importQuestions: (payload) =>
     request('/questions/import', {

@@ -7,14 +7,19 @@ export type QuestionViewModel = {
   id: number | string;
   text?: string;
   question_text?: string;
+  question_number?: number | string;
+  ticket_number?: number | null;
   options: QuestionOption[];
   correct_answer: string;
   explanation?: string;
+  explanation_html?: string;
   image_url?: string | null;
   category?: string;
   topic?: string;
   section?: string | number;
   difficulty?: string;
+  source_rule_slug?: string;
+  theory_section_id?: number | null;
 };
 
 export type FetchQuestionsParams = {

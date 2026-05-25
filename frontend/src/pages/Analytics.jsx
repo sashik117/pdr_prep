@@ -1,28 +1,58 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { BarChart3, BookOpen, CheckCircle2, Flame, RefreshCw, Target, TrendingUp, Trophy } from 'lucide-react';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
+  BarChart3,
+  BookOpen,
+  CheckCircle2,
+  Crown,
+  Flame,
+  History,
+  LayoutDashboard,
+  LineChart,
+  RefreshCw,
+  Target,
+  TrendingUp,
+  Trophy,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/lib/AuthContext';
+import { useProtectedScreen } from '@/lib/useProtectedScreen';
 import api from '@/api/apiClient';
 import LoginPrompt from '@/components/auth/LoginPrompt';
 import ActivityCalendar from '@/components/progress/ActivityCalendar';
 import { cn } from '@/lib/utils';
 
 const tabs = [
-  { id: 'overview', label: 'Огляд' },
-  { id: 'analytics', label: 'Аналітика' },
-  { id: 'history', label: 'Історія' },
+  { id: 'overview', label: 'Огляд', icon: LayoutDashboard },
+  { id: 'analytics', label: 'Аналітика', premium: true, icon: LineChart },
+  { id: 'history', label: 'Історія', premium: true, icon: History },
 ];
 
 const MODE_LABELS = {
   quick: 'Швидкий тест',
-  full: 'Повний іспит',
-  difficult: 'Робота над помилками',
-  daily: 'Виклик дня',
+  full: 'Тренування 20 питань',
+  mvs: 'Іспит МВС',
+  difficult: 'Мої помилки',
+  ticket: 'Білет',
+  section: 'Тест за розділом',
+  top: 'Топ 100 помилок',
 };
 
 function formatDayLabel(date) {
@@ -72,20 +102,22 @@ function buildLast7Weeks(results) {
 }
 
 export default function Analytics() {
-  const { user, isLoadingAuth } = useAuth();
+  const navigate = useNavigate();
+  const { user, isCheckingAccess, canAccess } = useProtectedScreen();
   const [tab, setTab] = useState('overview');
+  const isPremiumUser = Boolean(user?.is_premium);
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
-  const axisColor = isDark ? '#f8fafc' : '#0f172a';
-  const gridColor = isDark ? '#334155' : '#cbd5e1';
+  const axisColor = isDark ? '#dbe7ff' : '#0f172a';
+  const gridColor = isDark ? '#334155' : '#dbe3ee';
   const tooltipStyle = {
-    backgroundColor: isDark ? '#f8fafc' : '#ffffff',
-    border: isDark ? '1px solid #94a3b8' : '1px solid #cbd5e1',
-    color: '#0f172a',
-    borderRadius: '14px',
-    boxShadow: '0 10px 30px rgba(15,23,42,0.12)',
+    backgroundColor: isDark ? '#0f172a' : '#ffffff',
+    border: isDark ? '1px solid #334155' : '1px solid #dbe3ee',
+    color: isDark ? '#f8fafc' : '#0f172a',
+    borderRadius: '16px',
+    boxShadow: '0 12px 36px rgba(15,23,42,0.16)',
   };
-  const tooltipLabelStyle = { color: '#0f172a', fontWeight: 700 };
-  const tooltipItemStyle = { color: '#0f172a' };
+  const tooltipLabelStyle = { color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 700 };
+  const tooltipItemStyle = { color: isDark ? '#e2e8f0' : '#0f172a' };
 
   const statsQuery = useQuery({
     queryKey: ['analytics-stats'],
@@ -101,7 +133,7 @@ export default function Analytics() {
     staleTime: 120000,
   });
 
-  if (isLoadingAuth || (!!user && (statsQuery.isLoading || resultsQuery.isLoading))) {
+  if (isCheckingAccess || (!!user && (statsQuery.isLoading || resultsQuery.isLoading))) {
     return (
       <div className="flex items-center justify-center py-24">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
@@ -109,8 +141,8 @@ export default function Analytics() {
     );
   }
 
-  if (!user) {
-    return <LoginPrompt title="Прогрес та аналітика" description="Увійдіть, щоб бачити свою статистику, графіки та історію тестів." />;
+  if (!canAccess || !user) {
+    return <LoginPrompt title="Аналітика" description="Увійдіть, щоб бачити свій прогрес, календар активності та результати тестів." />;
   }
 
   const stats = statsQuery.data || {};
@@ -131,7 +163,7 @@ export default function Analytics() {
   const scoreTrend = last30.filter((item) => item.accuracy !== null);
   const last7weeks = buildLast7Weeks(results);
   const recentChartData = [...results].reverse().slice(-10).map((item, index, rows) => ({
-    name: `#${Math.max(1, results.length - rows.length + index + 1)} Тест`,
+    name: `Спроба ${Math.max(1, results.length - rows.length + index + 1)}`,
     score: item.score_percent || 0,
   }));
 
@@ -154,22 +186,37 @@ export default function Analytics() {
   ];
 
   const passPieData = [
-    { name: 'Здано', value: passedCount, color: '#2563eb' },
-    { name: 'Не здано', value: failedCount, color: '#fb923c' },
+    { name: 'Складено', value: passedCount, color: '#2563eb' },
+    { name: 'Не складено', value: failedCount, color: '#fb923c' },
   ];
 
+  const handleTabClick = (nextTab) => {
+    const item = tabs.find((entry) => entry.id === nextTab);
+    if (item?.premium && !isPremiumUser) {
+      navigate('/pricing');
+      return;
+    }
+    setTab(nextTab);
+  };
+
+  const showPremiumSection = tab !== 'overview' && !isPremiumUser;
+
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-[32px] border border-white/90 bg-[linear-gradient(135deg,rgba(20,107,255,0.1),rgba(255,255,255,0.98)_45%,rgba(239,246,255,0.94))] p-6 shadow-[0_24px_60px_rgba(37,99,235,0.08)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(30,64,175,0.2),rgba(2,6,23,0.98)_48%,rgba(15,23,42,0.98))] sm:p-8">
+    <div className="mx-auto max-w-6xl space-y-6 px-4 pb-6 sm:px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="surface-glass rounded-[1.7rem] p-5 shadow-[0_24px_60px_rgba(37,99,235,0.08)] sm:p-8"
+      >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-primary">Аналітика профілю</p>
-            <h1 className="mt-2 flex items-center gap-3 text-3xl font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-4xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Аналітика профілю</p>
+            <h1 className="mt-2 flex items-center gap-3 text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white sm:text-4xl">
               <BarChart3 className="h-8 w-8 text-primary" />
               Прогрес і статистика
             </h1>
             <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-200 sm:text-base">
-              Тут видно реальний рух уперед: частоту тренувань, точність по темах, історію тестів і активність по місяцях без зайвого шуму.
+              Базовий огляд відкритий для всіх. Розширена аналітика, історія спроб і повний розбір тем доступні у Premium.
             </p>
           </div>
 
@@ -187,20 +234,30 @@ export default function Analytics() {
           </Button>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2 rounded-2xl bg-white/70 p-1.5 shadow-inner dark:bg-slate-950/70">
-          {tabs.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setTab(item.id)}
-              className={cn(
-                'rounded-xl px-4 py-2 text-sm font-semibold transition-all',
-                tab === item.id ? 'bg-primary text-white shadow-[0_10px_22px_rgba(37,99,235,0.24)]' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800',
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
+        <div className="-mx-5 mt-5 flex gap-2 overflow-x-auto bg-slate-100/80 px-5 py-2 shadow-inner dark:bg-slate-950/70 sm:mx-0 sm:grid sm:grid-cols-3 sm:rounded-xl sm:px-2">
+          {tabs.map((item) => {
+            const Icon = item.icon;
+            const isActive = tab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => handleTabClick(item.id)}
+                className={cn(
+                  'inline-flex min-w-[132px] flex-none items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-primary/30 sm:min-w-0',
+                  isActive
+                    ? 'border-primary bg-primary text-white shadow-[0_10px_22px_rgba(37,99,235,0.24)]'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700 dark:hover:bg-slate-800',
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="inline-flex items-center gap-2">
+                  {item.label}
+                  {item.premium && !isPremiumUser ? <Crown className="h-3.5 w-3.5 text-amber-500" /> : null}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </motion.div>
 
@@ -210,25 +267,25 @@ export default function Analytics() {
             <StatCard icon={BookOpen} label="Тестів" value={totalTests} accent="blue" delay={0} />
             <StatCard icon={Target} label="Точність" value={`${accuracy}%`} accent="green" delay={0.04} />
             <StatCard icon={CheckCircle2} label="Правильних" value={totalCorrect} accent="emerald" delay={0.08} />
-            <StatCard icon={Trophy} label="Здано" value={passedCount} accent="violet" delay={0.12} />
-            <StatCard icon={Flame} label="Серія" value={`${streak} дн.`} accent="orange" delay={0.16} />
+            <StatCard icon={Trophy} label="Складено" value={passedCount} accent="violet" delay={0.12} />
+            <StatCard icon={Flame} label="Серія" value={`${streak}\u00A0дн.`} accent="orange" delay={0.16} />
             <StatCard icon={TrendingUp} label="Марафон" value={marathonBest} accent="rose" delay={0.2} />
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+          <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
             <ChartCard title="Календар активності">
               <ActivityCalendar dates={stats.activity_days || []} startDate={stats?.user?.created_at || user?.created_at || null} />
             </ChartCard>
 
             <ChartCard title="Останні результати">
               {recentChartData.length > 0 ? (
-                <div className="h-[240px] w-full">
+                <div className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={recentChartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                       <XAxis dataKey="name" tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
                       <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
-                      <Tooltip formatter={(value) => [`${value}%`, 'Результат']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                      <Tooltip formatter={(value) => [`${value}%`, 'Результат']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} isAnimationActive={false} />
                       <Bar dataKey="score" radius={[8, 8, 0, 0]} fill="#60a5fa" />
                     </BarChart>
                   </ResponsiveContainer>
@@ -239,16 +296,16 @@ export default function Analytics() {
             </ChartCard>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-2">
+          <div className="grid gap-5 xl:grid-cols-2">
             <PiePanel title="Правильність відповідей" data={answerPieData} empty={!totalAnswered} emptyText="Після першого тесту тут з’явиться зріз по правильних і неправильних відповідях." />
-            <PiePanel title="Здано / не здано" data={passPieData} empty={!results.length} emptyText="Щойно накопичиться історія тестів, тут буде видно співвідношення вдалих і невдалих проходжень." />
+            <PiePanel title="Складено / не складено" data={passPieData} empty={!results.length} emptyText="Щойно накопичиться історія тестів, тут буде видно співвідношення вдалих і невдалих проходжень." />
           </div>
         </div>
       )}
 
-      {tab === 'analytics' && (
+      {tab === 'analytics' && isPremiumUser && (
         <div className="space-y-6">
-          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
             <ChartCard title="Динаміка балів за 30 днів">
               {scoreTrend.length > 0 ? (
                 <div className="h-[260px] w-full">
@@ -263,7 +320,7 @@ export default function Analytics() {
                       <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                       <XAxis dataKey="date" tick={{ fontSize: 10, fill: axisColor }} tickLine={false} axisLine={false} interval={4} stroke={axisColor} />
                       <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
-                      <Tooltip formatter={(value) => [`${value}%`, 'Точність']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                      <Tooltip formatter={(value) => [`${value}%`, 'Точність']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} isAnimationActive={false} />
                       <Area type="monotone" dataKey="accuracy" stroke="#60a5fa" fill="url(#analyticsScoreFill)" strokeWidth={3} />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -283,7 +340,7 @@ export default function Analytics() {
             </ChartCard>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-2">
+          <div className="grid gap-5 xl:grid-cols-2">
             <ChartCard title="Тести по днях">
               <div className="h-[240px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -291,7 +348,7 @@ export default function Analytics() {
                     <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: axisColor }} tickLine={false} axisLine={false} interval={6} stroke={axisColor} />
                     <YAxis tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} allowDecimals={false} stroke={axisColor} />
-                    <Tooltip formatter={(value) => [value, 'Тестів']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                    <Tooltip formatter={(value) => [value, 'Тестів']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} isAnimationActive={false} />
                     <Bar dataKey="tests" radius={[8, 8, 0, 0]} fill="#22c55e" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -305,7 +362,7 @@ export default function Analytics() {
                     <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                     <XAxis dataKey="week" tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
                     <YAxis tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} allowDecimals={false} stroke={axisColor} />
-                    <Tooltip formatter={(value) => [value, 'Тестів']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                    <Tooltip formatter={(value) => [value, 'Тестів']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} isAnimationActive={false} />
                     <Bar dataKey="tests" radius={[8, 8, 0, 0]} fill="#60a5fa" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -321,20 +378,20 @@ export default function Analytics() {
                     <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                     <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
                     <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
-                    <Tooltip formatter={(value) => [`${value}%`, 'Точність']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                    <Tooltip formatter={(value) => [`${value}%`, 'Точність']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} isAnimationActive={false} />
                     <Bar dataKey="accuracy" radius={[0, 8, 8, 0]} fill="#60a5fa" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <EmptyState text="Щойно по розділах накопичиться більше даних, тут буде видно реальну точність по темах." />
+              <EmptyState text="Щойно по розділах накопичиться більше даних, тут буде видно точність по темах." />
             )}
           </ChartCard>
         </div>
       )}
 
-      {tab === 'history' && (
-        <Card className="overflow-hidden border-white/90 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92">
+      {tab === 'history' && isPremiumUser && (
+        <Card className="surface-glass overflow-hidden">
           <CardHeader>
             <CardTitle className="dark:text-white">Історія тестів</CardTitle>
           </CardHeader>
@@ -360,7 +417,7 @@ export default function Analytics() {
                       </p>
                     </div>
                     <div className="text-left sm:text-right">
-                      <p className={cn('text-lg font-black tracking-[-0.03em]', item.passed ? 'text-emerald-600 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-300')}>
+                      <p className={cn('text-lg font-semibold tracking-[-0.03em]', item.passed ? 'text-emerald-600 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-300')}>
                         {item.score_percent}%
                       </p>
                       <p className="text-sm text-slate-600 dark:text-slate-200">
@@ -376,6 +433,22 @@ export default function Analytics() {
           </CardContent>
         </Card>
       )}
+
+      {showPremiumSection ? (
+        <Card className="border-amber-200/70 bg-[linear-gradient(135deg,rgba(250,204,21,0.14),rgba(255,255,255,0.98)_50%,rgba(255,247,205,0.92))] dark:border-amber-500/20 dark:bg-[linear-gradient(135deg,rgba(234,179,8,0.14),rgba(15,23,42,0.96)_55%,rgba(51,30,0,0.82))]">
+          <CardContent className="p-8 text-center">
+            <Crown className="mx-auto h-10 w-10 text-amber-600 dark:text-amber-200" />
+            <h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">Цей розділ відкривається з Premium</h2>
+            <p className="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-300">
+              Тут будуть повні графіки, історія спроб, точність по темах і детальний розбір вашого прогресу.
+            </p>
+            <div className="mt-5 flex justify-center gap-3">
+              <Button asChild className="rounded-full px-6"><Link to="/pricing">Перейти до Premium</Link></Button>
+              <Button variant="outline" className="rounded-full px-6" onClick={() => setTab('overview')}>Повернутися до огляду</Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }
@@ -411,15 +484,15 @@ function StatCard({ icon: Icon, label, value, accent = 'blue', delay = 0 }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}>
-      <Card className={`overflow-hidden border shadow-[0_18px_45px_rgba(15,23,42,0.05)] ${palette.card}`}>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
+      <Card className={`h-full overflow-hidden border shadow-[0_18px_45px_rgba(15,23,42,0.05)] ${palette.card}`}>
+        <CardContent className="flex h-full min-h-[92px] items-center p-4">
+          <div className="flex min-w-0 items-center gap-3">
             <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-[0_12px_24px_rgba(15,23,42,0.14)] ${palette.icon}`}>
               <Icon className="h-5 w-5" />
             </div>
-            <div>
-              <p className="text-2xl font-black leading-tight text-slate-950 dark:text-white">{value}</p>
-              <p className="text-xs font-medium text-slate-600 dark:text-slate-200">{label}</p>
+            <div className="min-w-0">
+              <p className="whitespace-nowrap text-2xl font-semibold leading-tight text-slate-950 dark:text-white">{value}</p>
+              <p className="truncate text-xs font-medium text-slate-600 dark:text-slate-200">{label}</p>
             </div>
           </div>
         </CardContent>
@@ -430,9 +503,9 @@ function StatCard({ icon: Icon, label, value, accent = 'blue', delay = 0 }) {
 
 function ChartCard({ title, children }) {
   return (
-    <Card className="overflow-hidden border-white/90 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92">
+    <Card className="surface-glass overflow-hidden">
       <CardHeader>
-        <CardTitle className="dark:text-white">{title}</CardTitle>
+        <CardTitle className="text-slate-900 dark:text-white">{title}</CardTitle>
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
@@ -440,6 +513,7 @@ function ChartCard({ title, children }) {
 }
 
 function PiePanel({ title, data, empty, emptyText }) {
+  const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   return (
     <ChartCard title={title}>
       {!empty ? (
@@ -452,7 +526,16 @@ function PiePanel({ title, data, empty, emptyText }) {
                     <Cell key={item.name} fill={item.color} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #cbd5e1', color: '#0f172a', borderRadius: '14px' }} labelStyle={{ color: '#0f172a', fontWeight: 700 }} itemStyle={{ color: '#0f172a' }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: isDark ? '#0f172a' : '#ffffff',
+                    border: isDark ? '1px solid #334155' : '1px solid #cbd5e1',
+                    color: isDark ? '#f8fafc' : '#0f172a',
+                    borderRadius: '14px',
+                  }}
+                  labelStyle={{ color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 700 }}
+                  itemStyle={{ color: isDark ? '#e2e8f0' : '#0f172a' }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -482,8 +565,8 @@ function MiniHighlight({ label, value, accent = 'blue' }) {
 
   return (
     <div className={`rounded-[22px] border p-4 ${accentMap[accent] || accentMap.blue}`}>
-      <p className="text-xs font-black uppercase tracking-[0.16em] opacity-75">{label}</p>
-      <p className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-950 dark:text-white">{value}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] opacity-75">{label}</p>
+      <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">{value}</p>
     </div>
   );
 }

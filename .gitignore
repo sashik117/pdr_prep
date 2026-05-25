@@ -12,6 +12,8 @@ venv311/
 
 # Node
 node_modules/
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -35,3 +37,7 @@ Thumbs.db
 
 # Uploads / generated local data
 backend/uploads/
+backend/logs/
+mobile-audit/
+tmp_style_pack/
+.tmp-chrome*/
