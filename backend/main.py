@@ -23,7 +23,7 @@ import jwt
 import psycopg
 from psycopg import errors as psycopg_errors, sql
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -272,6 +272,26 @@ app.add_middleware(
 app.mount("/uploads", StaticFiles(directory=str(BASE_DIR / "uploads")), name="uploads")
 if PUBLIC_IMAGES_DIR.exists():
     app.mount("/images/questions_img", StaticFiles(directory=str(PUBLIC_IMAGES_DIR)), name="questions_img")
+
+
+def _is_frontend_navigation(request: Request) -> bool:
+    if request.method != "GET" or not IS_PRODUCTION or not FRONTEND_DIST_DIR.exists():
+        return False
+
+    path = request.url.path
+    if path in {"/health", "/api/health"} or path.startswith(("/api/", "/assets/", "/images/", "/uploads/", "/ws")):
+        return False
+
+    accept = request.headers.get("accept", "")
+    fetch_dest = request.headers.get("sec-fetch-dest", "")
+    return "text/html" in accept or fetch_dest == "document"
+
+
+@app.middleware("http")
+async def serve_frontend_navigation(request: Request, call_next):
+    if _is_frontend_navigation(request):
+        return FileResponse(FRONTEND_DIST_DIR / "index.html")
+    return await call_next(request)
 
 
 @app.get("/health")
