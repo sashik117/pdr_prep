@@ -215,9 +215,9 @@ Render deploy:
 # Frontend build: npm ci --include=dev && npm run build
 # Free Render accounts can have only one active free PostgreSQL database.
 # DATABASE_URL is requested during Blueprint sync.
-# Use the existing Render database Internal Database URL when the web service is in the same region.
-# Pre-deploy: python backend/scripts/render_migrate.py
-# Backend start: uvicorn main:app
+# Use Internal Database URL only when the database is in the same Render region.
+# Otherwise use External Database URL and add sslmode=require if Render requires SSL.
+# Backend start: python backend/scripts/render_start.py
 render.yaml
 ```
 
