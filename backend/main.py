@@ -69,6 +69,7 @@ SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASS = os.getenv("SMTP_PASS", "")
+ALLOW_MOCK_PAYMENTS = os.getenv("ALLOW_MOCK_PAYMENTS", "false").strip().lower() in {"1", "true", "yes"}
 PORT = int(os.getenv("PORT", "8000"))
 UPLOAD_DIR = BASE_DIR / "uploads" / "avatars"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -1547,7 +1548,7 @@ async def websocket_bridge(websocket: WebSocket, token: str = Query(default=""))
 
 
 def send_email(to_email: str, subject: str, body: str) -> bool:
-    if not SMTP_USER:
+    if not SMTP_USER or not SMTP_PASS:
         print(f"[EMAIL MOCK] {to_email}: {subject}")
         return False
     try:
@@ -1564,6 +1565,17 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
     except Exception as exc:
         print(f"[EMAIL ERROR] {exc}")
         return False
+
+
+def email_delivery_response(sent: bool, code: str, message: str) -> dict[str, Any]:
+    if sent:
+        return {"message": message}
+    if IS_PRODUCTION:
+        raise HTTPException(
+            503,
+            "Не вдалося надіслати лист. Будь ласка, перевірте налаштування пошти або спробуйте трохи пізніше.",
+        )
+    return {"message": message, "dev_code": code}
 
 
 def gen_code(length: int = 6) -> str:
@@ -2037,10 +2049,7 @@ def register(req: RegisterRequest):
         "Код підтвердження PDRPrep",
         f"<p>Ваш код підтвердження: <b style='font-size:24px'>{code}</b></p>",
     )
-    payload: dict[str, Any] = {"message": "Код підтвердження надіслано на email"}
-    if not sent:
-        payload["dev_code"] = code
-    return payload
+    return email_delivery_response(sent, code, "Код підтвердження надіслано на email")
 
 
 @app.post("/auth/verify-email")
@@ -2106,10 +2115,7 @@ def resend_verification(req: ResendVerificationRequest):
         "Новий код підтвердження PDRPrep",
         f"<p>Ваш новий код: <b style='font-size:24px'>{code}</b></p>",
     )
-    payload: dict[str, Any] = {"message": "Новий код надіслано на email"}
-    if not sent:
-        payload["dev_code"] = code
-    return payload
+    return email_delivery_response(sent, code, "Новий код надіслано на email")
 
 
 @app.post("/auth/forgot-password")
@@ -2135,10 +2141,7 @@ def forgot_password(req: ForgotPasswordRequest):
         "Скидання пароля PDRPrep",
         f"<p>Ваш код для скидання: <b style='font-size:24px'>{code}</b></p>",
     )
-    payload: dict[str, Any] = {"message": "Код надіслано на email"}
-    if not sent:
-        payload["dev_code"] = code
-    return payload
+    return email_delivery_response(sent, code, "Код надіслано на email")
 
 
 @app.post("/auth/reset-password")
@@ -2231,7 +2234,15 @@ def stop_promo(admin=Depends(require_promo_admin)):
 @app.post("/payment/checkout")
 def create_premium_checkout(req: PremiumCheckoutRequest, user=Depends(get_current_user)):
     plan = _get_premium_plan(req.plan_code)
-    provider = "liqpay" if PAYMENT_MODE == "liqpay" and LIQPAY_PUBLIC_KEY and LIQPAY_PRIVATE_KEY else "mock"
+    if PAYMENT_MODE == "liqpay":
+        if not LIQPAY_PUBLIC_KEY or not LIQPAY_PRIVATE_KEY:
+            raise HTTPException(503, "Оплата LiqPay ще не налаштована. Додайте ключі LiqPay у змінні середовища.")
+        provider = "liqpay"
+    elif PAYMENT_MODE == "mock" and (not IS_PRODUCTION or ALLOW_MOCK_PAYMENTS):
+        provider = "mock"
+    else:
+        raise HTTPException(503, "Оплата тимчасово недоступна. Будь ласка, спробуйте трохи пізніше.")
+
     order_uuid = f"premium_{user['id']}_{uuid4().hex[:16]}"
     result_url = req.return_url or f"{FRONTEND_URL.rstrip('/')}/pricing?checkout=success"
     separator = "&" if "?" in result_url else "?"
@@ -2318,6 +2329,8 @@ def get_payment_status(order_id: str, user=Depends(get_current_user)):
 
 @app.post("/payment/mock/activate/{order_id}")
 def activate_mock_payment(order_id: str, user=Depends(get_current_user)):
+    if IS_PRODUCTION and not ALLOW_MOCK_PAYMENTS:
+        raise HTTPException(403, "Mock-активація вимкнена у production-режимі")
     if PAYMENT_MODE == "liqpay" and LIQPAY_PUBLIC_KEY and LIQPAY_PRIVATE_KEY:
         raise HTTPException(403, "Mock-активація вимкнена у production-режимі")
     with db() as conn:
@@ -4396,10 +4409,7 @@ def admin_reset_user_password(user_id: int, admin=Depends(require_admin)):
         "Скидання пароля PDRPrep",
         f"<p>Адміністратор надіслав відновлення доступу. Ваш код: <b style='font-size:24px'>{code}</b></p>",
     )
-    payload: dict[str, Any] = {"message": "Лист на відновлення пароля надіслано"}
-    if not sent:
-        payload["dev_code"] = code
-    return payload
+    return email_delivery_response(sent, code, "Лист на відновлення пароля надіслано")
 
 
 @app.post("/admin/users/{user_id}/achievements")
@@ -4955,8 +4965,6 @@ if IS_PRODUCTION:
         @app.get("/{full_path:path}", include_in_schema=False)
         def serve_frontend(full_path: str):
             first_segment = full_path.strip("/").split("/", 1)[0]
-            if first_segment in API_ROUTE_PREFIXES:
-                raise HTTPException(404, "Not found")
 
             dist_root = FRONTEND_DIST_DIR.resolve()
             requested_file = (dist_root / full_path).resolve()
@@ -4967,6 +4975,9 @@ if IS_PRODUCTION:
 
             if requested_file.is_file():
                 return FileResponse(requested_file)
+
+            if first_segment in API_ROUTE_PREFIXES or first_segment in {"assets", "images"}:
+                raise HTTPException(404, "Not found")
 
             return FileResponse(dist_root / "index.html")
     else:

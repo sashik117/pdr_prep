@@ -27,7 +27,14 @@ backend/venv311
 *.log
 logs
 backend/logs
-backend/uploads
+backend/uploads/*
+!backend/uploads/handbook/
+backend/uploads/handbook/*
+!backend/uploads/handbook/vodiy/
+!backend/uploads/handbook/vodiy/**
+!backend/uploads/handbook/sign_*.svg
+!backend/uploads/handbook/marking_*.png
+!backend/uploads/handbook/placeholder.png
 mobile-audit
 tmp_style_pack
 .tmp-chrome*

@@ -22,8 +22,18 @@ services:
       - key: BACKEND_PUBLIC_URL
         value: https://driveprep-pdr.onrender.com
       - key: PAYMENT_MODE
-        value: mock
+        value: liqpay
+      - key: ALLOW_MOCK_PAYMENTS
+        value: "false"
+      - key: LIQPAY_PUBLIC_KEY
+        sync: false
+      - key: LIQPAY_PRIVATE_KEY
+        sync: false
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
         value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
