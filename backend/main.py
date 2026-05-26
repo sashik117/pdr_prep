@@ -69,6 +69,7 @@ SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASS = os.getenv("SMTP_PASS", "")
+SMTP_TIMEOUT = float(os.getenv("SMTP_TIMEOUT", "6"))
 ALLOW_MOCK_PAYMENTS = os.getenv("ALLOW_MOCK_PAYMENTS", "false").strip().lower() in {"1", "true", "yes"}
 PORT = int(os.getenv("PORT", "8000"))
 UPLOAD_DIR = BASE_DIR / "uploads" / "avatars"
@@ -1557,7 +1558,7 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
         message["To"] = to_email
         message["Subject"] = subject
         message.attach(MIMEText(body, "html"))
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as smtp:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as smtp:
             smtp.starttls()
             smtp.login(SMTP_USER, SMTP_PASS)
             smtp.sendmail(SMTP_USER, to_email, message.as_string())

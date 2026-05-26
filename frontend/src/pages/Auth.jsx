@@ -39,6 +39,9 @@ function normalizeAuthError(error, context = 'generic') {
   if (message.includes('невірний код')) return 'Невірний код підтвердження';
   if (message.includes('код застарів')) return 'Код уже застарів, запросіть новий';
   if (message.includes('невалідний email')) return 'Вкажіть коректну пошту';
+  if (message.includes('не вдалося надіслати лист')) {
+    return 'Код не вдалося надіслати через поштовий сервіс. Спробуйте ще раз трохи пізніше.';
+  }
   if (message.includes('підтвердіть email')) return 'Спочатку підтвердіть пошту';
   if (message.includes('пароль має містити')) return 'Пароль має містити щонайменше 6 символів';
   if (message.includes("вкажіть ім'я")) return "Вкажіть ім'я";
