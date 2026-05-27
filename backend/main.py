@@ -65,10 +65,10 @@ ADMIN_EMAILS = {
     for item in os.getenv("ADMIN_EMAILS", SUPPORT_EMAIL).split(",")
     if item.strip()
 }
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "")
-SMTP_PASS = os.getenv("SMTP_PASS", "")
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587").strip())
+SMTP_USER = os.getenv("SMTP_USER", "").strip()
+SMTP_PASS = "".join(os.getenv("SMTP_PASS", "").split())
 SMTP_TIMEOUT = float(os.getenv("SMTP_TIMEOUT", "6"))
 ALLOW_MOCK_PAYMENTS = os.getenv("ALLOW_MOCK_PAYMENTS", "false").strip().lower() in {"1", "true", "yes"}
 PORT = int(os.getenv("PORT", "8000"))
@@ -1548,23 +1548,52 @@ async def websocket_bridge(websocket: WebSocket, token: str = Query(default=""))
         realtime_hub.disconnect(user["email"], websocket)
 
 
+def mask_email(email: str) -> str:
+    local, _, domain = str(email).partition("@")
+    if not domain:
+        return "***"
+    visible = local[:2] if len(local) > 2 else local[:1]
+    return f"{visible}***@{domain}"
+
+
 def send_email(to_email: str, subject: str, body: str) -> bool:
     if not SMTP_USER or not SMTP_PASS:
-        print(f"[EMAIL MOCK] {to_email}: {subject}")
+        print(f"[EMAIL MOCK] missing SMTP credentials for {to_email}: {subject}", flush=True)
         return False
+
+    masked_user = mask_email(SMTP_USER)
     try:
+        print(
+            f"[EMAIL] sending via {SMTP_HOST}:{SMTP_PORT} as {masked_user} to {mask_email(to_email)}",
+            flush=True,
+        )
         message = MIMEMultipart()
         message["From"] = SMTP_USER
         message["To"] = to_email
         message["Subject"] = subject
-        message.attach(MIMEText(body, "html"))
+        message.attach(MIMEText(body, "html", "utf-8"))
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as smtp:
+            smtp.ehlo()
             smtp.starttls()
+            smtp.ehlo()
             smtp.login(SMTP_USER, SMTP_PASS)
             smtp.sendmail(SMTP_USER, to_email, message.as_string())
+        print(f"[EMAIL] sent to {mask_email(to_email)}", flush=True)
         return True
+    except smtplib.SMTPAuthenticationError as exc:
+        print(f"[EMAIL ERROR] auth failed for {masked_user}: {exc.smtp_code} {exc.smtp_error!r}", flush=True)
+        return False
+    except smtplib.SMTPConnectError as exc:
+        print(f"[EMAIL ERROR] connect failed to {SMTP_HOST}:{SMTP_PORT}: {exc}", flush=True)
+        return False
+    except smtplib.SMTPServerDisconnected as exc:
+        print(f"[EMAIL ERROR] server disconnected {SMTP_HOST}:{SMTP_PORT}: {exc}", flush=True)
+        return False
+    except TimeoutError as exc:
+        print(f"[EMAIL ERROR] timeout after {SMTP_TIMEOUT}s via {SMTP_HOST}:{SMTP_PORT}: {exc}", flush=True)
+        return False
     except Exception as exc:
-        print(f"[EMAIL ERROR] {exc}")
+        print(f"[EMAIL ERROR] {type(exc).__name__} via {SMTP_HOST}:{SMTP_PORT}: {exc}", flush=True)
         return False
 
 
