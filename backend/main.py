@@ -7,6 +7,8 @@ import re
 import shutil
 import smtplib
 import string
+import urllib.error
+import urllib.request
 import base64
 import hashlib
 from collections import defaultdict
@@ -71,6 +73,9 @@ SMTP_USER = os.getenv("SMTP_USER", "").strip()
 SMTP_PASS = "".join(os.getenv("SMTP_PASS", "").split())
 SMTP_TIMEOUT = float(os.getenv("SMTP_TIMEOUT", "6"))
 SMTP_SECURE = os.getenv("SMTP_SECURE", "false").strip().lower() in {"1", "true", "yes", "ssl"}
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
+EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "resend" if RESEND_API_KEY else "smtp").strip().lower()
+EMAIL_FROM = os.getenv("EMAIL_FROM", "DrivePrep <onboarding@resend.dev>").strip()
 ALLOW_MOCK_PAYMENTS = os.getenv("ALLOW_MOCK_PAYMENTS", "false").strip().lower() in {"1", "true", "yes"}
 PORT = int(os.getenv("PORT", "8000"))
 UPLOAD_DIR = BASE_DIR / "uploads" / "avatars"
@@ -1557,7 +1562,50 @@ def mask_email(email: str) -> str:
     return f"{visible}***@{domain}"
 
 
-def send_email(to_email: str, subject: str, body: str) -> bool:
+def send_email_with_resend(to_email: str, subject: str, body: str) -> bool:
+    if not RESEND_API_KEY:
+        print("[EMAIL RESEND] missing RESEND_API_KEY", flush=True)
+        return False
+
+    payload = json.dumps(
+        {
+            "from": EMAIL_FROM,
+            "to": [to_email],
+            "subject": subject,
+            "html": body,
+        }
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=payload,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        print(f"[EMAIL RESEND] sending to {mask_email(to_email)} from {EMAIL_FROM}", flush=True)
+        with urllib.request.urlopen(request, timeout=SMTP_TIMEOUT) as response:
+            raw = response.read().decode("utf-8", errors="replace")
+            print(f"[EMAIL RESEND] sent to {mask_email(to_email)}: {response.status} {raw}", flush=True)
+            return 200 <= response.status < 300
+    except urllib.error.HTTPError as exc:
+        raw = exc.read().decode("utf-8", errors="replace")
+        print(f"[EMAIL RESEND ERROR] HTTP {exc.code}: {raw}", flush=True)
+        return False
+    except urllib.error.URLError as exc:
+        print(f"[EMAIL RESEND ERROR] network: {exc}", flush=True)
+        return False
+    except TimeoutError as exc:
+        print(f"[EMAIL RESEND ERROR] timeout after {SMTP_TIMEOUT}s: {exc}", flush=True)
+        return False
+    except Exception as exc:
+        print(f"[EMAIL RESEND ERROR] {type(exc).__name__}: {exc}", flush=True)
+        return False
+
+
+def send_email_with_smtp(to_email: str, subject: str, body: str) -> bool:
     if not SMTP_USER or not SMTP_PASS:
         print(f"[EMAIL MOCK] missing SMTP credentials for {to_email}: {subject}", flush=True)
         return False
@@ -1598,6 +1646,14 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
     except Exception as exc:
         print(f"[EMAIL ERROR] {type(exc).__name__} via {SMTP_HOST}:{SMTP_PORT}: {exc}", flush=True)
         return False
+
+
+def send_email(to_email: str, subject: str, body: str) -> bool:
+    if EMAIL_PROVIDER in {"resend", "api", "http"}:
+        return send_email_with_resend(to_email, subject, body)
+    if RESEND_API_KEY and EMAIL_PROVIDER == "auto":
+        return send_email_with_resend(to_email, subject, body)
+    return send_email_with_smtp(to_email, subject, body)
 
 
 def email_delivery_response(sent: bool, code: str, message: str) -> dict[str, Any]:

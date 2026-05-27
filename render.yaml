@@ -17,6 +17,12 @@ services:
         value: driveprep
       - key: JWT_SECRET
         generateValue: true
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: EMAIL_FROM
+        value: DrivePrep <onboarding@resend.dev>
+      - key: RESEND_API_KEY
+        sync: false
       - key: FRONTEND_URL
         value: https://driveprep-pdr.onrender.com
       - key: BACKEND_PUBLIC_URL
