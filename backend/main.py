@@ -70,6 +70,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587").strip())
 SMTP_USER = os.getenv("SMTP_USER", "").strip()
 SMTP_PASS = "".join(os.getenv("SMTP_PASS", "").split())
 SMTP_TIMEOUT = float(os.getenv("SMTP_TIMEOUT", "6"))
+SMTP_SECURE = os.getenv("SMTP_SECURE", "false").strip().lower() in {"1", "true", "yes", "ssl"}
 ALLOW_MOCK_PAYMENTS = os.getenv("ALLOW_MOCK_PAYMENTS", "false").strip().lower() in {"1", "true", "yes"}
 PORT = int(os.getenv("PORT", "8000"))
 UPLOAD_DIR = BASE_DIR / "uploads" / "avatars"
@@ -1572,10 +1573,12 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
         message["To"] = to_email
         message["Subject"] = subject
         message.attach(MIMEText(body, "html", "utf-8"))
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as smtp:
+        smtp_factory = smtplib.SMTP_SSL if SMTP_SECURE or SMTP_PORT == 465 else smtplib.SMTP
+        with smtp_factory(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as smtp:
             smtp.ehlo()
-            smtp.starttls()
-            smtp.ehlo()
+            if smtp_factory is smtplib.SMTP:
+                smtp.starttls()
+                smtp.ehlo()
             smtp.login(SMTP_USER, SMTP_PASS)
             smtp.sendmail(SMTP_USER, to_email, message.as_string())
         print(f"[EMAIL] sent to {mask_email(to_email)}", flush=True)
