@@ -1,5 +1,35 @@
 import { Link } from 'react-router-dom';
-import { footerGroups } from '@/components/layout/navigation-config';
+import { Mail, MessageCircle } from 'lucide-react';
+
+const footerGroups = [
+  {
+    title: 'Навчання',
+    links: [
+      { to: '/study', label: 'Теорія ПДР' },
+      { to: '/signs', label: 'Дорожні знаки' },
+      { to: '/tests', label: 'Тести' },
+      { to: '/tickets', label: 'Білети' },
+    ],
+  },
+  {
+    title: 'Практика',
+    links: [
+      { to: '/saved-questions', label: 'Збережені питання' },
+      { to: '/analytics', label: 'Аналітика' },
+      { to: '/achievements', label: 'Досягнення' },
+      { to: '/pricing', label: 'Premium' },
+    ],
+  },
+  {
+    title: 'Сервіс',
+    links: [
+      { to: '/support', label: 'Підтримка' },
+      { to: '/settings', label: 'Налаштування' },
+      { to: '/privacy', label: 'Конфіденційність' },
+      { to: '/terms', label: 'Угода підписника' },
+    ],
+  },
+];
 
 export default function SiteFooter() {
   const handleFooterLinkClick = () => {
@@ -7,33 +37,39 @@ export default function SiteFooter() {
   };
 
   return (
-    <footer className="border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
-      <div className="w-full px-3 py-5 sm:px-5 sm:py-8 xl:pl-24">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-[1.2fr_repeat(3,1fr)]">
-          <div className="max-w-md sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center gap-3">
-              <img
-                src="/logo.png"
-                alt="DrivePrep"
-                className="h-9 w-9 rounded-full border border-slate-200 bg-white object-cover shadow-sm dark:border-slate-700 dark:bg-slate-900"
-              />
-              <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-900 dark:text-white">DrivePrep</p>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Спокійна підготовка до теоретичного іспиту: актуальні білети, теорія та тренування у зручному темпі.
+    <footer className="bg-slate-950 pt-14 pb-7 text-white">
+      <div className="w-full px-4 sm:px-6 xl:pl-24">
+        <div className="grid gap-10 lg:grid-cols-[1.35fr_repeat(3,1fr)]">
+          <div className="max-w-md">
+            <Link to="/" onClick={handleFooterLinkClick} className="flex items-center gap-3">
+              <img src="/logo.png" alt="DrivePrep" className="h-11 w-11 rounded-2xl bg-white object-cover shadow-lg" />
+              <span className="text-xl font-semibold tracking-tight">DrivePrep</span>
+            </Link>
+            <p className="mt-5 text-sm leading-7 text-slate-400">
+              Спокійна підготовка до теоретичного іспиту: актуальні питання, структурована теорія, білети, прогрес і повторення важливого матеріалу.
             </p>
+            <div className="mt-6 grid gap-3 text-sm text-slate-400">
+              <a href="mailto:pdr.preparation@gmail.com" className="flex items-center gap-3 transition-colors hover:text-white">
+                <Mail className="h-5 w-5" />
+                pdr.preparation@gmail.com
+              </a>
+              <Link to="/support" onClick={handleFooterLinkClick} className="flex items-center gap-3 transition-colors hover:text-white">
+                <MessageCircle className="h-5 w-5" />
+                Написати в підтримку
+              </Link>
+            </div>
           </div>
 
           {footerGroups.map((group) => (
             <div key={group.title}>
-              <p className="text-sm font-medium text-slate-900 dark:text-white">{group.title}</p>
-              <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 sm:block sm:space-y-1">
+              <h2 className="text-base font-semibold text-slate-100">{group.title}</h2>
+              <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 sm:block sm:space-y-3">
                 {group.links.map((link) => (
                   <Link
                     key={link.to}
                     to={link.to}
                     onClick={handleFooterLinkClick}
-                    className="block rounded-md py-1 text-sm text-slate-600 transition-colors hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-300"
+                    className="block text-sm text-slate-400 transition-colors hover:text-white"
                   >
                     {link.label}
                   </Link>
@@ -43,8 +79,8 @@ export default function SiteFooter() {
           ))}
         </div>
 
-        <div className="mt-5 border-t border-slate-200/70 pt-4 text-center text-xs text-slate-500 dark:border-slate-800/80 dark:text-slate-400 sm:text-sm">
-          © 2026 DrivePrep
+        <div className="mt-10 border-t border-slate-800 pt-6 text-center text-xs text-slate-500 sm:text-sm">
+          © 2026 DrivePrep. Матеріали створені для зручної самопідготовки до іспиту ПДР.
         </div>
       </div>
     </footer>
