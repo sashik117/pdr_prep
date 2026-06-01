@@ -24,13 +24,17 @@ def main() -> None:
         raise SystemExit(1)
 
     print(f"[container-start] DATABASE_URL configured for host: {_database_host(database_url)}", flush=True)
-    print("[container-start] Running database bootstrap...", flush=True)
-    try:
-        render_migrate.main()
-    except Exception:
-        print("[container-start] Database bootstrap failed:", flush=True)
-        traceback.print_exc()
-        raise SystemExit(1)
+    run_bootstrap = os.getenv("RUN_CONTAINER_BOOTSTRAP", "true").strip().lower() not in {"0", "false", "no"}
+    if run_bootstrap:
+        print("[container-start] Running database bootstrap...", flush=True)
+        try:
+            render_migrate.main()
+        except Exception:
+            print("[container-start] Database bootstrap failed:", flush=True)
+            traceback.print_exc()
+            raise SystemExit(1)
+    else:
+        print("[container-start] Database bootstrap skipped for this web machine.", flush=True)
 
     port = os.getenv("PORT", "8000")
     print(f"[container-start] Starting API on port {port}...", flush=True)
