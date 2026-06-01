@@ -36,6 +36,8 @@ backend/uploads/handbook/*
 !backend/uploads/handbook/marking_*.png
 !backend/uploads/handbook/placeholder.png
 mobile-audit
+docs/screenshots/audit
+.codex-screens
 tmp_style_pack
 .tmp-chrome*
 

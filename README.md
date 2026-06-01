@@ -217,8 +217,24 @@ Render deploy:
 # DATABASE_URL is requested during Blueprint sync.
 # Supabase Postgres works here too. Paste its connection string as DATABASE_URL.
 # DATABASE_SCHEMA=driveprep keeps this project isolated inside a shared database.
-# Backend start: python backend/scripts/render_start.py
+# Backend start: python backend/scripts/container_start.py
 render.yaml
+```
+
+Fly.io deploy:
+
+```bash
+# fly.toml uses the existing Dockerfile.
+# Runtime secrets are not stored in Git.
+fly secrets set DATABASE_URL="postgresql://..."
+fly secrets set JWT_SECRET="..."
+fly secrets set ADMIN_USERNAME="..."
+fly secrets set ADMIN_PASSWORD="..."
+fly secrets set RESEND_API_KEY="..."
+fly secrets set LIQPAY_PUBLIC_KEY="..."
+fly secrets set LIQPAY_PRIVATE_KEY="..."
+
+fly deploy
 ```
 
 ---

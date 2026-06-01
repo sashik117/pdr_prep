@@ -22,4 +22,4 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 EXPOSE 8000
 
-CMD ["python", "backend/scripts/render_start.py"]
+CMD ["python", "backend/scripts/container_start.py"]

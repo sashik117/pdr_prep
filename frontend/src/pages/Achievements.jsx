@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useProtectedScreen } from '@/lib/useProtectedScreen';
 import api from '@/api/apiClient';
-import { TIER_COLORS } from '@/lib/achievements';
+import { ACHIEVEMENTS_DEF, TIER_COLORS } from '@/lib/achievements';
 
 const categories = [
   { id: 'all', label: 'Усі' },
@@ -41,7 +41,49 @@ export default function Achievements() {
     enabled: !!user,
   });
 
-  const achievements = achievementsQuery.data || [];
+  const achievementsFromApi = achievementsQuery.data || [];
+  const achievements = useMemo(() => {
+    const byId = new Map(achievementsFromApi.map((item) => [item.id || item.achievement_id, item]));
+    const merged = ACHIEVEMENTS_DEF.map((definition) => {
+      const apiItem = byId.get(definition.id);
+      if (apiItem) {
+        return {
+          ...apiItem,
+          id: apiItem.id || apiItem.achievement_id || definition.id,
+          name: apiItem.name || apiItem.achievement_name || definition.name,
+          description: apiItem.description || apiItem.achievement_desc || definition.desc,
+          category: apiItem.category || definition.category,
+          tier: Number(apiItem.tier ?? definition.tier),
+          target: Number(apiItem.target ?? apiItem.threshold ?? definition.target),
+          threshold: Number(apiItem.threshold ?? apiItem.target ?? definition.target),
+        };
+      }
+
+      return {
+        id: definition.id,
+        name: definition.name,
+        description: definition.desc,
+        category: definition.category,
+        tier: definition.tier,
+        target: definition.target,
+        threshold: definition.target,
+        current: 0,
+        raw_current: 0,
+        progress_percent: 0,
+        progress_text: `0/${definition.target}`,
+        earned: false,
+      };
+    });
+
+    achievementsFromApi.forEach((item) => {
+      const id = item.id || item.achievement_id;
+      if (id && !ACHIEVEMENTS_DEF.some((definition) => definition.id === id)) {
+        merged.push(item);
+      }
+    });
+
+    return merged;
+  }, [achievementsFromApi]);
   const earnedAchievements = useMemo(() => achievements.filter((achievement) => achievement.earned), [achievements]);
   const earnedCount = earnedAchievements.length;
   const totalProgress = achievements.length ? Math.round((earnedCount / achievements.length) * 100) : 0;
@@ -217,29 +259,46 @@ function AchievementCard({ achievement, index, featured, onToggleFeatured }) {
   const current = Number(achievement.current ?? achievement.raw_current ?? 0);
   const target = Number(achievement.target ?? achievement.threshold ?? 1);
   const percent = Math.min(100, Math.max(0, Number(achievement.progress_percent ?? Math.round((current / Math.max(1, target)) * 100))));
+  const locked = !achievement.earned;
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.025 }}>
       <Card
         className={cn(
-          'h-full border-slate-200 bg-card shadow-md transition-all dark:border-slate-800',
-          achievement.earned ? 'opacity-100' : 'opacity-90',
+          'h-full transition-all',
+          locked
+            ? 'border-slate-200 bg-slate-50/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/72'
+            : 'border-slate-200 bg-card shadow-md dark:border-slate-800',
           featured && 'ring-2 ring-primary/30',
         )}
       >
-        <CardContent className="flex h-full flex-col p-5 pt-6">
+        <CardContent className="flex h-full flex-col p-5">
           <div className="flex items-start gap-4">
-            <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border shadow-sm', colors.bg, colors.text, colors.border)}>
+            <div
+              className={cn(
+                'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border shadow-sm',
+                locked
+                  ? 'border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500'
+                  : cn(colors.bg, colors.text, colors.border),
+              )}
+            >
               {achievement.earned ? <CheckCircle2 className="h-6 w-6" /> : <Award className="h-6 w-6" />}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-semibold text-slate-950 dark:text-white">{achievement.name}</h3>
-                <span className={cn('rounded-full border px-2 py-0.5 text-[11px] font-semibold', colors.bg, colors.text, colors.border)}>
+                <h3 className={cn('font-semibold', locked ? 'text-slate-600 dark:text-slate-300' : 'text-slate-950 dark:text-white')}>{achievement.name}</h3>
+                <span
+                  className={cn(
+                    'rounded-full border px-2 py-0.5 text-[11px] font-semibold',
+                    locked
+                      ? 'border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                      : cn(colors.bg, colors.text, colors.border),
+                  )}
+                >
                   {colors.label}
                 </span>
               </div>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{achievement.description}</p>
+              <p className={cn('mt-2 text-sm leading-6', locked ? 'text-slate-500 dark:text-slate-400' : 'text-slate-600 dark:text-slate-300')}>{achievement.description}</p>
             </div>
           </div>
 
@@ -249,7 +308,7 @@ function AchievementCard({ achievement, index, featured, onToggleFeatured }) {
               <span>{achievement.progress_text || `${Math.min(current, target)}/${target}`}</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-              <div className={cn('h-full rounded-full transition-all duration-500', achievement.earned ? 'bg-emerald-500' : 'bg-primary')} style={{ width: `${percent}%` }} />
+              <div className={cn('h-full rounded-full transition-all duration-500', achievement.earned ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600')} style={{ width: `${percent}%` }} />
             </div>
           </div>
 

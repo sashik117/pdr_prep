@@ -1,24 +1,17 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import os
 import random
 import re
 import shutil
-import smtplib
-import string
 import subprocess
 import sys
 import threading
-import urllib.error
-import urllib.request
 import base64
 import hashlib
 import hmac
-from collections import defaultdict
 from datetime import date, datetime, timedelta
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from html import escape as html_escape
 from pathlib import Path
 from typing import Any, Optional
@@ -27,15 +20,95 @@ from uuid import uuid4
 import bcrypt
 import jwt
 import psycopg
-from psycopg import errors as psycopg_errors, sql
-from dotenv import load_dotenv
+from psycopg import errors as psycopg_errors
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from psycopg.rows import dict_row
-from pydantic import BaseModel, Field
-from parsers.theory_sources import THEORY_CATEGORY_SEEDS, THEORY_SOURCE_MAP
+from core.bootstrap import ensure_runtime_migrations, ensure_schema_indexes, ensure_schema_tables
+from core.config import (
+    ADMIN_EMAILS,
+    ADMIN_PASSWORD,
+    ADMIN_PASSWORD_HASH,
+    ADMIN_USERNAME,
+    ALLOW_MOCK_PAYMENTS,
+    BACKEND_PUBLIC_URL,
+    BASE_DIR,
+    BROKEN_OPTION_RE,
+    CATEGORY_ALIASES,
+    CATEGORY_SECTION_RULES,
+    DEFAULT_IMPORT_FILE,
+    DEFAULT_PREMIUM_FEATURES,
+    DEFAULT_PROMO_SETTINGS,
+    EMBEDDED_OPTION_RE,
+    FRAME_SHOP,
+    FRONTEND_DIST_DIR,
+    FRONTEND_URL,
+    HANDBOOK_TOPIC_CATEGORY_MAP,
+    HANDBOOK_TOPICS,
+    IMAGE_REQUIRED_MARKERS,
+    IS_PRODUCTION,
+    JWT_REMEMBER_DAYS,
+    JWT_SECRET,
+    JWT_SESSION_DAYS,
+    LIQPAY_PRIVATE_KEY,
+    LIQPAY_PUBLIC_KEY,
+    MULTI_TOPIC_CATEGORY_SLUGS,
+    MVS_BLOCKS,
+    MVS_CATEGORY_BLOCKS,
+    MVS_TICKET_COUNT,
+    PAYMENT_MODE,
+    PORT,
+    PREMIUM_FEATURES_FILE,
+    PREMIUM_PLAN_ALIASES,
+    PREMIUM_PLANS,
+    PROMO_ADMIN_KEY,
+    PROMO_SETTINGS_FILE,
+    PUBLIC_IMAGES_DIR,
+    PUBLIC_STATIC_IMAGES_DIR,
+    QUESTION_UI_MARKERS,
+    RUNTIME_DIR,
+    RUN_STARTUP_MAINTENANCE,
+    SUPPORT_EMAIL,
+    SUPPORT_NAME,
+    THEORY_CATEGORY_FALLBACKS,
+    THEORY_PARSE_LOG_FILE,
+    THEORY_PARSE_STATUS_FILE,
+    UPLOAD_DIR,
+    USERNAME_RE,
+)
+from core.database import db
+from parsers.theory_sources import THEORY_SOURCE_MAP
+from schemas.requests import (
+    AdminAchievementUpdateRequest,
+    AdminLoginRequest,
+    AdminQuestionUpdateRequest,
+    AdminSupportReplyRequest,
+    AdminTheoryParseRequest,
+    AdminTheorySectionUpdateRequest,
+    AdminUserUpdateRequest,
+    BattleCreateRequest,
+    BattleDecisionRequest,
+    BattleSubmitRequest,
+    ForgotPasswordRequest,
+    FramePurchaseRequest,
+    FriendInviteRequest,
+    LoginRequest,
+    MarathonScoreSubmit,
+    MessageCreateRequest,
+    PremiumCheckoutRequest,
+    PremiumFeaturesUpdateRequest,
+    PromoConfigRequest,
+    RegisterRequest,
+    ResendVerificationRequest,
+    ResetPasswordRequest,
+    SupportMessageCreateRequest,
+    TestResultSubmit,
+    UpdateProfileRequest,
+    VerifyEmailRequest,
+)
+from services.email import email_delivery_response, gen_code, send_email
+from services.realtime import RealtimeHub
 from services.ticket_service import get_ticket_questions, list_tickets
 from services.theory_service import (
     get_theory_section,
@@ -43,280 +116,6 @@ from services.theory_service import (
     list_theory_sections,
     list_theory_topics,
 )
-
-load_dotenv()
-
-BASE_DIR = Path(__file__).resolve().parent
-IS_PRODUCTION = os.getenv("NODE_ENV", "").strip().lower() == "production"
-RUN_STARTUP_MAINTENANCE = os.getenv("RUN_STARTUP_MAINTENANCE", "true").strip().lower() not in {"0", "false", "no"}
-RAW_DB_URL = os.environ["DATABASE_URL"]
-DB_URL = (
-    f"{RAW_DB_URL}{'&' if '?' in RAW_DB_URL else '?'}sslmode=require"
-    if os.getenv("DATABASE_SSL", "").strip().lower() in {"1", "true", "yes", "require"} and "sslmode=" not in RAW_DB_URL
-    else RAW_DB_URL
-)
-DATABASE_SCHEMA = os.getenv("DATABASE_SCHEMA", "").strip()
-JWT_SECRET = os.getenv("JWT_SECRET", "change-me-in-production")
-JWT_REMEMBER_DAYS = int(os.getenv("JWT_REMEMBER_DAYS", "90"))
-JWT_SESSION_DAYS = int(os.getenv("JWT_SESSION_DAYS", "1"))
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
-SUPPORT_EMAIL = "pdr.preparation@gmail.com"
-SUPPORT_NAME = "DrivePrep Support"
-LIQPAY_PUBLIC_KEY = os.getenv("LIQPAY_PUBLIC_KEY", "")
-LIQPAY_PRIVATE_KEY = os.getenv("LIQPAY_PRIVATE_KEY", "")
-PAYMENT_MODE = os.getenv("PAYMENT_MODE", "mock" if not LIQPAY_PUBLIC_KEY or not LIQPAY_PRIVATE_KEY else "liqpay").strip().lower()
-BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", f"http://localhost:{os.getenv('PORT', '8000')}")
-ADMIN_EMAILS = {
-    item.strip().lower()
-    for item in os.getenv("ADMIN_EMAILS", SUPPORT_EMAIL).split(",")
-    if item.strip()
-}
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin").strip() or "admin"
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "").strip()
-ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "").strip()
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587").strip())
-SMTP_USER = os.getenv("SMTP_USER", "").strip()
-SMTP_PASS = "".join(os.getenv("SMTP_PASS", "").split())
-SMTP_TIMEOUT = float(os.getenv("SMTP_TIMEOUT", "6"))
-SMTP_SECURE = os.getenv("SMTP_SECURE", "false").strip().lower() in {"1", "true", "yes", "ssl"}
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
-EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "resend" if RESEND_API_KEY else "smtp").strip().lower()
-EMAIL_FROM = os.getenv("EMAIL_FROM", "DrivePrep <onboarding@resend.dev>").strip()
-ALLOW_MOCK_PAYMENTS = os.getenv("ALLOW_MOCK_PAYMENTS", "false").strip().lower() in {"1", "true", "yes"}
-PORT = int(os.getenv("PORT", "8000"))
-UPLOAD_DIR = BASE_DIR / "uploads" / "avatars"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-FRONTEND_DIST_DIR = BASE_DIR.parent / "frontend" / "dist"
-PUBLIC_STATIC_IMAGES_DIR = BASE_DIR / "public" / "images"
-RUNTIME_DIR = BASE_DIR / "runtime"
-THEORY_PARSE_STATUS_FILE = RUNTIME_DIR / "theory_parse_status.json"
-THEORY_PARSE_LOG_FILE = RUNTIME_DIR / "theory_parse.log"
-PUBLIC_STATIC_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-PUBLIC_IMAGES_DIR = (
-    FRONTEND_DIST_DIR / "images" / "questions_img"
-    if IS_PRODUCTION
-    else BASE_DIR.parent / "frontend" / "public" / "images" / "questions_img"
-)
-USERNAME_RE = re.compile(r"^[a-z][a-z0-9_]{2,31}$")
-
-COMMON_SECTIONS = list(range(1, 40))
-CATEGORY_SECTION_RULES = {
-    "A": list(range(1, 44)),
-    "A1": list(range(1, 44)),
-    "B": COMMON_SECTIONS + list(range(44, 48)),
-    "B1": COMMON_SECTIONS + list(range(44, 48)),
-    "C": COMMON_SECTIONS + list(range(48, 52)),
-    "C1": COMMON_SECTIONS + list(range(48, 52)),
-    "D": COMMON_SECTIONS + list(range(52, 56)),
-    "D1": COMMON_SECTIONS + list(range(52, 56)),
-    "T": COMMON_SECTIONS + list(range(60, 64)),
-    "BE": COMMON_SECTIONS + list(range(56, 60)),
-    "C1E": COMMON_SECTIONS + list(range(56, 60)),
-    "CE": COMMON_SECTIONS + list(range(56, 60)),
-    "D1E": COMMON_SECTIONS + list(range(56, 60)),
-    "DE": COMMON_SECTIONS + list(range(56, 60)),
-}
-CATEGORY_ALIASES = {
-    "A / A1": "A",
-    "B / B1": "B",
-    "C / C1": "C",
-    "D / D1": "D",
-    "BE / C1E / CE / D1E / DE": "BE",
-}
-MVS_TICKET_COUNT = 30
-MVS_BLOCKS = {
-    "pdr": {
-        "label": "ПДР",
-        "count": 10,
-        "sections": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 33, 34, 39],
-    },
-    "safety": {"label": "Безпека", "count": 4, "sections": [35, 36, 38]},
-    "vehicle": {"label": "Будова", "count": 4, "sections": [31]},
-    "medicine": {"label": "Домедична допомога", "count": 2, "sections": [37]},
-}
-MVS_CATEGORY_BLOCKS = {
-    "A": {"pdr": [40, 42], "vehicle": [41], "safety": [43]},
-    "A1": {"pdr": [40, 42], "vehicle": [41], "safety": [43]},
-    "B": {"pdr": [44, 46], "vehicle": [45], "safety": [47]},
-    "B1": {"pdr": [44, 46], "vehicle": [45], "safety": [47]},
-    "C": {"pdr": [48, 50], "vehicle": [49], "safety": [51]},
-    "C1": {"pdr": [48, 50], "vehicle": [49], "safety": [51]},
-    "D": {"pdr": [52, 54], "vehicle": [], "safety": [55]},
-    "D1": {"pdr": [52, 54], "vehicle": [], "safety": [55]},
-    "BE": {"pdr": [56, 58], "vehicle": [57], "safety": [59]},
-    "C1E": {"pdr": [56, 58], "vehicle": [57], "safety": [59]},
-    "CE": {"pdr": [56, 58], "vehicle": [57], "safety": [59]},
-    "D1E": {"pdr": [56, 58], "vehicle": [57], "safety": [59]},
-    "DE": {"pdr": [56, 58], "vehicle": [57], "safety": [59]},
-    "T": {"pdr": [60, 62], "vehicle": [61], "safety": [63]},
-}
-BROKEN_OPTION_RE = re.compile(r"(?:^|[.!?])\s*\d{1,3}[.)]?\s*[A-ZА-ЯІЇЄҐ]")
-EMBEDDED_OPTION_RE = re.compile(r"\s+(?:1|A|А)[.)]\s+")
-QUESTION_UI_MARKERS = ("Ілюстрація до питання", "Аналіз ситуації")
-IMAGE_REQUIRED_MARKERS = (
-    "зображений дорожній знак",
-    "зображений знак",
-    "зображено дорожній знак",
-    "зображено знак",
-    "на малюнку",
-    "на рисунку",
-    "на зображенні",
-    "ілюстрація до питання",
-)
-FRAME_SHOP: dict[str, dict[str, Any]] = {
-    "fire": {"price": 0, "achievement_id": "streak_28", "label": "Вогняна"},
-    "sun": {"price": 0, "achievement_id": "streak_90", "label": "Сонячна"},
-    "gold": {"price": 0, "achievement_id": "thousand", "label": "Золота"},
-    "diamond": {"price": 0, "achievement_id": "perfect_20", "label": "Діамантова"},
-    "speed": {"price": 0, "achievement_id": "marathon_100", "label": "Швидкість"},
-    "crown": {"price": 0, "achievement_id": "pro_driver", "label": "Корона"},
-    "galaxy": {"price": 0, "achievement_id": "legend", "label": "Галактика"},
-    "platinum": {"price": 0, "achievement_id": "exam_perfect", "label": "Платина"},
-    "mint": {"price": 6, "achievement_id": None, "label": "М'ятна"},
-    "sunset": {"price": 9, "achievement_id": None, "label": "Захід сонця"},
-    "neon": {"price": 12, "achievement_id": None, "label": "Неон"},
-    "aurora": {"price": 15, "achievement_id": None, "label": "Аврора"},
-}
-
-HANDBOOK_TOPICS: list[dict[str, Any]] = [
-    {
-        "key": "rules",
-        "title": "Правила дорожнього руху",
-        "category": "rules",
-        "chapters": [
-            {"chapter_num": index + 1, "title": title}
-            for index, title in enumerate(
-                [
-                    "Загальні положення",
-                    "Обов’язки і права водіїв механічних транспортних засобів",
-                    "Рух транспортних засобів із спеціальними сигналами",
-                    "Обов’язки і права пішоходів",
-                    "Обов’язки і права пасажирів",
-                    "Вимоги до велосипедистів",
-                    "Вимоги до осіб, які керують гужовим транспортом, і погоничам тварин",
-                    "Регулювання дорожнього руху",
-                    "Попереджувальні сигнали",
-                    "Початок руху та зміна його напрямку",
-                    "Розташування транспортних засобів на дорозі",
-                    "Швидкість руху",
-                    "Дистанція, інтервал, зустрічний роз’їзд",
-                    "Обгін",
-                    "Зупинка і стоянка",
-                    "Проїзд перехресть",
-                    "Переваги маршрутних транспортних засобів",
-                    "Проїзд пішохідних переходів і зупинок транспортних засобів",
-                    "Користування зовнішніми світловими приладами",
-                    "Рух через залізничні переїзди",
-                    "Перевезення пасажирів",
-                    "Перевезення вантажу",
-                    "Буксирування і експлуатація транспортних складів",
-                    "Навчальна їзда",
-                    "Рух транспортних засобів у колонах",
-                    "Рух у житловій та пішохідній зоні",
-                    "Рух по автомагістралях і дорогах для автомобілів",
-                    "Рух по гірських дорогах і на крутих спусках",
-                    "Міжнародний рух",
-                    "Номерні, розпізнавальні знаки, написи і позначення",
-                    "Технічний стан транспортних засобів та їх обладнання",
-                    "Окремі питання дорожнього руху, що вимагають узгодження",
-                    "Дорожні знаки",
-                    "Дорожня розмітка",
-                    "Медицина",
-                ]
-            )
-        ],
-    },
-    {"key": "road-signs", "title": "Дорожні знаки", "category": "signs", "chapters": []},
-    {"key": "road-markings", "title": "Дорожня розмітка", "category": "markings", "chapters": []},
-    {"key": "regulator", "title": "Регулювальник", "category": "regulator", "chapters": []},
-    {"key": "traffic-light", "title": "Світлофор", "category": "traffic-light", "chapters": []},
-]
-
-HANDBOOK_TOPIC_CATEGORY_MAP: dict[str, str] = {
-    topic["key"]: str(topic.get("category") or topic["key"])
-    for topic in HANDBOOK_TOPICS
-}
-
-THEORY_CATEGORY_FALLBACKS: list[dict[str, Any]] = [dict(item) for item in THEORY_CATEGORY_SEEDS]
-MULTI_TOPIC_CATEGORY_SLUGS = {"library", "academy"}
-
-PREMIUM_PLANS: dict[str, dict[str, Any]] = {
-    "1": {"code": "1", "slug": "monthly", "title": "Premium на 1 місяць", "months": 1},
-    "3": {"code": "3", "slug": "quarterly", "title": "Premium на 3 місяці", "months": 3},
-    "6": {"code": "6", "slug": "half_year", "title": "Premium на 6 місяців", "months": 6},
-    "12": {"code": "12", "slug": "yearly", "title": "Premium на 1 рік", "months": 12},
-}
-PREMIUM_PLAN_ALIASES: dict[str, str] = {
-    "1": "1",
-    "monthly": "1",
-    "month": "1",
-    "3": "3",
-    "quarterly": "3",
-    "quarter": "3",
-    "6": "6",
-    "half_year": "6",
-    "half-year": "6",
-    "12": "12",
-    "yearly": "12",
-    "year": "12",
-}
-DEFAULT_IMPORT_FILE = BASE_DIR / "data" / "questions" / "pdr_final_fixed.json"
-PROMO_SETTINGS_FILE = BASE_DIR / "config" / "promo_settings.json"
-PROMO_ADMIN_KEY = os.getenv("PROMO_ADMIN_KEY", "").strip()
-DEFAULT_PROMO_SETTINGS: dict[str, Any] = {
-    "is_active": False,
-    "started_at": None,
-    "never_ends": False,
-    "duration_days": 15,
-    "promo_prices": {"1": 159, "3": 469, "6": 950, "12": 1900},
-    "regular_prices": {"1": 300, "3": 900, "6": 1800, "12": 3600},
-}
-PREMIUM_FEATURES_FILE = BASE_DIR / "config" / "premium_features.json"
-DEFAULT_PREMIUM_FEATURES: list[dict[str, Any]] = [
-    {
-        "id": "mvs_exam",
-        "title": "Іспит МВС",
-        "description": "Імітація офіційного білета: 20 питань за блоками ПДР, безпека, будова та медицина.",
-        "is_enabled": True,
-        "sort_order": 1,
-    },
-    {
-        "id": "unlimited_tickets",
-        "title": "Усі білети без обмежень",
-        "description": "Повний доступ до тренувальних білетів кожної категорії без ліміту переглядів.",
-        "is_enabled": True,
-        "sort_order": 2,
-    },
-    {
-        "id": "section_practice",
-        "title": "Практика по розділах",
-        "description": "Окреме тренування слабких тем із банку питань DrivePrep.",
-        "is_enabled": True,
-        "sort_order": 3,
-    },
-    {
-        "id": "saved_questions",
-        "title": "Збережені запитання",
-        "description": "Персональний список важливих питань для швидкого повторення.",
-        "is_enabled": True,
-        "sort_order": 4,
-    },
-    {
-        "id": "deep_analytics",
-        "title": "Розширена аналітика",
-        "description": "Прогрес, помилки, серії навчання та історія проходжень в одному кабінеті.",
-        "is_enabled": True,
-        "sort_order": 5,
-    },
-    {
-        "id": "priority_support",
-        "title": "Пріоритетна підтримка",
-        "description": "Швидші відповіді в чаті підтримки для користувачів Premium.",
-        "is_enabled": True,
-        "sort_order": 6,
-    },
-]
 
 app = FastAPI(title="PDRPrep API", version="3.0.0")
 app.add_middleware(
@@ -371,48 +170,7 @@ def api_healthcheck() -> dict[str, str]:
     return healthcheck()
 
 
-class RealtimeHub:
-    def __init__(self) -> None:
-        self._connections: dict[str, set[WebSocket]] = defaultdict(set)
-
-    async def connect(self, email: str, websocket: WebSocket) -> None:
-        await websocket.accept()
-        self._connections[email.strip().lower()].add(websocket)
-
-    def disconnect(self, email: str, websocket: WebSocket) -> None:
-        normalized = email.strip().lower()
-        sockets = self._connections.get(normalized)
-        if not sockets:
-            return
-        sockets.discard(websocket)
-        if not sockets:
-            self._connections.pop(normalized, None)
-
-    async def emit(self, email: str, event: str, payload: Optional[dict[str, Any]] = None) -> None:
-        normalized = email.strip().lower()
-        sockets = list(self._connections.get(normalized, set()))
-        stale: list[WebSocket] = []
-        for socket in sockets:
-            try:
-                await socket.send_json({"event": event, "payload": payload or {}})
-            except Exception:
-                stale.append(socket)
-        for socket in stale:
-            self.disconnect(normalized, socket)
-
-
 realtime_hub = RealtimeHub()
-
-
-def db():
-    conn = psycopg.connect(DB_URL, row_factory=dict_row)
-    if DATABASE_SCHEMA:
-        if not DATABASE_SCHEMA.replace("_", "").isalnum() or DATABASE_SCHEMA[0].isdigit():
-            raise RuntimeError("DATABASE_SCHEMA must contain only letters, numbers, and underscores, and cannot start with a number")
-        conn.execute(sql.SQL("SET search_path TO {}, public").format(sql.Identifier(DATABASE_SCHEMA)))
-    conn.execute("SET lock_timeout TO '2000ms'")
-    conn.execute("SET statement_timeout TO '20000ms'")
-    return conn
 
 
 def _json_dumps(value: Any) -> str:
@@ -662,449 +420,6 @@ def _activate_premium_order(conn: psycopg.Connection, order_row: dict[str, Any],
     )
     updated_order = conn.execute("SELECT * FROM premium_orders WHERE id = %s", (order_row["id"],)).fetchone()
     return dict(updated_order) if updated_order else {}
-
-
-def _schema_sql_path() -> Path:
-    migration_path = BASE_DIR / "migrations" / "001_base_schema.sql"
-    if migration_path.exists():
-        return migration_path
-    return BASE_DIR / "create_tables.sql"
-
-
-def _schema_statements() -> list[str]:
-    sql_path = _schema_sql_path()
-    if not sql_path.exists():
-        return []
-
-    raw_sql = sql_path.read_text(encoding="utf-8")
-    return [statement.strip() for statement in raw_sql.split(";") if statement.strip()]
-
-
-def ensure_schema_tables() -> None:
-    statements = [
-        statement
-        for statement in _schema_statements()
-        if statement.upper().startswith("CREATE TABLE")
-    ]
-    with db() as conn:
-        for statement in statements:
-            conn.execute(statement)
-        conn.commit()
-
-
-def ensure_schema_indexes() -> None:
-    statements = [
-        statement
-        for statement in _schema_statements()
-        if not statement.upper().startswith("CREATE TABLE")
-    ]
-    if not statements:
-        return
-
-    with db() as conn:
-        for statement in statements:
-            try:
-                conn.execute(statement)
-            except (psycopg_errors.UndefinedColumn, psycopg_errors.UndefinedTable):
-                if statement.upper().startswith("CREATE INDEX"):
-                    continue
-                raise
-        conn.commit()
-
-
-def ensure_runtime_migrations() -> None:
-    statements = [
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS surname TEXT",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_version INT NOT NULL DEFAULT 0",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS purchased_frames JSONB NOT NULL DEFAULT '[]'::jsonb",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS spent_stars INT NOT NULL DEFAULT 0",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS featured_achievements JSONB NOT NULL DEFAULT '[]'::jsonb",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_visible BOOLEAN NOT NULL DEFAULT TRUE",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_preference TEXT NOT NULL DEFAULT 'system'",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS font_size INT NOT NULL DEFAULT 16",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS sound_enabled BOOLEAN NOT NULL DEFAULT TRUE",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS push_enabled BOOLEAN NOT NULL DEFAULT FALSE",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN NOT NULL DEFAULT FALSE",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS manual_star_adjustment INT NOT NULL DEFAULT 0",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS username_change_count INT NOT NULL DEFAULT 0",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS username_last_changed_at TIMESTAMP",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS streak_restores_left INT NOT NULL DEFAULT 3",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS streak_restores_month TEXT",
-        "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)",
-        """
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1
-                FROM information_schema.columns
-                WHERE table_name = 'users' AND column_name = 'email_confirmed'
-            ) THEN
-                EXECUTE '
-                    UPDATE users
-                    SET email_verified = true
-                    WHERE COALESCE(email_verified, false) = false
-                      AND COALESCE(email_confirmed, false) = true
-                ';
-            END IF;
-        END $$;
-        """,
-        """
-        UPDATE users
-        SET username = LOWER(REGEXP_REPLACE(COALESCE(username, SPLIT_PART(email, '@', 1)), '[^a-zA-Z0-9_]+', '', 'g'))
-        WHERE username IS NULL OR BTRIM(username) = ''
-        """,
-        """
-        DO $$
-        DECLARE
-            duplicate_record RECORD;
-        BEGIN
-            FOR duplicate_record IN
-                SELECT username
-                FROM users
-                WHERE username IS NOT NULL AND BTRIM(username) <> ''
-                GROUP BY username
-                HAVING COUNT(*) > 1
-            LOOP
-                UPDATE users
-                SET username = CONCAT(username, '_', id)
-                WHERE username = duplicate_record.username;
-            END LOOP;
-        END $$;
-        """,
-        "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_username ON users (LOWER(username))",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN NOT NULL DEFAULT FALSE",
-        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS section_name TEXT",
-        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS num_in_section INT",
-        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS ticket_number INT",
-        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS question_number INT",
-        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS category TEXT",
-        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS difficulty TEXT",
-        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS explanation TEXT",
-        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS explanation_html TEXT",
-        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS source_rule_slug TEXT",
-        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS theory_section_id INT",
-        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb",
-        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS page INT",
-        "CREATE INDEX IF NOT EXISTS idx_questions_section ON questions(section)",
-        "CREATE INDEX IF NOT EXISTS idx_questions_category ON questions(category)",
-        "CREATE INDEX IF NOT EXISTS idx_questions_ticket_number ON questions(ticket_number)",
-        "CREATE INDEX IF NOT EXISTS idx_questions_ticket_question ON questions(ticket_number, question_number)",
-        "CREATE INDEX IF NOT EXISTS idx_questions_text ON questions USING gin (to_tsvector('simple', question_text))",
-        "ALTER TABLE test_results ADD COLUMN IF NOT EXISTS client_attempt_id TEXT",
-        "CREATE UNIQUE INDEX IF NOT EXISTS uq_test_results_user_attempt ON test_results(user_id, client_attempt_id) WHERE client_attempt_id IS NOT NULL",
-        """
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1
-                FROM information_schema.columns
-                WHERE table_name = 'messages' AND column_name = 'read'
-            ) AND NOT EXISTS (
-                SELECT 1
-                FROM information_schema.columns
-                WHERE table_name = 'messages' AND column_name = 'is_read'
-            ) THEN
-                ALTER TABLE messages RENAME COLUMN read TO is_read;
-            END IF;
-        END $$;
-        """,
-        "ALTER TABLE messages ADD COLUMN IF NOT EXISTS from_name TEXT",
-        "ALTER TABLE messages ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'text'",
-        "ALTER TABLE messages ADD COLUMN IF NOT EXISTS result_data JSONB NOT NULL DEFAULT '{}'::jsonb",
-        "ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_read BOOLEAN NOT NULL DEFAULT FALSE",
-        """
-        CREATE TABLE IF NOT EXISTS handbook_data (
-            id SERIAL PRIMARY KEY,
-            topic_key TEXT NOT NULL,
-            category TEXT,
-            chapter_num INT,
-            sort_order INT NOT NULL DEFAULT 0,
-            section_title TEXT NOT NULL,
-            source_url TEXT UNIQUE,
-            source_slug TEXT UNIQUE,
-            content_html TEXT NOT NULL,
-            content_text TEXT NOT NULL DEFAULT '',
-            image_paths JSONB NOT NULL DEFAULT '[]'::jsonb,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-        """,
-        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS topic_key TEXT",
-        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS category TEXT",
-        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS chapter_num INT",
-        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS sort_order INT NOT NULL DEFAULT 0",
-        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS source_url TEXT",
-        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS source_slug TEXT",
-        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS content_html TEXT",
-        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS content_text TEXT NOT NULL DEFAULT ''",
-        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS image_paths JSONB NOT NULL DEFAULT '[]'::jsonb",
-        """
-        DO $$
-        BEGIN
-            IF NOT EXISTS (
-                SELECT 1
-                FROM information_schema.columns
-                WHERE table_name = 'handbook_data' AND column_name = 'search_vector'
-            ) THEN
-                ALTER TABLE handbook_data
-                ADD COLUMN search_vector TSVECTOR GENERATED ALWAYS AS (
-                    to_tsvector('simple', COALESCE(section_title, '') || ' ' || COALESCE(content_text, ''))
-                ) STORED;
-            END IF;
-        END $$;
-        """,
-        "CREATE INDEX IF NOT EXISTS idx_handbook_topic_key ON handbook_data(topic_key)",
-        "CREATE INDEX IF NOT EXISTS idx_handbook_chapter_num ON handbook_data(chapter_num)",
-        "CREATE INDEX IF NOT EXISTS idx_handbook_sort_order ON handbook_data(sort_order)",
-        "CREATE INDEX IF NOT EXISTS idx_handbook_category ON handbook_data(category)",
-        "CREATE INDEX IF NOT EXISTS idx_handbook_search_vector ON handbook_data USING gin(search_vector)",
-        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS comment_html TEXT",
-        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS video_url TEXT",
-        "ALTER TABLE handbook_data ADD COLUMN IF NOT EXISTS embed_url TEXT",
-        """
-        CREATE TABLE IF NOT EXISTS theory_categories (
-            id SERIAL PRIMARY KEY,
-            slug TEXT NOT NULL UNIQUE,
-            title TEXT NOT NULL,
-            description TEXT,
-            sort_order INT NOT NULL DEFAULT 0,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-        """,
-        """
-        CREATE TABLE IF NOT EXISTS theory_topics (
-            id SERIAL PRIMARY KEY,
-            category_id INT NOT NULL REFERENCES theory_categories(id) ON DELETE CASCADE,
-            slug TEXT NOT NULL UNIQUE,
-            title TEXT NOT NULL,
-            description TEXT,
-            topic_type TEXT NOT NULL DEFAULT 'topic',
-            sort_order INT NOT NULL DEFAULT 0,
-            source_url TEXT,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-        """,
-        """
-        CREATE TABLE IF NOT EXISTS theory_sections (
-            id SERIAL PRIMARY KEY,
-            topic_id INT NOT NULL REFERENCES theory_topics(id) ON DELETE CASCADE,
-            slug TEXT NOT NULL UNIQUE,
-            title TEXT NOT NULL,
-            description TEXT,
-            comment_html TEXT,
-            content_html TEXT NOT NULL DEFAULT '',
-            content_text TEXT NOT NULL DEFAULT '',
-            video_url TEXT,
-            embed_url TEXT,
-            chapter_num INT,
-            sort_order INT NOT NULL DEFAULT 0,
-            source_url TEXT,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-        """,
-        """
-        CREATE TABLE IF NOT EXISTS theory_assets (
-            id SERIAL PRIMARY KEY,
-            section_id INT NOT NULL REFERENCES theory_sections(id) ON DELETE CASCADE,
-            asset_type TEXT NOT NULL DEFAULT 'image',
-            asset_url TEXT NOT NULL,
-            alt_text TEXT,
-            caption TEXT,
-            sort_order INT NOT NULL DEFAULT 0,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-        """,
-        "ALTER TABLE theory_sections ADD COLUMN IF NOT EXISTS comment_html TEXT",
-        "ALTER TABLE theory_sections ADD COLUMN IF NOT EXISTS video_url TEXT",
-        "ALTER TABLE theory_sections ADD COLUMN IF NOT EXISTS embed_url TEXT",
-        "ALTER TABLE theory_sections ADD COLUMN IF NOT EXISTS chapter_num INT",
-        "ALTER TABLE theory_assets ADD COLUMN IF NOT EXISTS caption TEXT",
-        "CREATE INDEX IF NOT EXISTS idx_theory_topics_category_id ON theory_topics(category_id)",
-        "CREATE INDEX IF NOT EXISTS idx_theory_topics_sort_order ON theory_topics(sort_order)",
-        "CREATE INDEX IF NOT EXISTS idx_theory_sections_topic_id ON theory_sections(topic_id)",
-        "CREATE INDEX IF NOT EXISTS idx_theory_sections_sort_order ON theory_sections(sort_order)",
-        "CREATE INDEX IF NOT EXISTS idx_theory_assets_section_id ON theory_assets(section_id)",
-        "CREATE INDEX IF NOT EXISTS idx_theory_assets_sort_order ON theory_assets(sort_order)",
-        """
-        CREATE TABLE IF NOT EXISTS premium_orders (
-            id SERIAL PRIMARY KEY,
-            user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            plan_code TEXT NOT NULL,
-            amount INT NOT NULL,
-            currency TEXT NOT NULL DEFAULT 'UAH',
-            provider TEXT NOT NULL DEFAULT 'liqpay',
-            status TEXT NOT NULL DEFAULT 'pending',
-            provider_order_id TEXT UNIQUE,
-            provider_payment_id TEXT,
-            checkout_url TEXT,
-            provider_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
-            activated_at TIMESTAMP,
-            expires_at TIMESTAMP,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-        """,
-        "ALTER TABLE premium_orders ADD COLUMN IF NOT EXISTS provider_payload JSONB NOT NULL DEFAULT '{}'::jsonb",
-        "ALTER TABLE premium_orders ADD COLUMN IF NOT EXISTS activated_at TIMESTAMP",
-        "ALTER TABLE premium_orders ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP",
-        "ALTER TABLE premium_orders ADD COLUMN IF NOT EXISTS provider_payment_id TEXT",
-        "ALTER TABLE premium_orders ADD COLUMN IF NOT EXISTS checkout_url TEXT",
-        "CREATE INDEX IF NOT EXISTS idx_premium_orders_user_id ON premium_orders(user_id)",
-        "CREATE INDEX IF NOT EXISTS idx_premium_orders_status ON premium_orders(status)",
-        """
-        CREATE INDEX IF NOT EXISTS idx_theory_sections_search
-        ON theory_sections USING gin (to_tsvector('simple', COALESCE(title, '') || ' ' || COALESCE(content_text, '')))
-        """,
-        """
-        UPDATE handbook_data
-        SET content_html = regexp_replace(
-                content_html,
-                '<(?:p|div)[^>]*>\\s*(?:<a[^>]*>\\s*\\d+\\s*</a>\\s*){5,}</(?:p|div)>',
-                '',
-                'gi'
-            ),
-            content_text = regexp_replace(
-                content_text,
-                '(?:\\m\\d{1,2}\\M\\s*){10,}',
-                ' ',
-                'g'
-            )
-        WHERE content_html ~ '<(?:p|div)[^>]*>\\s*(?:<a[^>]*>\\s*\\d+\\s*</a>\\s*){5,}</(?:p|div)>'
-           OR content_text ~ '(?:\\m\\d{1,2}\\M\\s*){10,}';
-        """,
-        """
-        UPDATE handbook_data
-        SET topic_key = CASE
-                WHEN source_url LIKE '%/theory/rules/%' THEN 'rules'
-                WHEN source_url LIKE '%/theory/road-signs%' THEN 'road-signs'
-                WHEN source_url LIKE '%/theory/road-markings%' THEN 'road-markings'
-                WHEN source_url LIKE '%/theory/regulator%' THEN 'regulator'
-                WHEN source_url LIKE '%/theory/traffic-light%' THEN 'traffic-light'
-                ELSE topic_key
-            END
-        WHERE topic_key IS NULL
-           OR BTRIM(topic_key) = ''
-           OR topic_key NOT IN ('rules', 'road-signs', 'road-markings', 'regulator', 'traffic-light');
-        """,
-        "ALTER TABLE friendships ADD COLUMN IF NOT EXISTS addressee_seen_at TIMESTAMP",
-        """
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1
-                FROM information_schema.columns
-                WHERE table_name = 'messages'
-                  AND column_name = 'result_data'
-                  AND udt_name <> 'jsonb'
-            ) THEN
-                ALTER TABLE messages
-                ALTER COLUMN result_data TYPE jsonb
-                USING CASE
-                    WHEN result_data IS NULL OR BTRIM(result_data::text) = '' THEN '{}'::jsonb
-                    ELSE result_data::jsonb
-                END;
-            END IF;
-        END $$;
-        """,
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS challenger_name TEXT",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS opponent_name TEXT",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending'",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'B'",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS question_ids JSONB NOT NULL DEFAULT '[]'::jsonb",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS challenger_answers JSONB NOT NULL DEFAULT '{}'::jsonb",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS opponent_answers JSONB NOT NULL DEFAULT '{}'::jsonb",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS challenger_score INT NOT NULL DEFAULT 0",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS opponent_score INT NOT NULL DEFAULT 0",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS challenger_time INT NOT NULL DEFAULT 0",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS opponent_time INT NOT NULL DEFAULT 0",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS winner_email TEXT",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS challenger_seen_at TIMESTAMP",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS opponent_seen_at TIMESTAMP",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS finished_at TIMESTAMP",
-        "ALTER TABLE battles ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT NOW()",
-        "CREATE INDEX IF NOT EXISTS idx_battles_challenger_email ON battles(challenger_email)",
-        "CREATE INDEX IF NOT EXISTS idx_battles_opponent_email ON battles(opponent_email)",
-        "CREATE INDEX IF NOT EXISTS idx_battles_status ON battles(status)",
-        """
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1
-                FROM information_schema.tables
-                WHERE table_name = 'battles'
-            ) THEN
-                ALTER TABLE battles DROP CONSTRAINT IF EXISTS battles_status_check;
-                ALTER TABLE battles
-                ADD CONSTRAINT battles_status_check
-                CHECK (status IN ('pending', 'active', 'finished', 'declined'));
-            END IF;
-        END $$;
-        """,
-        """
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1
-                FROM information_schema.columns
-                WHERE table_name = 'battles'
-                  AND column_name = 'question_ids'
-                  AND udt_name <> 'jsonb'
-            ) THEN
-                ALTER TABLE battles
-                ALTER COLUMN question_ids TYPE jsonb
-                USING CASE
-                    WHEN question_ids IS NULL OR BTRIM(question_ids::text) = '' THEN '[]'::jsonb
-                    ELSE question_ids::jsonb
-                END;
-            END IF;
-        END $$;
-        """,
-        """
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1
-                FROM information_schema.columns
-                WHERE table_name = 'battles'
-                  AND column_name = 'challenger_answers'
-                  AND udt_name <> 'jsonb'
-            ) THEN
-                ALTER TABLE battles
-                ALTER COLUMN challenger_answers TYPE jsonb
-                USING CASE
-                    WHEN challenger_answers IS NULL OR BTRIM(challenger_answers::text) = '' THEN '{}'::jsonb
-                    ELSE challenger_answers::jsonb
-                END;
-            END IF;
-        END $$;
-        """,
-        """
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1
-                FROM information_schema.columns
-                WHERE table_name = 'battles'
-                  AND column_name = 'opponent_answers'
-                  AND udt_name <> 'jsonb'
-            ) THEN
-                ALTER TABLE battles
-                ALTER COLUMN opponent_answers TYPE jsonb
-                USING CASE
-                    WHEN opponent_answers IS NULL OR BTRIM(opponent_answers::text) = '' THEN '{}'::jsonb
-                    ELSE opponent_answers::jsonb
-                END;
-            END IF;
-        END $$;
-        """,
-    ]
-
-    with db() as conn:
-        for statement in statements:
-            conn.execute(statement)
-        conn.commit()
 
 
 @app.on_event("startup")
@@ -1756,123 +1071,6 @@ async def websocket_bridge(websocket: WebSocket, token: str = Query(default=""))
         realtime_hub.disconnect(user["email"], websocket)
 
 
-def mask_email(email: str) -> str:
-    local, _, domain = str(email).partition("@")
-    if not domain:
-        return "***"
-    visible = local[:2] if len(local) > 2 else local[:1]
-    return f"{visible}***@{domain}"
-
-
-def send_email_with_resend(to_email: str, subject: str, body: str) -> bool:
-    if not RESEND_API_KEY:
-        print("[EMAIL RESEND] missing RESEND_API_KEY", flush=True)
-        return False
-
-    payload = json.dumps(
-        {
-            "from": EMAIL_FROM,
-            "to": [to_email],
-            "subject": subject,
-            "html": body,
-        }
-    ).encode("utf-8")
-    request = urllib.request.Request(
-        "https://api.resend.com/emails",
-        data=payload,
-        method="POST",
-        headers={
-            "Authorization": f"Bearer {RESEND_API_KEY}",
-            "Content-Type": "application/json",
-        },
-    )
-    try:
-        print(f"[EMAIL RESEND] sending to {mask_email(to_email)} from {EMAIL_FROM}", flush=True)
-        with urllib.request.urlopen(request, timeout=SMTP_TIMEOUT) as response:
-            raw = response.read().decode("utf-8", errors="replace")
-            print(f"[EMAIL RESEND] sent to {mask_email(to_email)}: {response.status} {raw}", flush=True)
-            return 200 <= response.status < 300
-    except urllib.error.HTTPError as exc:
-        raw = exc.read().decode("utf-8", errors="replace")
-        print(f"[EMAIL RESEND ERROR] HTTP {exc.code}: {raw}", flush=True)
-        return False
-    except urllib.error.URLError as exc:
-        print(f"[EMAIL RESEND ERROR] network: {exc}", flush=True)
-        return False
-    except TimeoutError as exc:
-        print(f"[EMAIL RESEND ERROR] timeout after {SMTP_TIMEOUT}s: {exc}", flush=True)
-        return False
-    except Exception as exc:
-        print(f"[EMAIL RESEND ERROR] {type(exc).__name__}: {exc}", flush=True)
-        return False
-
-
-def send_email_with_smtp(to_email: str, subject: str, body: str) -> bool:
-    if not SMTP_USER or not SMTP_PASS:
-        print(f"[EMAIL MOCK] missing SMTP credentials for {to_email}: {subject}", flush=True)
-        return False
-
-    masked_user = mask_email(SMTP_USER)
-    try:
-        print(
-            f"[EMAIL] sending via {SMTP_HOST}:{SMTP_PORT} as {masked_user} to {mask_email(to_email)}",
-            flush=True,
-        )
-        message = MIMEMultipart()
-        message["From"] = SMTP_USER
-        message["To"] = to_email
-        message["Subject"] = subject
-        message.attach(MIMEText(body, "html", "utf-8"))
-        smtp_factory = smtplib.SMTP_SSL if SMTP_SECURE or SMTP_PORT == 465 else smtplib.SMTP
-        with smtp_factory(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as smtp:
-            smtp.ehlo()
-            if smtp_factory is smtplib.SMTP:
-                smtp.starttls()
-                smtp.ehlo()
-            smtp.login(SMTP_USER, SMTP_PASS)
-            smtp.sendmail(SMTP_USER, to_email, message.as_string())
-        print(f"[EMAIL] sent to {mask_email(to_email)}", flush=True)
-        return True
-    except smtplib.SMTPAuthenticationError as exc:
-        print(f"[EMAIL ERROR] auth failed for {masked_user}: {exc.smtp_code} {exc.smtp_error!r}", flush=True)
-        return False
-    except smtplib.SMTPConnectError as exc:
-        print(f"[EMAIL ERROR] connect failed to {SMTP_HOST}:{SMTP_PORT}: {exc}", flush=True)
-        return False
-    except smtplib.SMTPServerDisconnected as exc:
-        print(f"[EMAIL ERROR] server disconnected {SMTP_HOST}:{SMTP_PORT}: {exc}", flush=True)
-        return False
-    except TimeoutError as exc:
-        print(f"[EMAIL ERROR] timeout after {SMTP_TIMEOUT}s via {SMTP_HOST}:{SMTP_PORT}: {exc}", flush=True)
-        return False
-    except Exception as exc:
-        print(f"[EMAIL ERROR] {type(exc).__name__} via {SMTP_HOST}:{SMTP_PORT}: {exc}", flush=True)
-        return False
-
-
-def send_email(to_email: str, subject: str, body: str) -> bool:
-    if EMAIL_PROVIDER in {"resend", "api", "http"}:
-        return send_email_with_resend(to_email, subject, body)
-    if RESEND_API_KEY and EMAIL_PROVIDER == "auto":
-        return send_email_with_resend(to_email, subject, body)
-    return send_email_with_smtp(to_email, subject, body)
-
-
-def email_delivery_response(sent: bool, code: str, message: str) -> dict[str, Any]:
-    if sent:
-        return {"message": message}
-    if IS_PRODUCTION:
-        raise HTTPException(
-            503,
-            "Не вдалося надіслати лист. Будь ласка, перевірте налаштування пошти або спробуйте трохи пізніше.",
-        )
-    return {"message": message, "dev_code": code}
-
-
-def gen_code(length: int = 6) -> str:
-    return "".join(random.choices(string.digits, k=length))
-
-
 def _friend_counterpart(friendship: dict[str, Any], current_user_id: int) -> tuple[int, str]:
     if friendship["requester_id"] == current_user_id:
         return friendship["addressee_id"], "outgoing"
@@ -2058,178 +1256,6 @@ def _prepare_import_question(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-class RegisterRequest(BaseModel):
-    name: str
-    surname: str
-    username: str
-    email: str
-    password: str
-
-
-class LoginRequest(BaseModel):
-    identifier: str
-    password: str
-    remember_me: bool = True
-
-
-class AdminLoginRequest(BaseModel):
-    username: str
-    password: str
-    remember_me: bool = True
-
-
-class VerifyEmailRequest(BaseModel):
-    email: str
-    code: str
-
-
-class ForgotPasswordRequest(BaseModel):
-    email: str
-
-
-class ResetPasswordRequest(BaseModel):
-    email: str
-    code: str
-    new_password: str
-
-
-class ResendVerificationRequest(BaseModel):
-    email: str
-
-
-class UpdateProfileRequest(BaseModel):
-    name: Optional[str] = None
-    surname: Optional[str] = None
-    username: Optional[str] = None
-    bio: Optional[str] = None
-    active_frame: Optional[str] = None
-    email_visible: Optional[bool] = None
-    featured_achievements: Optional[list[str]] = None
-    theme_preference: Optional[str] = None
-    font_size: Optional[int] = None
-    sound_enabled: Optional[bool] = None
-    push_enabled: Optional[bool] = None
-
-
-class AnswerSubmit(BaseModel):
-    question_id: int
-    selected_index: int
-    is_correct: bool
-    time_ms: Optional[int] = None
-
-
-class TestResultSubmit(BaseModel):
-    section: Optional[str] = None
-    mode: str
-    total: int
-    correct: int
-    time_seconds: int
-    client_attempt_id: Optional[str] = None
-    answers: list[AnswerSubmit] = Field(default_factory=list)
-
-
-class MarathonScoreSubmit(BaseModel):
-    score: int
-
-
-class FriendInviteRequest(BaseModel):
-    username: str
-
-
-class MessageCreateRequest(BaseModel):
-    to_user: str
-    content: str
-    type: str = "text"
-    result_data: dict[str, Any] = Field(default_factory=dict)
-
-
-class BattleCreateRequest(BaseModel):
-    opponent_user: str
-    category: str = "B"
-    question_count: int = Field(default=10, ge=5, le=20)
-
-
-class BattleSubmitRequest(BaseModel):
-    answers: dict[str, str]
-    time_seconds: int = Field(ge=0)
-
-
-class BattleDecisionRequest(BaseModel):
-    action: str = "decline"
-
-
-class SupportMessageCreateRequest(BaseModel):
-    content: str
-
-
-class FramePurchaseRequest(BaseModel):
-    frame_id: str
-
-
-class PremiumCheckoutRequest(BaseModel):
-    plan_code: str
-    return_url: Optional[str] = None
-
-
-class PromoConfigRequest(BaseModel):
-    duration_days: Optional[int] = Field(default=15, ge=1, le=60)
-    never_ends: Optional[bool] = None
-    promo_prices: Optional[dict[str, int]] = None
-    regular_prices: Optional[dict[str, int]] = None
-
-
-class PremiumFeaturesUpdateRequest(BaseModel):
-    features: list[dict[str, Any]]
-
-
-class AdminSupportReplyRequest(BaseModel):
-    content: str
-
-
-class AdminUserUpdateRequest(BaseModel):
-    is_blocked: Optional[bool] = None
-    is_premium: Optional[bool] = None
-    total_tests: Optional[int] = None
-    total_correct: Optional[int] = None
-    total_answers: Optional[int] = None
-    marathon_best: Optional[int] = None
-    streak_days: Optional[int] = None
-    manual_star_adjustment: Optional[int] = None
-
-
-class AdminAchievementUpdateRequest(BaseModel):
-    achievement_id: str
-    remove: bool = False
-
-
-class AdminQuestionUpdateRequest(BaseModel):
-    question_text: Optional[str] = None
-    explanation: Optional[str] = None
-    difficulty: Optional[str] = None
-    section_name: Optional[str] = None
-    options: Optional[list[str]] = None
-    images: Optional[list[str]] = None
-    correct_ans: Optional[int] = None
-
-
-class AdminTheoryParseRequest(BaseModel):
-    chapters: Optional[str] = None
-    skip_signs: bool = False
-    skip_markings: bool = False
-    write_seed: bool = True
-
-
-class AdminTheorySectionUpdateRequest(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    content_html: Optional[str] = None
-    comment_html: Optional[str] = None
-    video_url: Optional[str] = None
-    embed_url: Optional[str] = None
-    chapter_num: Optional[int] = None
-    sort_order: Optional[int] = None
-
-
 ACHIEVEMENTS_DEF = [
     ("first_step", 1, "Перший виїзд", "Пройти перший тест", "tests", 1),
     ("rookie", 2, "Новачок", "Пройти 10 тестів", "tests", 10),
@@ -2252,20 +1278,33 @@ ACHIEVEMENTS_DEF = [
     ("perfect_20", 3, "Чиста серія", "20 тестів без помилок", "perfect", 20),
     ("exam_passed", 2, "Іспит складено", "Скласти перший іспит МВС або білет", "exam", 1),
     ("exam_5", 3, "Стабільний іспит", "Скласти 5 іспитів МВС або білетів", "exam", 5),
+    ("exam_10", 3, "Десятка іспитів", "Скласти 10 іспитів МВС або білетів", "exam", 10),
     ("exam_20", 4, "Екзаменаційний темп", "Скласти 20 іспитів МВС або білетів", "exam", 20),
+    ("exam_50", 4, "Готовий до сервісного центру", "Скласти 50 іспитів МВС або білетів", "exam", 50),
     ("exam_perfect", 4, "Ідеальний іспит", "Скласти іспит МВС або білет без помилок", "exam", 1),
     ("exam_perfect_5", 4, "П'ять чистих іспитів", "Скласти 5 іспитів або білетів без помилок", "exam", 5),
+    ("exam_perfect_10", 4, "Десять чистих іспитів", "Скласти 10 іспитів або білетів без помилок", "exam", 10),
     ("accuracy_70", 1, "Рівна їзда", "Тримати загальну точність від 70%", "accuracy", 70),
+    ("accuracy_75", 1, "Впевнена база", "Тримати загальну точність від 75%", "accuracy", 75),
     ("accuracy_80", 2, "Впевнена точність", "Тримати загальну точність від 80%", "accuracy", 80),
+    ("accuracy_85", 2, "Чіткий контроль", "Тримати загальну точність від 85%", "accuracy", 85),
     ("accuracy_90", 3, "Точний маршрут", "Тримати загальну точність від 90%", "accuracy", 90),
+    ("accuracy_92", 3, "Майже без промахів", "Тримати загальну точність від 92%", "accuracy", 92),
     ("accuracy_95", 4, "Ювелірна точність", "Тримати загальну точність від 95%", "accuracy", 95),
+    ("accuracy_98", 4, "Еталонна точність", "Тримати загальну точність від 98%", "accuracy", 98),
     ("battle_first", 1, "Перший батл", "Завершити перший батл", "battle", 1),
+    ("battle_3", 1, "Три виклики", "Завершити 3 батли", "battle", 3),
     ("battle_5", 2, "Батл-серія", "Завершити 5 батлів", "battle", 5),
+    ("battle_10", 2, "Десятка батлів", "Завершити 10 батлів", "battle", 10),
     ("battle_20", 3, "Арена досвіду", "Завершити 20 батлів", "battle", 20),
+    ("battle_50", 4, "Ветеран батлів", "Завершити 50 батлів", "battle", 50),
     ("battle_winner", 2, "Перемога в батлі", "Виграти перший батл", "battle_wins", 1),
+    ("battle_wins_3", 2, "Три перемоги", "Виграти 3 батли", "battle_wins", 3),
     ("battle_wins_5", 3, "П'ять перемог", "Виграти 5 батлів", "battle_wins", 5),
     ("battle_champion", 3, "Чемпіон батлів", "Виграти 10 батлів", "battle_wins", 10),
+    ("battle_wins_15", 4, "Серія переможця", "Виграти 15 батлів", "battle_wins", 15),
     ("battle_wins_25", 4, "Лідер батлів", "Виграти 25 батлів", "battle_wins", 25),
+    ("battle_wins_50", 4, "Легенда дуелей", "Виграти 50 батлів", "battle_wins", 50),
 ]
 
 
@@ -2321,7 +1360,7 @@ def _check_achievements(conn: psycopg.Connection, user_id: int) -> list[dict[str
         elif category == "perfect":
             should_create = perfect_tests >= threshold
         elif category == "exam":
-            if achievement_id in {"exam_perfect", "exam_perfect_5"}:
+            if achievement_id in {"exam_perfect", "exam_perfect_5", "exam_perfect_10"}:
                 should_create = int(exam_stats.get("perfect_count") or 0) >= threshold
             else:
                 should_create = int(exam_stats.get("passed_count") or 0) >= threshold
@@ -2375,7 +1414,7 @@ def _achievement_progress_value(
     if category == "perfect":
         return int(perfect_tests or 0)
     if category == "exam":
-        if achievement_id in {"exam_perfect", "exam_perfect_5"}:
+        if achievement_id in {"exam_perfect", "exam_perfect_5", "exam_perfect_10"}:
             return int(exam_stats.get("perfect_count") or 0)
         return int(exam_stats.get("passed_count") or 0)
     if category == "accuracy":

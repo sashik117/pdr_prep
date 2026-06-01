@@ -12,7 +12,7 @@ venv311/
 
 # Node
 node_modules/
-logs/
+/logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -44,8 +44,14 @@ backend/uploads/handbook/*
 !backend/uploads/handbook/sign_*.svg
 !backend/uploads/handbook/marking_*.png
 !backend/uploads/handbook/placeholder.png
-backend/logs/
+backend/logs/*
+!backend/logs/.gitkeep
 backend/runtime/
+
+# Local browser/test artifacts
+.codex-screens/
 mobile-audit/
+docs/screenshots/audit/*
+!docs/screenshots/audit/.gitkeep
 tmp_style_pack/
 .tmp-chrome*/

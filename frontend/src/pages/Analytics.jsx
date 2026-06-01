@@ -38,6 +38,7 @@ import api from '@/api/apiClient';
 import LoginPrompt from '@/components/auth/LoginPrompt';
 import ActivityCalendar from '@/components/progress/ActivityCalendar';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const tabs = [
   { id: 'overview', label: 'Огляд', icon: LayoutDashboard },
@@ -126,8 +127,12 @@ export default function Analytics() {
   const [tab, setTab] = useState(tabs.some((item) => item.id === requestedTab) ? requestedTab : 'overview');
   const isPremiumUser = Boolean(user?.is_premium);
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  const isMobile = useIsMobile();
   const axisColor = isDark ? '#dbe7ff' : '#0f172a';
   const gridColor = isDark ? '#334155' : '#dbe3ee';
+  const mobileChartMargin = isMobile ? { top: 12, right: 2, left: -26, bottom: 0 } : { top: 12, right: 10, left: 0, bottom: 0 };
+  const mobileAreaMargin = isMobile ? { top: 12, right: 2, left: -26, bottom: 0 } : { top: 12, right: 10, left: 0, bottom: 0 };
+  const yAxisWidth = isMobile ? 34 : 60;
   const tooltipStyle = {
     backgroundColor: isDark ? '#0f172a' : '#ffffff',
     border: isDark ? '1px solid #334155' : '1px solid #dbe3ee',
@@ -315,12 +320,12 @@ export default function Analytics() {
 
             <ChartCard title="Останні результати">
               {recentChartData.length > 0 ? (
-                <div className="h-[300px] w-full sm:h-[340px]">
+                <div className="-mx-2 h-[300px] sm:mx-0 sm:h-[340px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={recentChartData}>
+                    <BarChart data={recentChartData} margin={mobileChartMargin}>
                       <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                       <XAxis dataKey="name" tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
+                      <YAxis width={yAxisWidth} domain={[0, 100]} tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
                       <Tooltip formatter={(value) => [`${value}%`, 'Результат']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} isAnimationActive={false} />
                       <Bar dataKey="score" radius={[8, 8, 0, 0]} fill="#60a5fa" />
                     </BarChart>
@@ -339,9 +344,9 @@ export default function Analytics() {
           <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
             <ChartCard title="Динаміка балів за 30 днів">
               {scoreTrend.length > 0 ? (
-                <div className="h-[220px] w-full">
+                <div className="-mx-2 h-[220px] sm:mx-0">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={scoreTrend}>
+                    <AreaChart data={scoreTrend} margin={mobileAreaMargin}>
                       <defs>
                         <linearGradient id="analyticsScoreFill" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.32} />
@@ -350,7 +355,7 @@ export default function Analytics() {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                       <XAxis dataKey="date" tick={{ fontSize: 10, fill: axisColor }} tickLine={false} axisLine={false} interval={4} stroke={axisColor} />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
+                      <YAxis width={yAxisWidth} domain={[0, 100]} tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
                       <Tooltip formatter={(value) => [`${value}%`, 'Точність']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} isAnimationActive={false} />
                       <Area type="monotone" dataKey="accuracy" stroke="#60a5fa" fill="url(#analyticsScoreFill)" strokeWidth={3} />
                     </AreaChart>
@@ -373,14 +378,15 @@ export default function Analytics() {
 
           <div className="grid gap-5 xl:grid-cols-2">
             <ChartCard title="Тести по днях">
-              <div className="h-[205px] w-full">
+              <div className="-mx-2 h-[205px] sm:mx-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={last30}
+                    margin={mobileChartMargin}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: axisColor }} tickLine={false} axisLine={false} interval={6} stroke={axisColor} />
-                    <YAxis tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} allowDecimals={false} stroke={axisColor} />
+                    <YAxis width={yAxisWidth} tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} allowDecimals={false} stroke={axisColor} />
                     <Tooltip formatter={(value) => [value, 'Тестів']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} isAnimationActive={false} />
                     <Bar dataKey="tests" radius={[8, 8, 0, 0]} fill="#22c55e" />
                   </BarChart>
@@ -389,12 +395,12 @@ export default function Analytics() {
             </ChartCard>
 
             <ChartCard title="Тести по тижнях">
-              <div className="h-[205px] w-full">
+              <div className="-mx-2 h-[205px] sm:mx-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={last7weeks}>
+                  <BarChart data={last7weeks} margin={mobileChartMargin}>
                     <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                     <XAxis dataKey="week" tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
-                    <YAxis tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} allowDecimals={false} stroke={axisColor} />
+                    <YAxis width={yAxisWidth} tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} allowDecimals={false} stroke={axisColor} />
                     <Tooltip formatter={(value) => [value, 'Тестів']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} isAnimationActive={false} />
                     <Bar dataKey="tests" radius={[8, 8, 0, 0]} fill="#60a5fa" />
                   </BarChart>
@@ -531,10 +537,10 @@ function StatCard({ icon: Icon, label, value, accent = 'blue', delay = 0 }) {
 function ChartCard({ title, children }) {
   return (
     <Card className="surface-glass overflow-hidden">
-      <CardHeader>
+      <CardHeader className="px-4 pb-2 pt-4 sm:px-6 sm:pb-3 sm:pt-6">
         <CardTitle className="text-slate-900 dark:text-white">{title}</CardTitle>
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className="px-3 pb-4 sm:px-6 sm:pb-6">{children}</CardContent>
     </Card>
   );
 }

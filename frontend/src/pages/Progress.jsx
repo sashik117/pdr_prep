@@ -40,6 +40,7 @@ import LoginPrompt from '@/components/auth/LoginPrompt';
 import ProtectedScreenFallback from '@/components/auth/ProtectedScreenFallback';
 import ActivityCalendar from '@/components/progress/ActivityCalendar';
 import { ACHIEVEMENTS_DEF, TIER_COLORS, getUnlockedFrames } from '@/lib/achievements';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const timeRangeOptions = [15, 30, 60, 120];
 
@@ -47,6 +48,10 @@ export default function Progress({ view = 'dashboard' }) {
   const { user, login, isCheckingAccess, isTemporaryAuthFailure, canAccess, checkUserAuth } = useProtectedScreen();
   const queryClient = useQueryClient();
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  const isMobile = useIsMobile();
+  const profileChartMargin = isMobile ? { top: 12, right: 0, left: -30, bottom: 0 } : { top: 14, right: 10, left: -18, bottom: 0 };
+  const profileScoreMargin = isMobile ? { top: 12, right: 0, left: -30, bottom: 0 } : { top: 12, right: 8, left: -20, bottom: 0 };
+  const profileYAxisWidth = isMobile ? 32 : 60;
   const chartTooltipStyle = {
     backgroundColor: isDark ? '#0f172a' : '#ffffff',
     border: isDark ? '1px solid #334155' : '1px solid #cbd5e1',
@@ -565,30 +570,30 @@ export default function Progress({ view = 'dashboard' }) {
       {isProfileView ? (
       <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
         <Card className="surface-glass overflow-hidden">
-          <CardHeader>
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-6 sm:pb-3 sm:pt-6">
             <CardTitle className="dark:text-white">Загальний час тестування</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[22px] border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-500/20 dark:bg-blue-950/25">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">Сьогодні</p>
-                <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-blue-700 dark:text-blue-200">
+          <CardContent className="space-y-3 px-3 pb-4 sm:space-y-4 sm:px-6 sm:pb-6">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              <div className="rounded-[20px] border border-blue-100 bg-blue-50/80 p-3 text-center dark:border-blue-500/20 dark:bg-blue-950/25 sm:rounded-[22px] sm:p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-blue-600 dark:text-blue-300 sm:text-xs">Сьогодні</p>
+                <p className="mt-1.5 text-lg font-semibold tracking-[-0.04em] text-blue-700 dark:text-blue-200 sm:mt-2 sm:text-2xl">
                   {formatDuration(stats?.today_test_time_seconds || 0)}
                 </p>
               </div>
-              <div className="rounded-[22px] border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-500/20 dark:bg-emerald-950/25">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-300">За {timeRange} днів</p>
-                <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-emerald-700 dark:text-emerald-200">
+              <div className="rounded-[20px] border border-emerald-100 bg-emerald-50/80 p-3 text-center dark:border-emerald-500/20 dark:bg-emerald-950/25 sm:rounded-[22px] sm:p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-600 dark:text-emerald-300 sm:text-xs">За {timeRange} днів</p>
+                <p className="mt-1.5 text-lg font-semibold tracking-[-0.04em] text-emerald-700 dark:text-emerald-200 sm:mt-2 sm:text-2xl">
                   {formatDuration(totalRangeTime)}
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-4 gap-2 sm:flex sm:flex-wrap">
               {timeRangeOptions.map((days) => (
                 <button
                   key={days}
                   type="button"
-                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  className={`rounded-full border px-2 py-1.5 text-[11px] font-semibold transition-colors sm:px-3 sm:text-xs ${
                     timeRange === days
                       ? 'border-primary bg-primary text-white'
                       : 'border-slate-200 bg-white text-slate-600 hover:border-primary/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200'
@@ -600,10 +605,10 @@ export default function Progress({ view = 'dashboard' }) {
               ))}
             </div>
             {timeChartData.length ? (
-              <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/45">
-                <div className="h-[170px] w-full">
+              <div className="-mx-1 rounded-[22px] border border-slate-200 bg-slate-50/70 p-2 dark:border-slate-800 dark:bg-slate-900/45 sm:mx-0 sm:p-3">
+                <div className="h-[190px] w-full sm:h-[170px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={timeChartData} margin={{ top: 14, right: 10, left: -18, bottom: 0 }}>
+                    <AreaChart data={timeChartData} margin={profileChartMargin}>
                       <defs>
                         <linearGradient id="profileTimeFill" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.34} />
@@ -612,7 +617,7 @@ export default function Progress({ view = 'dashboard' }) {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#dbe4ef'} />
                       <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} stroke={isDark ? '#94a3b8' : '#64748b'} />
-                      <YAxis tickLine={false} axisLine={false} fontSize={11} stroke={isDark ? '#94a3b8' : '#64748b'} />
+                      <YAxis width={profileYAxisWidth} tickLine={false} axisLine={false} fontSize={11} stroke={isDark ? '#94a3b8' : '#64748b'} />
                       <Tooltip
                         contentStyle={chartTooltipStyle}
                         labelStyle={chartTooltipLabelStyle}
@@ -678,11 +683,11 @@ export default function Progress({ view = 'dashboard' }) {
           <CardHeader>
             <CardTitle className="dark:text-white">Динаміка результатів</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 pb-4 sm:px-6 sm:pb-6">
             {performanceChart.length > 1 ? (
-              <div className="h-[260px] w-full">
+              <div className="-mx-2 h-[260px] sm:mx-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={performanceChart} margin={{ top: 12, right: 8, left: -20, bottom: 0 }}>
+                  <AreaChart data={performanceChart} margin={profileScoreMargin}>
                     <defs>
                       <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.42} />
@@ -691,7 +696,7 @@ export default function Progress({ view = 'dashboard' }) {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} stroke="#94a3b8" />
-                    <YAxis tickLine={false} axisLine={false} domain={[0, 100]} fontSize={12} stroke="#94a3b8" />
+                    <YAxis width={profileYAxisWidth} tickLine={false} axisLine={false} domain={[0, 100]} fontSize={12} stroke="#94a3b8" />
                     <Tooltip contentStyle={chartTooltipStyle} labelStyle={chartTooltipLabelStyle} itemStyle={chartTooltipItemStyle} />
                     <Area type="monotone" dataKey="score" stroke="#60a5fa" strokeWidth={3} fill="url(#scoreFill)" />
                   </AreaChart>
