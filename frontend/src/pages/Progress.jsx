@@ -1,8 +1,32 @@
 ﻿// @ts-nocheck
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AtSign, BookMarked, CheckCheck, CheckCircle2, ChevronDown, ChevronUp, CircleAlert, Copy, Flame, LogOut, Mail, MessageCircleMore, PencilLine, Save, Settings, ShieldCheck, Sparkles, Star, Target, Users, XCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  ArrowRight,
+  AtSign,
+  BadgeX,
+  BookMarked,
+  BookOpen,
+  CheckCheck,
+  CheckCircle2,
+  Copy,
+  Flame,
+  Mail,
+  PencilLine,
+  Route,
+  Save,
+  ShieldX,
+  Shuffle,
+  Sparkles,
+  Star,
+  Target,
+  Trophy,
+  TrendingUp,
+  Users,
+  XCircle,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,43 +39,12 @@ import FramePicker from '@/components/profile/FramePicker';
 import LoginPrompt from '@/components/auth/LoginPrompt';
 import ProtectedScreenFallback from '@/components/auth/ProtectedScreenFallback';
 import ActivityCalendar from '@/components/progress/ActivityCalendar';
-import { TIER_COLORS, getUnlockedFrames } from '@/lib/achievements';
-import AdminPanel from '@/pages/AdminPanel';
+import { ACHIEVEMENTS_DEF, TIER_COLORS, getUnlockedFrames } from '@/lib/achievements';
 
-const profileLinks = [
-  { to: '/study', label: 'Теорія', icon: BookMarked, badgeKey: null },
-  { to: '/mistakes', label: 'Помилки', icon: CircleAlert, badgeKey: null },
-  { to: '/friends', label: 'Друзі', icon: Users, badgeKey: 'friends' },
-  { to: '/support', label: 'Підтримка', icon: MessageCircleMore, badgeKey: 'support' },
-  { to: '/settings', label: 'Налаштування', icon: Settings, badgeKey: null },
-  { to: '/privacy', label: 'Конфіденційність', icon: ShieldCheck, badgeKey: null },
-];
+const timeRangeOptions = [15, 30, 60, 120];
 
-const onboardingSections = [
-  {
-    title: 'Тести та навчання',
-    text: 'Починайте з розділу Тести, коли хочете пройти швидкий тест, повний іспит або попрацювати над помилками. Якщо хочеться краще зрозуміти тему, відкривайте Бібліотеку і переходьте до потрібного розділу правил.',
-  },
-  {
-    title: 'Аналітика та прогрес',
-    text: 'У профілі та в аналітиці видно, як часто ви тренуєтесь, яка у вас точність, скільки тестів уже складено і які теми варто підтягнути. Це допомагає не просто клацати питання, а реально бачити свій рух.',
-  },
-  {
-    title: 'Зірки, серія і нагороди',
-    text: 'Зірки даються за ідеальні тести без помилок. Вогник показує серію активності: проходьте хоча б один тест на день, щоб не втрачати темп. Досягнення відкривають нові рамки й роблять профіль живішим.',
-  },
-  {
-    title: 'Друзі, чат і батли',
-    text: 'У Друзях зберігаються ваші контакти, переписка і запити. Через Батли можна кинути виклик другу або будь-якому користувачу за нікнеймом, а потім порівняти відповіді після завершення поєдинку.',
-  },
-  {
-    title: 'Налаштування і підтримка',
-    text: 'У налаштуваннях можна змінити тему, шрифт, звук і приватність профілю. Якщо щось ламається або є питання, пишіть у Підтримку: відповідь прийде прямо в чат усередині сайту.',
-  },
-];
-
-export default function Progress() {
-  const { user, login, logout, isCheckingAccess, isTemporaryAuthFailure, canAccess, checkUserAuth } = useProtectedScreen();
+export default function Progress({ view = 'dashboard' }) {
+  const { user, login, isCheckingAccess, isTemporaryAuthFailure, canAccess, checkUserAuth } = useProtectedScreen();
   const queryClient = useQueryClient();
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   const chartTooltipStyle = {
@@ -64,7 +57,7 @@ export default function Progress() {
   const chartTooltipLabelStyle = { color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 700 };
   const chartTooltipItemStyle = { color: isDark ? '#e2e8f0' : '#0f172a' };
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [timeRange, setTimeRange] = useState(30);
   const [name, setName] = useState(user?.name || '');
   const [surname, setSurname] = useState(user?.surname || '');
   const [username, setUsername] = useState(user?.username || '');
@@ -78,23 +71,15 @@ export default function Progress() {
   const [purchasingFrameId, setPurchasingFrameId] = useState(null);
   const [streakAnimating, setStreakAnimating] = useState(false);
   const previousStreakRef = useRef(/** @type {number | null} */ (null));
+  const isProfileView = view === 'profile';
 
   const statsQuery = useQuery({
     queryKey: ['cabinet-stats'],
     queryFn: () => api.getStats(),
     enabled: !!user,
   });
-  const notificationsQuery = useQuery({
-    queryKey: ['notification-summary'],
-    queryFn: () => api.getNotificationSummary(),
-    enabled: !!user,
-    staleTime: 20_000,
-    refetchInterval: 20_000,
-  });
-
   const stats = statsQuery.data;
   const profile = { ...(stats?.user || {}), ...(user || {}) };
-  const notificationSummary = notificationsQuery.data || { friends: 0, support: 0, battles: 0 };
   const totalTests = stats?.total_tests || 0;
   const totalCorrect = stats?.total_correct || 0;
   const totalAnswers = stats?.total_answers || 0;
@@ -105,8 +90,54 @@ export default function Progress() {
   const totalStars = stats?.total_stars || 0;
   const availableStars = stats?.available_stars ?? totalStars;
   const passedTests = stats?.passed_tests || 0;
+  const failedTests = Math.max(0, totalTests - passedTests);
   const totalWrong = stats?.total_wrong ?? Math.max(0, totalAnswers - totalCorrect);
   const progressPercent = Math.min(100, Math.max(8, totalTests * 2 + Math.round(accuracy * 0.4)));
+  const recentTests = stats?.recent_tests || [];
+  const quickActions = [
+    {
+      to: '/tests?mode=quick&category=B',
+      title: 'Офіційні тести',
+      description: 'Питання з бази ПДР для швидкої та чесної перевірки знань.',
+      icon: Shuffle,
+      color: 'bg-blue-600',
+    },
+    {
+      to: '/tickets?category=B',
+      title: 'Офіційні білети',
+      description: 'Тренувальні білети за логікою іспиту МВС.',
+      icon: BookOpen,
+      color: 'bg-emerald-500',
+    },
+    {
+      to: '/saved-questions',
+      title: 'Збережені',
+      description: 'Питання, які Ви відклали для спокійного повторення.',
+      icon: BookMarked,
+      color: 'bg-rose-800',
+    },
+    {
+      to: '/marathon',
+      title: 'Марафон',
+      description: 'Довге тренування на витривалість.',
+      icon: Route,
+      color: 'bg-sky-500',
+    },
+    {
+      to: '/battle',
+      title: 'Батли',
+      description: 'Змагання з друзями у форматі тесту.',
+      icon: Users,
+      color: 'bg-violet-500',
+    },
+    {
+      to: '/leaderboard',
+      title: 'Рейтинг',
+      description: 'Порівняйте свій прогрес з іншими.',
+      icon: Trophy,
+      color: 'bg-yellow-500',
+    },
+  ];
   const usernameChangeBlocked = Boolean(profile?.username_change_blocked);
   const usernameChangeAvailableAt = profile?.username_change_available_at ? new Date(profile.username_change_available_at) : null;
   const usernameHintText = usernameChangeBlocked && usernameChangeAvailableAt
@@ -125,11 +156,12 @@ export default function Progress() {
           name: topic.section_name || `Розділ ${topic.section || ''}`,
           total,
           wrong,
+          errorRate: total > 0 ? Math.round((wrong / total) * 100) : 0,
           accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
         };
       })
       .filter((topic) => topic.total > 0 && topic.wrong > 0)
-      .sort((a, b) => (b.wrong - a.wrong) || (a.accuracy - b.accuracy))
+      .sort((a, b) => (b.errorRate - a.errorRate) || (b.wrong - a.wrong))
       .slice(0, 5);
   }, [stats]);
 
@@ -141,7 +173,7 @@ export default function Progress() {
       tier: achievement.tier || 1,
     }))
   ), [stats]);
-  const totalAchievements = 20;
+  const totalAchievements = ACHIEVEMENTS_DEF.length;
   const featuredAchievements = useMemo(() => {
     const selected = profile?.featured_achievements || [];
     if (!selected.length) return achievements.slice(0, 4);
@@ -162,6 +194,31 @@ export default function Progress() {
         score: result.total ? Math.round(((result.correct || 0) / result.total) * 100) : 0,
       }))
   ), [stats]);
+
+  const timeRangeRows = useMemo(() => {
+    const rows = Array.isArray(stats?.daily_test_time) ? stats.daily_test_time : [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const since = new Date(today);
+    since.setDate(today.getDate() - (timeRange - 1));
+    return rows
+      .filter((row) => {
+        const day = new Date(row.day);
+        return !Number.isNaN(day.getTime()) && day >= since;
+      })
+      .sort((left, right) => String(left.day).localeCompare(String(right.day)));
+  }, [stats?.daily_test_time, timeRange]);
+
+  const totalRangeTime = timeRangeRows.reduce((sum, row) => sum + Number(row.seconds || 0), 0);
+  const timeChartData = useMemo(
+    () =>
+      timeRangeRows.map((row) => ({
+        label: new Date(row.day).toLocaleDateString('uk-UA', { day: '2-digit', month: 'short' }),
+        minutes: Math.round(Number(row.seconds || 0) / 60),
+        seconds: Number(row.seconds || 0),
+      })),
+    [timeRangeRows],
+  );
 
   useEffect(() => {
     if (previousStreakRef.current === null) {
@@ -268,11 +325,84 @@ export default function Progress() {
   }
 
   if (profile?.is_admin) {
-    return <AdminPanel />;
+    return <Navigate to="/admin" replace />;
   }
 
   return (
-    <div className="w-full space-y-6 pb-6">
+    <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      {!isProfileView ? (
+      <motion.section className="space-y-6" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: 'easeOut' }}>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
+            Привіт, {profile?.name || user?.name || 'водію'}!
+          </h1>
+          <p className="max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
+            Оберіть зручний формат підготовки або перегляньте свій прогрес. Тут зібрано все, що допомагає спокійно рухатися до іспиту.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link key={action.to} to={action.to} className="group block h-full">
+                <Card className="h-full border-2 border-transparent bg-card shadow-md transition-all hover:border-primary/30 hover:shadow-xl dark:border-slate-800 dark:hover:border-sky-500/40">
+                  <CardContent className="grid min-h-[112px] grid-cols-[48px_minmax(0,1fr)_18px] items-center gap-4 p-4 sm:min-h-[118px]">
+                    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-sm ${action.color}`}>
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-base font-semibold text-slate-950 transition-colors group-hover:text-primary dark:text-white">
+                        {action.title}
+                      </span>
+                      <span className="mt-1 block text-sm leading-6 text-slate-600 dark:text-slate-300">
+                        {action.description}
+                      </span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-3">
+          <Card className="border-slate-200 bg-card shadow-md dark:border-slate-800 lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold text-slate-950 dark:text-white">Ваша статистика</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                <DashboardStatTile icon={Target} label="Тестів пройдено" value={String(totalTests)} accent="blue" />
+                <DashboardStatTile icon={Trophy} label="Успішних" value={String(passedTests)} accent="green" />
+                <DashboardStatTile icon={ShieldX} label="Не успішних" value={String(failedTests)} accent="red" />
+                <DashboardStatTile icon={TrendingUp} label="Точність" value={`${accuracy}%`} accent="amber" />
+                <DashboardStatTile icon={CheckCircle2} label="Правильних" value={String(totalCorrect)} accent="sky" />
+                <DashboardStatTile icon={BadgeX} label="Неправильних" value={String(totalWrong)} accent="rose" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 bg-card shadow-md dark:border-slate-800">
+            <CardHeader className="flex flex-row items-center justify-between gap-3">
+              <CardTitle className="text-xl font-semibold text-slate-950 dark:text-white">Останні тести</CardTitle>
+              <Link to="/analytics?tab=history" className="text-sm font-medium text-primary hover:underline">Всі</Link>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {recentTests.length > 0 ? recentTests.slice(0, 4).map((result, index) => (
+                <RecentTestRow key={result.id || `${result.created_at || result.completed_at || 'test'}-${index}`} result={result} />
+              )) : (
+                <EmptyState text="Історія поки порожня. Почніть перший тест, і тут з’являться результати." />
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </motion.section>
+      ) : null}
+
+      {isProfileView ? (
+      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: 'easeOut' }}>
       <Card className="overflow-hidden border-white/90 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(239,246,255,0.96))] shadow-[0_24px_60px_rgba(37,99,235,0.08)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96),rgba(15,23,42,0.98))]">
         <CardContent className="space-y-6 p-4 sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
@@ -339,7 +469,7 @@ export default function Progress() {
                           Досягнення: {achievements.length}/{totalAchievements}
                         </p>
                       </div>
-                      <Button asChild variant="outline" size="sm" className="order-2 h-9 rounded-lg px-3 text-xs sm:order-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                      <Button asChild variant="outline" size="sm" className="hidden h-9 rounded-lg px-3 text-xs sm:inline-flex dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                         <Link to="/achievements">Переглянути всі</Link>
                       </Button>
                     </div>
@@ -352,6 +482,11 @@ export default function Progress() {
                     ) : (
                       <p className="text-sm text-slate-500 dark:text-slate-300">Перші нагороди з’являються після тестів, серії активності та хороших результатів.</p>
                     )}
+                    <div className="mt-3 flex justify-end sm:hidden">
+                      <Button asChild variant="outline" size="sm" className="h-8 rounded-lg px-2.5 text-[11px] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                        <Link to="/achievements">Переглянути всі</Link>
+                      </Button>
+                    </div>
                   </div>
                 </>
               ) : (
@@ -402,7 +537,7 @@ export default function Progress() {
           </div>
 
           <div className="space-y-4 lg:grid lg:gap-4 lg:grid-cols-[1.15fr_repeat(4,minmax(0,1fr))] lg:space-y-0">
-            <div className="rounded-[24px] border border-sky-100 bg-[linear-gradient(135deg,rgba(20,107,255,0.08),rgba(255,255,255,0.98)_42%,rgba(236,253,245,0.9))] p-4 shadow-[0_16px_40px_rgba(37,99,235,0.08)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(30,64,175,0.22),rgba(2,6,23,0.96)_48%,rgba(6,78,59,0.4))]">
+            <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">Коротко про статистику</p>
                 <span className="rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-sm font-bold text-primary dark:bg-slate-900/80">{progressPercent}%</span>
@@ -417,35 +552,87 @@ export default function Progress() {
 
             <div className="grid grid-cols-2 gap-4 lg:contents">
               <MetricCard icon={CheckCheck} label="Складено іспитів" value={String(passedTests)} accent="blue" />
-              <MetricCard icon={Target} label="Точність" value={`${accuracy}%`} accent="amber" />
+              <MetricCard icon={Target} label="Точність" value={`${accuracy}%`} accent="violet" />
               <MetricCard icon={CheckCircle2} label="Правильних" value={String(totalCorrect)} accent="green" />
               <MetricCard icon={XCircle} label="Помилки" value={String(totalWrong)} accent="red" />
             </div>
           </div>
         </CardContent>
       </Card>
+      </motion.div>
+      ) : null}
 
+      {isProfileView ? (
       <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
         <Card className="surface-glass overflow-hidden">
           <CardHeader>
-            <CardTitle className="dark:text-white">Меню профілю</CardTitle>
+            <CardTitle className="dark:text-white">Загальний час тестування</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3">
-            {profileLinks.map(({ to, label, icon: Icon, badgeKey }) => (
-              <Link
-                key={to}
-                to={to}
-                className="relative inline-flex min-h-14 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-sky-200 hover:bg-sky-50 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-sky-500/40 dark:hover:bg-slate-800"
-              >
-                <Icon className="h-4 w-4 text-primary" />
-                {label}
-                {badgeKey && notificationSummary[badgeKey] > 0 ? (
-                  <span className="absolute right-3 top-3 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold text-white">
-                    {Math.min(notificationSummary[badgeKey], 9)}
-                  </span>
-                ) : null}
-              </Link>
-            ))}
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[22px] border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-500/20 dark:bg-blue-950/25">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">Сьогодні</p>
+                <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-blue-700 dark:text-blue-200">
+                  {formatDuration(stats?.today_test_time_seconds || 0)}
+                </p>
+              </div>
+              <div className="rounded-[22px] border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-500/20 dark:bg-emerald-950/25">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-300">За {timeRange} днів</p>
+                <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-emerald-700 dark:text-emerald-200">
+                  {formatDuration(totalRangeTime)}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {timeRangeOptions.map((days) => (
+                <button
+                  key={days}
+                  type="button"
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    timeRange === days
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-primary/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200'
+                  }`}
+                  onClick={() => setTimeRange(days)}
+                >
+                  {days} днів
+                </button>
+              ))}
+            </div>
+            {timeChartData.length ? (
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/45">
+                <div className="h-[170px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={timeChartData} margin={{ top: 14, right: 10, left: -18, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="profileTimeFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.34} />
+                          <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0.04} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#dbe4ef'} />
+                      <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} stroke={isDark ? '#94a3b8' : '#64748b'} />
+                      <YAxis tickLine={false} axisLine={false} fontSize={11} stroke={isDark ? '#94a3b8' : '#64748b'} />
+                      <Tooltip
+                        contentStyle={chartTooltipStyle}
+                        labelStyle={chartTooltipLabelStyle}
+                        itemStyle={chartTooltipItemStyle}
+                        formatter={(value, name, props) => [formatDuration(props?.payload?.seconds || 0), 'Час']}
+                      />
+                      <Area type="monotone" dataKey="minutes" stroke="#0ea5e9" strokeWidth={3} fill="url(#profileTimeFill)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            ) : null}
+
+            <div>
+              {!timeRangeRows.length ? (
+                <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-5 text-sm leading-6 text-slate-500 dark:border-slate-800 dark:text-slate-300">
+                  Тут з’явиться схема часу після перших завершених тестів.
+                </p>
+              ) : null}
+            </div>
           </CardContent>
         </Card>
 
@@ -458,13 +645,15 @@ export default function Progress() {
           </CardContent>
         </Card>
       </div>
+      ) : null}
 
+      {!isProfileView ? (
       <div className="grid gap-5 xl:grid-cols-[1.02fr_0.98fr]">
         <Card className="surface-glass overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between gap-4">
             <CardTitle className="dark:text-white">Слабкі теми</CardTitle>
-            <Button asChild variant="ghost" className="h-auto rounded-xl border border-primary/10 bg-primary/5 px-3 py-2 text-primary shadow-sm hover:bg-primary/10">
-              <Link to="/tests">Потренувати</Link>
+            <Button asChild variant="ghost" className="h-auto rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-600 shadow-sm hover:bg-red-100 dark:border-red-500/20 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/45">
+              <Link to="/mistakes">Потренувати</Link>
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -472,10 +661,13 @@ export default function Progress() {
               <div key={topic.id}>
                 <div className="mb-1 flex items-center justify-between gap-4">
                   <span className="truncate text-sm font-semibold text-slate-700 dark:text-slate-100">{topic.name}</span>
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">{topic.accuracy}% · {topic.wrong} пом.</span>
+                  <span className="text-sm font-bold text-red-600 dark:text-red-300">
+                    <span className="sm:hidden">{topic.errorRate}% · {topic.wrong} пом.</span>
+                    <span className="hidden sm:inline">{topic.errorRate}% слабкості · {topic.wrong} пом.</span>
+                  </span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                  <div className="h-2 rounded-full bg-[linear-gradient(90deg,#fb7185_0%,#f59e0b_48%,#38bdf8_100%)]" style={{ width: `${topic.accuracy}%` }} />
+                <div className="h-2 overflow-hidden rounded-full bg-red-100 dark:bg-red-950/60">
+                  <div className="h-2 rounded-full bg-red-500" style={{ width: `${Math.max(8, topic.errorRate)}%` }} />
                 </div>
               </div>
             )) : <EmptyState text="Після кількох тестів тут покажуться теми, які варто підтягнути." />}
@@ -511,45 +703,8 @@ export default function Progress() {
           </CardContent>
         </Card>
       </div>
+      ) : null}
 
-      <Card className="overflow-hidden border-white/90 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(239,246,255,0.96))] shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96),rgba(15,23,42,0.98))]">
-        <CardHeader>
-          <CardTitle className="dark:text-white">Довідник по сайту</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-          <Button
-            type="button"
-            variant="outline"
-            className="rounded-xl border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            onClick={() => setShowOnboarding((value) => !value)}
-          >
-            {showOnboarding ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
-            {showOnboarding ? 'Сховати гайд' : 'Показати гайд'}
-          </Button>
-          {showOnboarding ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {onboardingSections.map((section) => (
-                <div key={section.title} className="rounded-[22px] border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-                  <p className="font-semibold text-slate-900 dark:text-white">{section.title}</p>
-                  <p className="mt-2">{section.text}</p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      <Card className="overflow-hidden border-red-200 bg-red-50 shadow-[0_18px_45px_rgba(239,68,68,0.08)] dark:border-red-500/20 dark:bg-red-950/25">
-        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-6">
-          <div>
-            <p className="font-semibold text-slate-900 dark:text-white">Вихід з акаунту</p>
-          </div>
-          <Button variant="destructive" className="w-full rounded-xl px-5 shadow-[0_12px_24px_rgba(239,68,68,0.18)] sm:w-auto" onClick={logout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Log out
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   );
 }
@@ -560,6 +715,14 @@ function apiToken() {
 
 function hasPersistentLogin() {
   return tokenStore.hasPersistent();
+}
+
+function formatDuration(seconds) {
+  const total = Math.max(0, Number(seconds) || 0);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  return [hours, minutes, secs].map((part) => String(part).padStart(2, '0')).join(':');
 }
 
 function Field(props) {
@@ -585,43 +748,99 @@ function StatusPill({ icon: Icon, value, label, active, animate, palette, filled
   );
 }
 
+function DashboardStatTile({ icon: Icon, label, value, accent = 'blue' }) {
+  const accentMap = {
+    blue: 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-200',
+    green: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-200',
+    amber: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-200',
+    sky: 'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-200',
+    red: 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-200',
+    rose: 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-200',
+  };
+
+  return (
+    <div className="flex min-h-[132px] flex-col items-center justify-center rounded-xl bg-slate-50 p-4 pt-5 text-center dark:bg-slate-900/60">
+      <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ${accentMap[accent] || accentMap.blue}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">{value}</div>
+      <div className="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-300">{label}</div>
+    </div>
+  );
+}
+
+function RecentTestRow({ result }) {
+  const correct = Number(result.correct || result.correct_answers || 0);
+  const total = Number(result.total || result.total_questions || 0);
+  const score = total > 0 ? Math.round((correct / total) * 100) : Number(result.score || 0);
+  const passed = typeof result.passed === 'boolean' ? result.passed : score >= 80;
+  const dateValue = result.completed_at || result.created_at || result.date;
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-900/60">
+      <div className="flex min-w-0 items-center gap-3">
+        {passed ? (
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />
+        ) : (
+          <XCircle className="h-5 w-5 shrink-0 text-rose-500" />
+        )}
+        <div className="min-w-0">
+          <div className="text-sm font-medium text-slate-950 dark:text-white">
+            {correct}/{total || '?'} правильних
+          </div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">{formatShortDate(dateValue)}</div>
+        </div>
+      </div>
+      <div className={passed ? 'text-sm font-semibold text-emerald-600 dark:text-emerald-300' : 'text-sm font-semibold text-rose-600 dark:text-rose-300'}>
+        {score}%
+      </div>
+    </div>
+  );
+}
+
+function formatShortDate(value) {
+  if (!value) return 'Нещодавно';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Нещодавно';
+  return date.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' });
+}
+
 function MetricCard({ icon: Icon, label, value, accent = 'blue', filledIcon = false }) {
   const accentMap = {
     blue: {
-      card: 'border-sky-100 bg-[linear-gradient(135deg,rgba(14,165,233,0.12),rgba(255,255,255,0.98)_52%,rgba(219,234,254,0.92))] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(14,165,233,0.16),rgba(15,23,42,0.98)_52%,rgba(30,41,59,0.96))]',
-      icon: 'from-sky-500 to-blue-600',
-      glow: 'shadow-[0_12px_28px_rgba(14,165,233,0.18)]',
+      card: 'border-sky-100 bg-sky-50/80 dark:border-sky-500/20 dark:bg-sky-950/20',
+      icon: 'bg-sky-500',
     },
     orange: {
-      card: 'border-orange-100 bg-[linear-gradient(135deg,rgba(251,146,60,0.14),rgba(255,255,255,0.98)_52%,rgba(255,237,213,0.92))] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(249,115,22,0.18),rgba(15,23,42,0.98)_52%,rgba(30,41,59,0.96))]',
-      icon: 'from-amber-400 to-orange-500',
-      glow: 'shadow-[0_12px_28px_rgba(249,115,22,0.18)]',
+      card: 'border-orange-100 bg-orange-50/80 dark:border-orange-500/20 dark:bg-orange-950/20',
+      icon: 'bg-orange-500',
     },
     green: {
-      card: 'border-emerald-100 bg-[linear-gradient(135deg,rgba(34,197,94,0.14),rgba(255,255,255,0.98)_52%,rgba(209,250,229,0.92))] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(34,197,94,0.18),rgba(15,23,42,0.98)_52%,rgba(30,41,59,0.96))]',
-      icon: 'from-emerald-500 to-teal-500',
-      glow: 'shadow-[0_12px_28px_rgba(16,185,129,0.18)]',
+      card: 'border-emerald-100 bg-emerald-50/80 dark:border-emerald-500/20 dark:bg-emerald-950/20',
+      icon: 'bg-emerald-500',
     },
     amber: {
-      card: 'border-amber-100 bg-[linear-gradient(135deg,rgba(251,191,36,0.16),rgba(255,255,255,0.98)_52%,rgba(254,243,199,0.92))] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(245,158,11,0.2),rgba(15,23,42,0.98)_52%,rgba(30,41,59,0.96))]',
-      icon: 'from-amber-400 to-yellow-500',
-      glow: 'shadow-[0_12px_28px_rgba(245,158,11,0.22)]',
+      card: 'border-amber-100 bg-amber-50/80 dark:border-amber-500/20 dark:bg-amber-950/20',
+      icon: 'bg-amber-500',
+    },
+    violet: {
+      card: 'border-violet-100 bg-violet-50/80 dark:border-violet-500/20 dark:bg-violet-950/20',
+      icon: 'bg-violet-500',
     },
     red: {
-      card: 'border-rose-100 bg-[linear-gradient(135deg,rgba(244,63,94,0.14),rgba(255,255,255,0.98)_52%,rgba(255,228,230,0.92))] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(244,63,94,0.18),rgba(15,23,42,0.98)_52%,rgba(30,41,59,0.96))]',
-      icon: 'from-rose-500 to-orange-500',
-      glow: 'shadow-[0_12px_28px_rgba(244,63,94,0.16)]',
+      card: 'border-rose-100 bg-rose-50/80 dark:border-rose-500/20 dark:bg-rose-950/20',
+      icon: 'bg-rose-500',
     },
   };
   const palette = accentMap[accent] || accentMap.blue;
 
   return (
-    <div className={`rounded-[22px] border p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] ${palette.card}`}>
-      <div className={`mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white ${palette.icon} ${palette.glow}`}>
+    <div className="flex min-h-[116px] flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-4 pt-5 text-center shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-950">
+      <div className={`mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm ${palette.icon}`}>
         <Icon className={`h-5 w-5 ${filledIcon ? 'fill-current' : ''}`} />
       </div>
-      <p className="text-2xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-white">{value}</p>
-      <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{label}</p>
+      <p className="text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">{value}</p>
+      <p className="text-sm font-medium leading-5 text-slate-600 dark:text-slate-300">{label}</p>
     </div>
   );
 }

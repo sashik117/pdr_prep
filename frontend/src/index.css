@@ -216,14 +216,19 @@
     @apply flex flex-col gap-3 sm:flex-row sm:items-center;
   }
 
-  .app-content > *,
   .app-content .page-shell,
   .app-content .section-shell,
   .app-content .mx-auto[class*="max-w-"] {
-    width: 100% !important;
-    max-width: none !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  @media (min-width: 1024px) {
+    .app-content .mx-auto[class*="max-w-7xl"],
+    .app-content .mx-auto[class*="max-w-6xl"] {
+      max-width: 76rem !important;
+    }
   }
 
   .app-content :where(.rounded-2xl, .rounded-3xl),

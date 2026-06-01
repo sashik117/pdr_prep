@@ -33,6 +33,7 @@ export async function fetchQuestions({ section, category, topic, ids, limit = 20
  *   topic?: string,
  *   excludeIds?: Array<string | number>,
  *   difficultOnly?: boolean,
+ *   difficulty?: string,
  *   seed?: string
  * }} [paramsArg]
  */
@@ -43,6 +44,7 @@ export async function fetchRandomQuestions({
   topic,
   excludeIds = [],
   difficultOnly = false,
+  difficulty,
   seed,
 } = {}) {
   /** @type {Record<string, string>} */
@@ -52,6 +54,7 @@ export async function fetchRandomQuestions({
   if (topic) params.topic = String(topic);
   if (excludeIds.length > 0) params.exclude_ids = excludeIds.join(',');
   if (difficultOnly) params.difficult_only = 'true';
+  if (difficulty) params.difficulty = String(difficulty);
   if (seed) params.seed = seed;
   return api.getRandomQuestions(params);
 }

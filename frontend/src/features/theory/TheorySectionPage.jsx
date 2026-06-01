@@ -23,6 +23,13 @@ function isPremiumSlug(slug) {
   return slug === 'video-lectures' || slug.startsWith('academy');
 }
 
+function cleanVideoTitle(title) {
+  return String(title || '')
+    .replace(/^Розділ\s*\d+(?:[.)]\s*)?/i, '')
+    .replace(/^\d+(?:[.)]\s*)?/, '')
+    .trim();
+}
+
 function sectionOrderValue(section, fallback) {
   const value = Number(section?.chapterNum || section?.sortOrder || fallback + 1);
   return Number.isFinite(value) ? value : fallback + 1;
@@ -78,6 +85,8 @@ export default function TheorySectionPage() {
   const section = sectionQuery.data || resolvedSection;
   const resolvedTopicKey = section?.topicSlug || topicKey || '';
   const requiresPremium = isPremiumSlug(resolvedTopicKey);
+  const isVideoTopic = resolvedTopicKey === 'video-lectures' || topicKey === 'video-lectures';
+  const sectionTitle = isVideoTopic ? cleanVideoTitle(section?.title) : section?.title;
   const isPremiumUser = Boolean(user?.is_premium);
   const hasInlineImages = /<img\b/i.test(section?.contentHtml || '');
   const currentIndex = sections.findIndex((item) => item.id === section?.id);
@@ -96,7 +105,7 @@ export default function TheorySectionPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pb-6 sm:space-y-8">
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 pb-8 sm:space-y-8 sm:px-6 lg:px-8">
       <div className="flex items-center gap-3">
         <Button asChild variant="outline" className="rounded-lg">
           <Link to={resolvedTopicKey ? `/study/${resolvedTopicKey}` : '/study'}>
@@ -126,7 +135,7 @@ export default function TheorySectionPage() {
 
           <div>
             <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white sm:text-3xl">
-              {section?.title || 'Завантаження розділу'}
+              {sectionTitle || 'Завантаження розділу'}
             </h1>
             {section?.description ? (
               <p className="mt-3 hidden text-sm leading-7 text-slate-700 dark:text-slate-200 sm:block">
@@ -175,14 +184,14 @@ export default function TheorySectionPage() {
             <div className="space-y-8 p-4 sm:p-8">
               {section.embedUrl || section.videoUrl ? (
                 <motion.div {...reveal}>
-                  <TheoryVideoPanel title={section.title} embedUrl={section.embedUrl} videoUrl={section.videoUrl} />
+                  <TheoryVideoPanel title={sectionTitle || section.title} embedUrl={section.embedUrl} videoUrl={section.videoUrl} />
                 </motion.div>
               ) : null}
 
               <motion.div
                 {...reveal}
                 transition={{ ...reveal.transition, delay: 0.05 }}
-                className="theory-reading-panel rounded-xl border border-slate-200 bg-card p-4 shadow-sm dark:border-slate-800 sm:p-6"
+                className="theory-reading-panel min-w-0 overflow-hidden bg-transparent p-0 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-card sm:p-6 sm:shadow-sm dark:sm:border-slate-800"
               >
                 <details className="mb-4 rounded-lg bg-sky-50/70 px-4 py-3 text-sm text-slate-600 dark:bg-sky-950/20 dark:text-slate-300 md:hidden">
                   <summary className="cursor-pointer font-medium text-slate-900 dark:text-white">Коротко про розділ</summary>
@@ -193,7 +202,7 @@ export default function TheorySectionPage() {
 
               {!hasInlineImages ? (
                 <motion.div {...reveal} transition={{ ...reveal.transition, delay: 0.08 }}>
-                  <TheoryAssetGallery assets={section.assets} fallbackTitle={section.title} />
+                  <TheoryAssetGallery assets={section.assets} fallbackTitle={sectionTitle || section.title} />
                 </motion.div>
               ) : null}
 

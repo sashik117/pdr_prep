@@ -67,7 +67,7 @@ export const extraModes = [
     to: '/tests?mode=difficult',
   },
   {
-    title: 'Топ 100 помилок',
+    title: 'Топ помилок багатьох',
     description: 'Добірка питань, які найчастіше плутають під час підготовки.',
     icon: Star,
     to: '/tests?mode=top',

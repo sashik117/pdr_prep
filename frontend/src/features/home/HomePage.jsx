@@ -21,6 +21,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/lib/AuthContext';
 
 const reveal = {
   initial: { opacity: 0, y: 20 },
@@ -65,8 +66,8 @@ const modes = [
   {
     icon: ClipboardList,
     title: 'Білети',
-    description: 'Окремі тренувальні білети для повторення перед іспитом.',
-    bullets: ['Зручно проходити по одному', 'Добре працює для контрольного повторення'],
+    description: 'Окремі офіційні тренувальні білети для спокійного повторення перед іспитом.',
+    bullets: ['Кожен білет проходиться окремо', 'Зручно повторювати матеріал без поспіху', 'Добре підходить для контрольної перевірки перед сервісним центром'],
     to: '/tickets',
   },
 ];
@@ -74,7 +75,7 @@ const modes = [
 const extraModes = [
   {
     icon: Brain,
-    title: 'Топ 100 помилок',
+    title: 'Топ помилок багатьох',
     description: 'Питання, на яких учні найчастіше плутаються під час підготовки.',
     to: '/tests?mode=top',
   },
@@ -103,7 +104,7 @@ const theoryTopics = [
 
 const stats = [
   {
-    value: '900 000+',
+    value: '1 000+',
     label: 'користувачів обрали цифрову підготовку до теоретичного іспиту',
     icon: UsersRound,
   },
@@ -141,20 +142,25 @@ const supportActions = [
 ];
 
 export default function HomePage() {
+  const { isAuthenticated } = useAuth();
+  const accountCta = isAuthenticated
+    ? { to: '/cabinet', label: 'До профілю' }
+    : { to: '/auth?tab=register', label: 'Зареєструватися' };
+
   return (
-    <div className="-mx-3 -my-5 overflow-hidden bg-white text-slate-950 dark:bg-slate-950 dark:text-white sm:-mx-5 sm:-my-7">
+    <div className="overflow-hidden bg-white text-slate-950 dark:bg-slate-950 dark:text-white">
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-950 text-white">
         <div className="absolute inset-0 opacity-15 [background-image:linear-gradient(rgba(255,255,255,.22)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.22)_1px,transparent_1px)] [background-size:42px_42px]" />
         <div className="absolute -bottom-32 -right-32 h-80 w-80 rounded-full bg-sky-400/25 blur-3xl" />
         <div className="absolute -left-24 top-16 h-64 w-64 rounded-full bg-blue-300/20 blur-3xl" />
 
-        <div className="relative ml-auto mr-auto w-full max-w-[1400px] px-4 py-16 sm:px-6 md:py-24 lg:px-8">
+        <div className="relative ml-auto mr-auto w-full max-w-[1400px] px-5 py-16 sm:px-6 md:py-24 lg:px-8">
           <div className="mx-auto max-w-4xl text-center">
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45 }}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-blue-50 backdrop-blur"
+              className="mb-6 inline-flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-center text-sm font-medium leading-6 text-blue-50 backdrop-blur"
             >
               <CheckCircle className="h-4 w-4" />
               База питань і теорії оновлена для підготовки 2026 року
@@ -164,7 +170,7 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55 }}
-              className="text-balance text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-6xl"
+              className="mx-auto max-w-4xl text-balance text-3xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-6xl"
             >
               Підготовка до теоретичного іспиту ПДР без зайвого шуму
             </motion.h1>
@@ -191,7 +197,7 @@ export default function HomePage() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="rounded-full border-white/30 bg-white/10 px-8 text-white hover:bg-white/15 hover:text-white">
-                <Link to="/study">Відкрити теорію</Link>
+                <Link to={accountCta.to}>{accountCta.label}</Link>
               </Button>
             </motion.div>
           </div>
@@ -199,7 +205,7 @@ export default function HomePage() {
       </section>
 
       <section className="border-b border-slate-200 bg-slate-50 py-12 dark:border-slate-800 dark:bg-slate-900/60">
-        <div className="ml-auto mr-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8">
+        <div className="ml-auto mr-auto w-full max-w-[1400px] px-5 sm:px-6 lg:px-8">
           <div className="grid gap-5 md:grid-cols-3">
             {advantages.map((item, index) => {
               const Icon = item.icon;
@@ -223,14 +229,14 @@ export default function HomePage() {
       </section>
 
       <section className="bg-white py-16 dark:bg-slate-950 md:py-20">
-        <div className="ml-auto mr-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8">
+        <div className="ml-auto mr-auto w-full max-w-[1400px] px-5 sm:px-6 lg:px-8">
           <motion.div {...reveal} className="mb-10 max-w-3xl">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">Практика</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
               Оберіть формат, який підходить саме Вам
             </h2>
             <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300">
-              Тренуйтеся короткими підходами, проходьте повний формат іспиту або повертайтеся до білетів, які хочете повторити.
+              Тренуйтеся короткими підходами, проходьте повний формат іспиту або відкривайте окремі офіційні тренувальні білети, коли потрібно повторити матеріал по-людськи й без поспіху.
             </p>
           </motion.div>
 
@@ -241,16 +247,16 @@ export default function HomePage() {
                 <motion.div key={mode.title} {...reveal} transition={{ ...reveal.transition, delay: index * 0.06 }}>
                   <Link
                     to={mode.to}
-                    className="group flex h-full flex-col rounded-2xl border-2 border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-blue-500 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-400"
+                    className="group flex h-full flex-col rounded-2xl border-2 border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-blue-500 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-400 sm:p-6"
                   >
-                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-500/15 dark:text-blue-300">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-500/15 dark:text-blue-300">
                       <Icon className="h-6 w-6" />
                     </div>
                     <h3 className="text-xl font-semibold text-slate-950 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-300">
                       {mode.title}
                     </h3>
                     <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{mode.description}</p>
-                    <ul className="mt-5 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                    <ul className="mt-5 hidden space-y-2 text-sm text-slate-600 dark:text-slate-300 sm:block">
                       {mode.bullets.map((bullet) => (
                         <li key={bullet} className="flex gap-2">
                           <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
@@ -289,11 +295,12 @@ export default function HomePage() {
               );
             })}
           </div>
+
         </div>
       </section>
 
       <section className="bg-slate-50 py-16 dark:bg-slate-900/60 md:py-20">
-        <div className="ml-auto mr-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8">
+        <div className="ml-auto mr-auto w-full max-w-[1400px] px-5 sm:px-6 lg:px-8">
           <motion.div {...reveal} className="mb-10 text-center">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-300">Теорія</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
@@ -309,17 +316,23 @@ export default function HomePage() {
               const Icon = topic.icon;
               return (
                 <motion.div key={topic.title} {...reveal} transition={{ ...reveal.transition, delay: index * 0.04 }}>
-                  <Link
-                    to={topic.to}
-                    className="group flex h-full flex-col items-center justify-center rounded-2xl bg-white p-5 text-center shadow-md shadow-slate-200/60 transition-all hover:-translate-y-0.5 hover:shadow-lg dark:bg-slate-950 dark:shadow-black/20"
-                  >
+                  <div className="flex h-full flex-col items-center justify-center rounded-2xl bg-white p-5 text-center shadow-md shadow-slate-200/60 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-200/60 dark:bg-slate-950 dark:shadow-black/20 dark:hover:shadow-blue-950/30">
                     <Icon className="mb-3 h-8 w-8 text-blue-600 dark:text-blue-300" />
                     <span className="text-sm font-semibold text-slate-950 dark:text-white">{topic.title}</span>
-                  </Link>
+                  </div>
                 </motion.div>
               );
             })}
           </div>
+
+          <motion.div {...reveal} className="mt-8 flex justify-center">
+            <Button asChild size="lg" className="rounded-full px-8 shadow-lg shadow-blue-600/15">
+              <Link to="/study">
+                Вчити теорію
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+            </Button>
+          </motion.div>
 
           <motion.div
             {...reveal}
@@ -333,16 +346,16 @@ export default function HomePage() {
                   Коли розділ має відео, користувач бачить його в контексті теми. Текст, ілюстрації та тестова практика залишаються пов’язаними.
                 </p>
               </div>
-              <Button asChild className="rounded-full bg-white text-blue-700 hover:bg-blue-50">
-                <Link to="/study/video-lectures">Дивитися відео</Link>
-              </Button>
+              <div className="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm leading-6 text-blue-50">
+                Відео відкриваються всередині теорії, щоб не розривати навчання на окремі випадкові переходи.
+              </div>
             </div>
           </motion.div>
         </div>
       </section>
 
       <section className="bg-white py-16 dark:bg-slate-950 md:py-20">
-        <div className="ml-auto mr-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8">
+        <div className="ml-auto mr-auto w-full max-w-[1400px] px-5 sm:px-6 lg:px-8">
           <div className="grid gap-8 md:grid-cols-3">
             {stats.map((stat, index) => {
               const Icon = stat.icon;
@@ -361,7 +374,7 @@ export default function HomePage() {
       </section>
 
       <section className="bg-slate-50 py-16 dark:bg-slate-900/60 md:py-20">
-        <div className="ml-auto mr-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8">
+        <div className="ml-auto mr-auto w-full max-w-[1400px] px-5 sm:px-6 lg:px-8">
           <motion.div {...reveal} className="mb-10 text-center">
             <h2 className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">Учні цінують спокійну підготовку</h2>
             <div className="mt-4 flex items-center justify-center gap-2 text-xl font-semibold text-slate-950 dark:text-white">
@@ -393,7 +406,7 @@ export default function HomePage() {
       </section>
 
       <section className="bg-gradient-to-br from-blue-600 to-blue-900 py-16 text-white md:py-20">
-        <div className="ml-auto mr-auto w-full max-w-[1000px] px-4 text-center sm:px-6 lg:px-8">
+        <div className="ml-auto mr-auto w-full max-w-[1000px] px-5 text-center sm:px-6 lg:px-8">
           <motion.h2 {...reveal} className="text-3xl font-semibold tracking-tight sm:text-4xl">
             Почніть підготовку тоді, коли Вам зручно
           </motion.h2>
@@ -412,7 +425,7 @@ export default function HomePage() {
       </section>
 
       <section className="bg-slate-50 py-12 dark:bg-slate-900/60">
-        <div className="ml-auto mr-auto grid w-full max-w-[1100px] gap-3 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
+        <div className="ml-auto mr-auto grid w-full max-w-[1100px] gap-3 px-5 sm:px-6 md:grid-cols-3 lg:px-8">
           {supportActions.map((action) => {
             const Icon = action.icon;
             return (

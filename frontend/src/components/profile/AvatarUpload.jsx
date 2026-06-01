@@ -110,7 +110,10 @@ export default function AvatarUpload({ avatarUrl = null, activeFrame = '', onAva
             <img
               src={displayedAvatar}
               alt="Avatar"
-              className="h-full w-full object-cover"
+              width={192}
+              height={192}
+              decoding="async"
+              className="h-full w-full object-cover [backface-visibility:hidden]"
               onError={() => setImageBroken(true)}
             />
           ) : <div className="flex h-full w-full items-center justify-center"><User2 className="h-9 w-9 text-slate-400" /></div>}

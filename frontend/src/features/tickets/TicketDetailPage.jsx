@@ -92,7 +92,7 @@ export default function TicketDetailPage() {
 
   if (!Number.isFinite(numericTicket) || numericTicket <= 0 || lockedPreview) {
     return (
-      <div className="mx-auto w-full max-w-2xl space-y-5 py-10 text-center">
+      <div className="mx-auto w-full max-w-2xl space-y-5 px-4 py-10 text-center sm:px-6">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-amber-500/12 text-amber-600 dark:text-amber-200">
           <Lock className="h-7 w-7" />
         </div>
@@ -121,7 +121,7 @@ export default function TicketDetailPage() {
   }
 
   return (
-    <div className="w-full space-y-5 pb-6">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-8 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Button asChild variant="outline" className="rounded-lg">
           <Link to={backHref}>
@@ -147,7 +147,7 @@ export default function TicketDetailPage() {
           </p>
         </div>
 
-        <Card className="border-slate-200 shadow-none dark:border-slate-800">
+        <Card className="border-slate-200 bg-card shadow-md dark:border-slate-800">
           <CardContent className="space-y-4 p-4 sm:p-5">
             <div>
               <p className="text-sm font-medium text-slate-950 dark:text-white">Почати білет як тест</p>
@@ -181,7 +181,7 @@ export default function TicketDetailPage() {
           ['Будова', 4],
           ['Медицина', 2],
         ].map(([label, count]) => (
-          <Card key={label} className="border-slate-200 shadow-none dark:border-slate-800">
+          <Card key={label} className="border-slate-200 bg-card shadow-sm dark:border-slate-800">
             <CardContent className="flex items-center gap-3 p-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-sky-400/10 dark:text-sky-200">
                 <FileQuestion className="h-5 w-5" />

@@ -1,17 +1,28 @@
-﻿import { Lock, LogIn, UserPlus } from 'lucide-react';
+import { ArrowLeft, Lock, LogIn, UserPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function LoginPrompt({
   title = 'Потрібен акаунт',
   description = 'Увійдіть або зареєструйтеся, щоб користуватися цією функцією.',
+  showBack = true,
 }) {
   const { navigateToLogin, navigateToRegister } = useAuth();
+  const navigate = useNavigate();
   const redirectTo = `${window.location.pathname}${window.location.search}`;
 
   return (
-    <div className="mx-auto max-w-xl py-20 text-center">
+    <div className="mx-auto w-full max-w-xl py-8 text-center sm:py-20">
+      {showBack ? (
+        <div className="mb-6 text-left">
+          <Button type="button" variant="ghost" className="rounded-full px-3 text-slate-600 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white" onClick={() => navigate(-1)}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Назад
+          </Button>
+        </div>
+      ) : null}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-[28px] bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-300">
           <Lock className="h-9 w-9" />

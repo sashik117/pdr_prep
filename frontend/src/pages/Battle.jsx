@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Clock3, History, PlayCircle, Search, ShieldAlert, Swords, Target, Trophy, UserPlus2, X } from 'lucide-react';
+import { ArrowLeft, Clock3, History, PlayCircle, Search, ShieldAlert, Swords, Target, Trophy, UserPlus2, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +38,7 @@ export default function Battle() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [exitBattleOpen, setExitBattleOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
-  const [friendsOpen, setFriendsOpen] = useState(false);
+  const [friendsOpen, setFriendsOpen] = useState(() => (typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)').matches : false));
 
   const normalizedOpponentUsername = useMemo(() => String(opponentUser || '').trim().replace(/^@/, ''), [opponentUser]);
 
@@ -242,7 +242,12 @@ export default function Battle() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 pb-6 sm:px-6 lg:px-8">
+      <Button type="button" variant="ghost" className="-ml-2 rounded-full px-3 text-slate-600 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white" onClick={() => navigate(-1)}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Назад
+      </Button>
+
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <Card className="rounded-[28px] border-white/70 dark:border-slate-800 dark:bg-slate-950/92">
           <CardHeader>
@@ -317,13 +322,12 @@ export default function Battle() {
               >
                 <div>
                   <p className="font-semibold text-slate-900 dark:text-white">Список друзів для батлу</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-300">Розгорніть список і викличте когось одразу звідси.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-300">На ПК список відкритий одразу, на телефоні його можна розгорнути.</p>
                 </div>
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{friendsOpen ? 'Сховати' : 'Показати'}</span>
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary lg:hidden">{friendsOpen ? 'Сховати' : 'Показати'}</span>
               </button>
 
-              {friendsOpen ? (
-                <>
+              <div className={cn('space-y-3', !friendsOpen && 'hidden lg:block')}>
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <Input className="pl-9" value={friendSearch} onChange={(event) => setFriendSearch(event.target.value)} placeholder="Або виберіть друга зі списку" />
@@ -355,8 +359,7 @@ export default function Battle() {
                       </div>
                     )}
                   </div>
-                </>
-              ) : null}
+              </div>
             </div>
           </CardContent>
         </Card>

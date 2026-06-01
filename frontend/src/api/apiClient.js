@@ -2,12 +2,14 @@
 const DEFAULT_API_URL =
   import.meta.env.PROD && typeof window !== 'undefined'
     ? window.location.origin
-    : 'http://localhost:8000';
+    : 'http://127.0.0.1:8000';
 const BASE_URL = (import.meta.env.VITE_API_URL || DEFAULT_API_URL).replace(/\/$/, '');
 
 const TOKEN_KEY = 'pdr_token';
 const USER_KEY = 'pdr_user';
 const TOKEN_COOKIE = 'pdr_token';
+const ADMIN_TOKEN_KEY = 'driveprep_admin_token';
+const ADMIN_USER_KEY = 'driveprep_admin_user';
 const ONE_DAY_SECONDS = 60 * 60 * 24;
 const REMEMBER_ME_DAYS = 90;
 
@@ -127,6 +129,51 @@ export const userStore = {
   },
 };
 
+export const adminTokenStore = {
+  get: () => localStorage.getItem(ADMIN_TOKEN_KEY) || sessionStorage.getItem(ADMIN_TOKEN_KEY),
+  hasPersistent: () => !!localStorage.getItem(ADMIN_TOKEN_KEY),
+  set: (token, rememberMe = true) => {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+    if (rememberMe) {
+      localStorage.setItem(ADMIN_TOKEN_KEY, token);
+    } else {
+      sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
+    }
+  },
+  clear: () => {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_USER_KEY);
+    sessionStorage.removeItem(ADMIN_USER_KEY);
+  },
+};
+
+export const adminUserStore = {
+  get: () => {
+    try {
+      const raw = localStorage.getItem(ADMIN_USER_KEY) || sessionStorage.getItem(ADMIN_USER_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  },
+  set: (admin, rememberMe = true) => {
+    const value = JSON.stringify(admin);
+    localStorage.removeItem(ADMIN_USER_KEY);
+    sessionStorage.removeItem(ADMIN_USER_KEY);
+    if (rememberMe) {
+      localStorage.setItem(ADMIN_USER_KEY, value);
+    } else {
+      sessionStorage.setItem(ADMIN_USER_KEY, value);
+    }
+  },
+  clear: () => {
+    localStorage.removeItem(ADMIN_USER_KEY);
+    sessionStorage.removeItem(ADMIN_USER_KEY);
+  },
+};
+
 /**
  * @param {Record<string, string | number | boolean | null | undefined>} params
  */
@@ -144,7 +191,8 @@ function toQueryString(params = {}) {
  * @param {RequestInit} [options]
  */
 async function request(path, options = {}) {
-  const token = tokenStore.get();
+  const adminToken = path.startsWith('/admin') ? adminTokenStore.get() : null;
+  const token = adminToken || tokenStore.get();
   const headers = new Headers(options.headers || {});
   if (!(options.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
@@ -163,7 +211,7 @@ async function request(path, options = {}) {
       headers,
     });
   } catch (error) {
-    throw new Error('Не вдалося підключитися до сервера. Перевірте, чи запущений backend на http://localhost:8000.');
+    throw new Error('Не вдалося підключитися до сервера DrivePrep. Перевірте підключення і спробуйте ще раз.');
   }
 
   if (response.status === 204) return null;
@@ -197,6 +245,12 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ identifier, password, remember_me }),
     }),
+  adminLogin: (username, password, remember_me = true) =>
+    request('/admin/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password, remember_me }),
+    }),
+  adminMe: () => request('/admin/auth/me'),
 
   resendVerification: (email) =>
     request('/auth/resend-verification', {
@@ -274,6 +328,7 @@ export const api = {
   },
   getTheorySection: (sectionId) => request(`/theory/sections/${sectionId}`),
   getPromoStatus: () => request('/promo/status'),
+  getPremiumFeatures: () => request('/premium/features'),
   updatePromoConfig: (payload, adminKey) =>
     request('/admin/promo/config', {
       method: 'PATCH',
@@ -362,6 +417,13 @@ export const api = {
       body: JSON.stringify({ content }),
     }),
   getAdminUsers: () => request('/admin/users'),
+  getAdminPremiumFeatures: () => request('/admin/premium/features'),
+  updateAdminPremiumFeatures: (features) =>
+    request('/admin/premium/features', {
+      method: 'PATCH',
+      body: JSON.stringify({ features }),
+    }),
+  getAdminPremiumOrders: (limit = 60) => request(`/admin/premium/orders?limit=${encodeURIComponent(limit)}`),
   getAdminUserAudit: (userId) => request(`/admin/users/${userId}/audit`),
   updateAdminUser: (userId, payload) =>
     request(`/admin/users/${userId}`, {
@@ -388,6 +450,22 @@ export const api = {
   },
   updateAdminQuestion: (questionId, payload) =>
     request(`/admin/questions/${questionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  getAdminTheorySummary: () => request('/admin/theory/summary'),
+  startAdminTheoryParse: (payload = {}) =>
+    request('/admin/theory/parse', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getAdminTheoryParseStatus: () => request('/admin/theory/parse/status'),
+  searchAdminTheorySections: (params = {}) => {
+    const query = toQueryString(params);
+    return request(`/admin/theory/sections${query ? `?${query}` : ''}`);
+  },
+  updateAdminTheorySection: (sectionId, payload) =>
+    request(`/admin/theory/sections/${sectionId}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),

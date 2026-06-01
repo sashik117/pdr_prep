@@ -1,94 +1,85 @@
-﻿import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const sections = [
   {
     title: '1. Реєстрація та акаунт',
     body: [
-      'Після завершення реєстрації в сервісі DrivePrep користувач створює особистий акаунт і стає користувачем платформи. З цього моменту на нього поширюються умови цієї Угоди.',
-      'Користувач не має права передавати доступ до акаунта третім особам, продавати обліковий запис або надавати його в користування за винагороду. Будь-які дії, здійснені з використанням логіна і пароля, вважаються виконаними користувачем.',
+      'Після реєстрації користувач створює особистий акаунт DrivePrep і відповідає за збереження доступу до нього.',
+      'Не можна передавати акаунт третім особам, продавати його або використовувати для нечесного проходження тестів.',
     ],
   },
   {
-    title: '2. Контент, підписки та доступ',
+    title: '2. Контент і доступ',
     body: [
-      'DrivePrep надає доступ до навчального контенту, тестів, білетів, довідників, аналітики, Premium-курсів, відеолекцій та інших функцій сервісу залежно від типу облікового запису та активованого тарифу.',
-      'Окремі розділи можуть бути доступні лише Premium-користувачам. Умови доступу, перелік функцій і наповнення тарифів можуть оновлюватися в межах розвитку сервісу.',
+      'DrivePrep надає навчальні матеріали, тести, білети, аналітику, підтримку та інші функції залежно від типу акаунта.',
+      'Окремі можливості можуть бути доступні лише користувачам Premium. Перелік функцій може оновлюватися разом із розвитком сервісу.',
     ],
   },
   {
-    title: '3. Оплата та Premium-підписка',
+    title: '3. Оплата Premium',
     body: [
-      'Усі платежі за Premium-підписку здійснюються авансом. Доступ до обраного плану відкривається після підтвердження оплати та діє протягом строку, визначеного обраним тарифом.',
-      'DrivePrep може надавати безкоштовний доступ до окремих функцій, але витрати на інтернет, зв’язок або пристрій користувач несе самостійно.',
+      'Premium-доступ відкривається після підтвердження оплати й діє протягом строку обраного тарифу.',
+      'Витрати на інтернет, пристрій або зв’язок користувач оплачує самостійно.',
     ],
   },
   {
     title: '4. Повернення коштів',
     body: [
-      'Користувач може звернутися із запитом на повернення коштів, якщо підписка була придбана помилково. Запит надсилається на pdr.preparation@gmail.com.',
-      'Ми розглядаємо заявки в індивідуальному порядку. Для стандартного повернення коштів важливими є строк звернення після покупки та фактичне використання сервісу. У разі схвалення кошти повертаються тим самим способом оплати протягом розумного строку.',
+      'Якщо підписка була придбана помилково, можна звернутися на pdr.preparation@gmail.com із запитом на повернення.',
+      'Заявки розглядаються індивідуально з урахуванням строку звернення та фактичного використання сервісу.',
     ],
   },
   {
-    title: '5. Правила поведінки в сервісі',
+    title: '5. Правила поведінки',
     body: [
-      'Користувач зобов’язується не використовувати DrivePrep для спаму, реклами сторонніх продуктів, шахрайства, маніпуляцій із навчальними результатами, порушення норм спілкування або розміщення образливого чи незаконного контенту.',
-      'У коментарях, повідомленнях і публічних обговореннях заборонені образи, офтоп, масові розсилання, прихована реклама та будь-які дії, що заважають іншим користувачам працювати із сервісом.',
+      'У сервісі заборонені спам, реклама, шахрайство, образи, маніпуляції результатами та дії, які заважають іншим користувачам.',
+      'У разі порушень акаунт може бути тимчасово обмежено або заблоковано.',
     ],
   },
   {
-    title: '6. Протидія зловживанням',
+    title: '6. Контакти',
     body: [
-      'DrivePrep залишає за собою право використовувати технічні засоби для виявлення нечесної поведінки, автоматизації проходження, несанкціонованого доступу, підробки результатів або спроб обходу лімітів і Premium-обмежень.',
-      'У разі виявлення таких дій акаунт може бути тимчасово обмежено або повністю заблоковано без відшкодування сплачених коштів.',
-    ],
-  },
-  {
-    title: '7. Припинення дії угоди',
-    body: [
-      'Користувач може припинити використання сервісу в будь-який момент. За потреби видалення акаунта або запиту на деактивацію доступу слід звернутися на pdr.preparation@gmail.com.',
-      'DrivePrep може припинити доступ до акаунта або окремих функцій у разі порушення умов цієї Угоди, незаконної активності, зловживань або завершення надання відповідного функціоналу.',
-    ],
-  },
-  {
-    title: '8. Вирішення спорів',
-    body: [
-      'Ми рекомендуємо спочатку звертатися до служби підтримки DrivePrep для неформального врегулювання будь-яких спірних питань.',
-      'Якщо питання не може бути вирішене в досудовому порядку, воно регулюється відповідно до чинного законодавства України.',
-    ],
-  },
-  {
-    title: '9. Контакти та редакція',
-    body: [
-      'Усі питання щодо підписки, повернення коштів, доступу до Premium або умов використання сервісу надсилайте на pdr.preparation@gmail.com.',
+      'Питання щодо підписки, повернення коштів або доступу до Premium надсилайте на pdr.preparation@gmail.com.',
       'Актуальна редакція Угоди підписника DrivePrep діє з 29 квітня 2026 року.',
     ],
   },
 ];
 
 export default function Terms() {
+  const navigate = useNavigate();
+
   return (
-    <div className="w-full space-y-8">
-      <section className="border-b border-slate-200 pb-7 dark:border-slate-800 sm:pb-9">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-violet-700 dark:text-violet-200">Угода підписника</p>
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="-ml-2 inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Назад
+      </button>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:p-7">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-950/35 dark:text-violet-200">
+          <ShieldCheck className="h-6 w-6" />
+        </div>
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-violet-700 dark:text-violet-200">Угода підписника</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white sm:text-4xl">
           Умови використання DrivePrep та Premium-доступу
         </h1>
-        <p className="mt-4 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:max-w-5xl sm:text-base">
-          У цій угоді зібрано правила користування акаунтом, навчальним контентом, оплатою
-          підписки, поверненням коштів і поведінкою в сервісі.
+        <p className="mt-4 max-w-3xl text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
+          Коротко й зрозуміло про акаунт, навчальний контент, оплату, повернення коштів і правила поведінки в сервісі.
         </p>
       </section>
 
-      <div className="space-y-7">
+      <div className="grid gap-4">
         {sections.map((section) => (
-          <section key={section.title} className="border-b border-slate-200 pb-6 last:border-b-0 dark:border-slate-800">
-            <h2 className="text-xl font-semibold tracking-[-0.01em] text-slate-950 dark:text-white sm:text-2xl">{section.title}</h2>
-            <div className="mt-4 grid gap-4 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:grid-cols-2 sm:text-[15px]">
-              {section.body.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
+          <section key={section.title} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+            <h2 className="text-xl font-semibold tracking-[-0.01em] text-slate-950 dark:text-white">{section.title}</h2>
+            <div className="mt-4 grid gap-4 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:grid-cols-2">
+              {section.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
             </div>
           </section>
         ))}

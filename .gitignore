@@ -45,6 +45,7 @@ backend/uploads/handbook/*
 !backend/uploads/handbook/marking_*.png
 !backend/uploads/handbook/placeholder.png
 backend/logs/
+backend/runtime/
 mobile-audit/
 tmp_style_pack/
 .tmp-chrome*/

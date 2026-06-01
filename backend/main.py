@@ -7,10 +7,14 @@ import re
 import shutil
 import smtplib
 import string
+import subprocess
+import sys
+import threading
 import urllib.error
 import urllib.request
 import base64
 import hashlib
+import hmac
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from email.mime.multipart import MIMEMultipart
@@ -67,6 +71,9 @@ ADMIN_EMAILS = {
     for item in os.getenv("ADMIN_EMAILS", SUPPORT_EMAIL).split(",")
     if item.strip()
 }
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin").strip() or "admin"
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "").strip()
+ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "").strip()
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587").strip())
 SMTP_USER = os.getenv("SMTP_USER", "").strip()
@@ -81,6 +88,11 @@ PORT = int(os.getenv("PORT", "8000"))
 UPLOAD_DIR = BASE_DIR / "uploads" / "avatars"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 FRONTEND_DIST_DIR = BASE_DIR.parent / "frontend" / "dist"
+PUBLIC_STATIC_IMAGES_DIR = BASE_DIR / "public" / "images"
+RUNTIME_DIR = BASE_DIR / "runtime"
+THEORY_PARSE_STATUS_FILE = RUNTIME_DIR / "theory_parse_status.json"
+THEORY_PARSE_LOG_FILE = RUNTIME_DIR / "theory_parse.log"
+PUBLIC_STATIC_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 PUBLIC_IMAGES_DIR = (
     FRONTEND_DIST_DIR / "images" / "questions_img"
     if IS_PRODUCTION
@@ -155,11 +167,11 @@ IMAGE_REQUIRED_MARKERS = (
 FRAME_SHOP: dict[str, dict[str, Any]] = {
     "fire": {"price": 0, "achievement_id": "streak_28", "label": "Вогняна"},
     "sun": {"price": 0, "achievement_id": "streak_90", "label": "Сонячна"},
-    "gold": {"price": 0, "achievement_id": "correct_1000", "label": "Золота"},
+    "gold": {"price": 0, "achievement_id": "thousand", "label": "Золота"},
     "diamond": {"price": 0, "achievement_id": "perfect_20", "label": "Діамантова"},
     "speed": {"price": 0, "achievement_id": "marathon_100", "label": "Швидкість"},
-    "crown": {"price": 0, "achievement_id": "hundred_tests", "label": "Корона"},
-    "galaxy": {"price": 0, "achievement_id": "correct_5000", "label": "Галактика"},
+    "crown": {"price": 0, "achievement_id": "pro_driver", "label": "Корона"},
+    "galaxy": {"price": 0, "achievement_id": "legend", "label": "Галактика"},
     "platinum": {"price": 0, "achievement_id": "exam_perfect", "label": "Платина"},
     "mint": {"price": 6, "achievement_id": None, "label": "М'ятна"},
     "sunset": {"price": 9, "achievement_id": None, "label": "Захід сонця"},
@@ -255,10 +267,56 @@ PROMO_ADMIN_KEY = os.getenv("PROMO_ADMIN_KEY", "").strip()
 DEFAULT_PROMO_SETTINGS: dict[str, Any] = {
     "is_active": False,
     "started_at": None,
+    "never_ends": False,
     "duration_days": 15,
     "promo_prices": {"1": 159, "3": 469, "6": 950, "12": 1900},
     "regular_prices": {"1": 300, "3": 900, "6": 1800, "12": 3600},
 }
+PREMIUM_FEATURES_FILE = BASE_DIR / "config" / "premium_features.json"
+DEFAULT_PREMIUM_FEATURES: list[dict[str, Any]] = [
+    {
+        "id": "mvs_exam",
+        "title": "Іспит МВС",
+        "description": "Імітація офіційного білета: 20 питань за блоками ПДР, безпека, будова та медицина.",
+        "is_enabled": True,
+        "sort_order": 1,
+    },
+    {
+        "id": "unlimited_tickets",
+        "title": "Усі білети без обмежень",
+        "description": "Повний доступ до тренувальних білетів кожної категорії без ліміту переглядів.",
+        "is_enabled": True,
+        "sort_order": 2,
+    },
+    {
+        "id": "section_practice",
+        "title": "Практика по розділах",
+        "description": "Окреме тренування слабких тем із банку питань DrivePrep.",
+        "is_enabled": True,
+        "sort_order": 3,
+    },
+    {
+        "id": "saved_questions",
+        "title": "Збережені запитання",
+        "description": "Персональний список важливих питань для швидкого повторення.",
+        "is_enabled": True,
+        "sort_order": 4,
+    },
+    {
+        "id": "deep_analytics",
+        "title": "Розширена аналітика",
+        "description": "Прогрес, помилки, серії навчання та історія проходжень в одному кабінеті.",
+        "is_enabled": True,
+        "sort_order": 5,
+    },
+    {
+        "id": "priority_support",
+        "title": "Пріоритетна підтримка",
+        "description": "Швидші відповіді в чаті підтримки для користувачів Premium.",
+        "is_enabled": True,
+        "sort_order": 6,
+    },
+]
 
 app = FastAPI(title="PDRPrep API", version="3.0.0")
 app.add_middleware(
@@ -280,6 +338,7 @@ app.add_middleware(
 app.mount("/uploads", StaticFiles(directory=str(BASE_DIR / "uploads")), name="uploads")
 if PUBLIC_IMAGES_DIR.exists():
     app.mount("/images/questions_img", StaticFiles(directory=str(PUBLIC_IMAGES_DIR)), name="questions_img")
+app.mount("/images", StaticFiles(directory=str(PUBLIC_STATIC_IMAGES_DIR)), name="images")
 
 
 def _is_frontend_navigation(request: Request) -> bool:
@@ -384,6 +443,7 @@ def _normalize_promo_settings(raw: Any) -> dict[str, Any]:
     return {
         "is_active": bool(data.get("is_active", DEFAULT_PROMO_SETTINGS["is_active"])),
         "started_at": data.get("started_at") or None,
+        "never_ends": bool(data.get("never_ends", DEFAULT_PROMO_SETTINGS["never_ends"])),
         "duration_days": max(1, int(data.get("duration_days") or DEFAULT_PROMO_SETTINGS["duration_days"])),
         "promo_prices": _normalize_price_map(data.get("promo_prices"), DEFAULT_PROMO_SETTINGS["promo_prices"]),
         "regular_prices": _normalize_price_map(data.get("regular_prices"), DEFAULT_PROMO_SETTINGS["regular_prices"]),
@@ -439,13 +499,16 @@ def _compute_promo_status(settings: Optional[dict[str, Any]] = None, *, persist:
             started_at = None
 
     is_active = bool(payload["is_active"] and started_at)
-    seconds_left = 0
-    if is_active and started_at:
+    seconds_left: Optional[int] = 0
+    if is_active and payload.get("never_ends"):
+        seconds_left = None
+    elif is_active and started_at:
         elapsed_seconds = int((now - started_at).total_seconds())
         seconds_left = max(0, int(payload["duration_days"]) * 86400 - max(0, elapsed_seconds))
         if seconds_left <= 0:
             payload["is_active"] = False
             payload["started_at"] = None
+            payload["never_ends"] = False
             is_active = False
             if persist:
                 _save_promo_settings(payload)
@@ -456,7 +519,8 @@ def _compute_promo_status(settings: Optional[dict[str, Any]] = None, *, persist:
         "is_active": bool(is_active),
         "started_at": payload.get("started_at"),
         "duration_days": int(payload["duration_days"]),
-        "seconds_left": int(seconds_left),
+        "never_ends": bool(payload.get("never_ends")),
+        "seconds_left": None if seconds_left is None else int(seconds_left),
         "show_strikethrough": bool(is_active),
         "current_prices": {key: int(value) for key, value in current_prices.items()},
         "original_prices": {key: int(value) for key, value in original_prices.items()},
@@ -478,6 +542,53 @@ def _get_premium_plan(plan_code: str) -> dict[str, Any]:
         "amount": price_uah * 100,
         "display_price": price_uah,
     }
+
+
+def _normalize_premium_features(raw: Any) -> list[dict[str, Any]]:
+    rows = raw if isinstance(raw, list) else DEFAULT_PREMIUM_FEATURES
+    normalized: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for index, item in enumerate(rows):
+        if not isinstance(item, dict):
+            continue
+        feature_id = str(item.get("id") or "").strip().lower().replace(" ", "_")
+        if not feature_id or feature_id in seen:
+            continue
+        seen.add(feature_id)
+        normalized.append(
+            {
+                "id": feature_id,
+                "title": str(item.get("title") or feature_id).strip(),
+                "description": str(item.get("description") or "").strip(),
+                "is_enabled": bool(item.get("is_enabled", True)),
+                "sort_order": int(item.get("sort_order") or index + 1),
+            }
+        )
+    if not normalized:
+        normalized = [dict(item) for item in DEFAULT_PREMIUM_FEATURES]
+    return sorted(normalized, key=lambda item: (int(item.get("sort_order") or 0), item.get("title") or ""))
+
+
+def _save_premium_features(features: list[dict[str, Any]]) -> None:
+    PREMIUM_FEATURES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PREMIUM_FEATURES_FILE.write_text(
+        _json_dumps(_normalize_premium_features(features)),
+        encoding="utf-8",
+    )
+
+
+def _load_premium_features() -> list[dict[str, Any]]:
+    if not PREMIUM_FEATURES_FILE.exists():
+        _save_premium_features(DEFAULT_PREMIUM_FEATURES)
+        return [dict(item) for item in DEFAULT_PREMIUM_FEATURES]
+    try:
+        raw = json.loads(PREMIUM_FEATURES_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        raw = DEFAULT_PREMIUM_FEATURES
+    features = _normalize_premium_features(raw)
+    if features != raw:
+        _save_premium_features(features)
+    return features
 
 
 def _build_liqpay_payload(*, order_id: str, plan: dict[str, Any], result_url: str) -> dict[str, Any]:
@@ -681,6 +792,8 @@ def ensure_runtime_migrations() -> None:
         "CREATE INDEX IF NOT EXISTS idx_questions_ticket_number ON questions(ticket_number)",
         "CREATE INDEX IF NOT EXISTS idx_questions_ticket_question ON questions(ticket_number, question_number)",
         "CREATE INDEX IF NOT EXISTS idx_questions_text ON questions USING gin (to_tsvector('simple', question_text))",
+        "ALTER TABLE test_results ADD COLUMN IF NOT EXISTS client_attempt_id TEXT",
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_test_results_user_attempt ON test_results(user_id, client_attempt_id) WHERE client_attempt_id IS NOT NULL",
         """
         DO $$
         BEGIN
@@ -1213,6 +1326,26 @@ def _passed_tests_count(conn: psycopg.Connection, user_id: int) -> int:
     return int((row or {}).get("count") or 0)
 
 
+def _battle_stats_for_email(conn: psycopg.Connection, email: Optional[str]) -> dict[str, int]:
+    normalized = str(email or "").strip().lower()
+    if not normalized:
+        return {"battle_wins": 0, "battle_finished": 0}
+    row = conn.execute(
+        """
+        SELECT
+          COUNT(*) FILTER (WHERE status = 'finished') AS battle_finished,
+          COUNT(*) FILTER (WHERE status = 'finished' AND LOWER(COALESCE(winner_email, '')) = %s) AS battle_wins
+        FROM battles
+        WHERE LOWER(challenger_email) = %s OR LOWER(opponent_email) = %s
+        """,
+        (normalized, normalized, normalized),
+    ).fetchone()
+    return {
+        "battle_wins": int((row or {}).get("battle_wins") or 0),
+        "battle_finished": int((row or {}).get("battle_finished") or 0),
+    }
+
+
 def _frame_shop_payload(user: dict[str, Any], earned_achievement_ids: list[str], available_stars: int) -> list[dict[str, Any]]:
     purchased = set(_purchased_frames(user))
     items: list[dict[str, Any]] = []
@@ -1474,6 +1607,77 @@ def create_token(user_id: int, remember_me: bool = True) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
 
+def create_admin_token(username: str, remember_me: bool = True) -> str:
+    days = JWT_REMEMBER_DAYS if remember_me else JWT_SESSION_DAYS
+    payload = {
+        "sub": f"admin:{username}",
+        "scope": "admin",
+        "exp": datetime.utcnow() + timedelta(days=days),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+
+def _admin_public() -> dict[str, Any]:
+    return {
+        "id": 0,
+        "username": ADMIN_USERNAME,
+        "name": "Адміністратор",
+        "full_name": "DrivePrep Admin",
+        "email": SUPPORT_EMAIL,
+        "is_admin": True,
+        "admin_session": True,
+    }
+
+
+def _is_admin_password_configured() -> bool:
+    return bool(ADMIN_PASSWORD_HASH or ADMIN_PASSWORD or PROMO_ADMIN_KEY or not IS_PRODUCTION)
+
+
+def _check_admin_credentials(username: str, password: str) -> bool:
+    if username.strip().lower() != ADMIN_USERNAME.lower():
+        return False
+    if not _is_admin_password_configured():
+        return False
+    if ADMIN_PASSWORD_HASH:
+        return check_password(password, ADMIN_PASSWORD_HASH)
+    expected = ADMIN_PASSWORD or PROMO_ADMIN_KEY or ("admin12345" if not IS_PRODUCTION else "")
+    return bool(expected) and hmac.compare_digest(password, expected)
+
+
+def get_current_admin(authorization: Optional[str] = Header(default=None)) -> dict[str, Any]:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Потрібен вхід в адмін-панель")
+
+    token = authorization[7:]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        if payload.get("scope") == "admin":
+            token_username = str(payload.get("sub") or "").replace("admin:", "", 1)
+            if token_username.lower() != ADMIN_USERNAME.lower():
+                raise HTTPException(401, "Адмін-сесія недійсна")
+            return _admin_public()
+    except jwt.ExpiredSignatureError as exc:
+        raise HTTPException(401, "Адмін-сесія завершилася, увійдіть знову") from exc
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
+    user = get_current_user(authorization)
+    if not _is_admin_email(user.get("email")):
+        raise HTTPException(403, "Потрібні права адміністратора")
+    return user
+
+
+def get_optional_admin(authorization: Optional[str] = Header(default=None)) -> Optional[dict[str, Any]]:
+    if not authorization:
+        return None
+    try:
+        return get_current_admin(authorization)
+    except HTTPException:
+        return None
+
+
 def get_current_user(authorization: Optional[str] = Header(default=None)) -> dict[str, Any]:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(401, "Потрібна авторизація")
@@ -1506,20 +1710,18 @@ def get_optional_user(authorization: Optional[str] = Header(default=None)) -> Op
         return None
 
 
-def require_admin(user=Depends(get_current_user)) -> dict[str, Any]:
-    if not _is_admin_email(user.get("email")):
-        raise HTTPException(403, "Потрібні права адміністратора")
-    return user
+def require_admin(admin=Depends(get_current_admin)) -> dict[str, Any]:
+    return admin
 
 
 def require_promo_admin(
     x_admin_key: Optional[str] = Header(default=None, alias="x-admin-key"),
-    user=Depends(get_optional_user),
+    admin=Depends(get_optional_admin),
 ) -> Optional[dict[str, Any]]:
     if PROMO_ADMIN_KEY and x_admin_key and x_admin_key == PROMO_ADMIN_KEY:
         return {"source": "secret-key"}
-    if user and _is_admin_email(user.get("email")):
-        return user
+    if admin:
+        return admin
     raise HTTPException(403, "Потрібні права адміністратора або коректний promo key")
 
 
@@ -1870,6 +2072,12 @@ class LoginRequest(BaseModel):
     remember_me: bool = True
 
 
+class AdminLoginRequest(BaseModel):
+    username: str
+    password: str
+    remember_me: bool = True
+
+
 class VerifyEmailRequest(BaseModel):
     email: str
     code: str
@@ -1916,6 +2124,7 @@ class TestResultSubmit(BaseModel):
     total: int
     correct: int
     time_seconds: int
+    client_attempt_id: Optional[str] = None
     answers: list[AnswerSubmit] = Field(default_factory=list)
 
 
@@ -1964,8 +2173,13 @@ class PremiumCheckoutRequest(BaseModel):
 
 class PromoConfigRequest(BaseModel):
     duration_days: Optional[int] = Field(default=15, ge=1, le=60)
+    never_ends: Optional[bool] = None
     promo_prices: Optional[dict[str, int]] = None
     regular_prices: Optional[dict[str, int]] = None
+
+
+class PremiumFeaturesUpdateRequest(BaseModel):
+    features: list[dict[str, Any]]
 
 
 class AdminSupportReplyRequest(BaseModel):
@@ -1998,11 +2212,30 @@ class AdminQuestionUpdateRequest(BaseModel):
     correct_ans: Optional[int] = None
 
 
+class AdminTheoryParseRequest(BaseModel):
+    chapters: Optional[str] = None
+    skip_signs: bool = False
+    skip_markings: bool = False
+    write_seed: bool = True
+
+
+class AdminTheorySectionUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    content_html: Optional[str] = None
+    comment_html: Optional[str] = None
+    video_url: Optional[str] = None
+    embed_url: Optional[str] = None
+    chapter_num: Optional[int] = None
+    sort_order: Optional[int] = None
+
+
 ACHIEVEMENTS_DEF = [
     ("first_step", 1, "Перший виїзд", "Пройти перший тест", "tests", 1),
     ("rookie", 2, "Новачок", "Пройти 10 тестів", "tests", 10),
     ("driver", 3, "Водій", "Пройти 50 тестів", "tests", 50),
     ("pro_driver", 4, "Профі", "Пройти 100 тестів", "tests", 100),
+    ("veteran_driver", 4, "Досвідчений водій", "Пройти 250 тестів", "tests", 250),
     ("hundred", 1, "Сотня", "100 правильних відповідей", "correct", 100),
     ("five_hundred", 2, "П'ятисотня", "500 правильних відповідей", "correct", 500),
     ("thousand", 3, "Тисячник", "1000 правильних відповідей", "correct", 1000),
@@ -2010,11 +2243,29 @@ ACHIEVEMENTS_DEF = [
     ("streak_3", 1, "Розігрів", "3 дні підряд", "streak", 3),
     ("streak_7", 2, "Темп", "7 днів підряд", "streak", 7),
     ("streak_28", 3, "Вогонь", "28 днів підряд", "streak", 28),
+    ("streak_90", 4, "Стабільний темп", "90 днів активності підряд", "streak", 90),
     ("marathon_10", 1, "Бігун", "10 у марафоні", "marathon", 10),
     ("marathon_50", 2, "Спринтер", "50 у марафоні", "marathon", 50),
     ("marathon_100", 3, "Блискавка", "100 у марафоні", "marathon", 100),
     ("perfect_1", 1, "Без помилок", "Перший ідеальний тест", "perfect", 1),
     ("perfect_5", 2, "Відмінник", "5 ідеальних тестів", "perfect", 5),
+    ("perfect_20", 3, "Чиста серія", "20 тестів без помилок", "perfect", 20),
+    ("exam_passed", 2, "Іспит складено", "Скласти перший іспит МВС або білет", "exam", 1),
+    ("exam_5", 3, "Стабільний іспит", "Скласти 5 іспитів МВС або білетів", "exam", 5),
+    ("exam_20", 4, "Екзаменаційний темп", "Скласти 20 іспитів МВС або білетів", "exam", 20),
+    ("exam_perfect", 4, "Ідеальний іспит", "Скласти іспит МВС або білет без помилок", "exam", 1),
+    ("exam_perfect_5", 4, "П'ять чистих іспитів", "Скласти 5 іспитів або білетів без помилок", "exam", 5),
+    ("accuracy_70", 1, "Рівна їзда", "Тримати загальну точність від 70%", "accuracy", 70),
+    ("accuracy_80", 2, "Впевнена точність", "Тримати загальну точність від 80%", "accuracy", 80),
+    ("accuracy_90", 3, "Точний маршрут", "Тримати загальну точність від 90%", "accuracy", 90),
+    ("accuracy_95", 4, "Ювелірна точність", "Тримати загальну точність від 95%", "accuracy", 95),
+    ("battle_first", 1, "Перший батл", "Завершити перший батл", "battle", 1),
+    ("battle_5", 2, "Батл-серія", "Завершити 5 батлів", "battle", 5),
+    ("battle_20", 3, "Арена досвіду", "Завершити 20 батлів", "battle", 20),
+    ("battle_winner", 2, "Перемога в батлі", "Виграти перший батл", "battle_wins", 1),
+    ("battle_wins_5", 3, "П'ять перемог", "Виграти 5 батлів", "battle_wins", 5),
+    ("battle_champion", 3, "Чемпіон батлів", "Виграти 10 батлів", "battle_wins", 10),
+    ("battle_wins_25", 4, "Лідер батлів", "Виграти 25 батлів", "battle_wins", 25),
 ]
 
 
@@ -2035,6 +2286,23 @@ def _check_achievements(conn: psycopg.Connection, user_id: int) -> list[dict[str
         """,
         (user_id,),
     ).fetchone()["count"]
+    exam_stats = conn.execute(
+        """
+        SELECT
+            COUNT(*) FILTER (
+                WHERE mode IN ('mvs', 'ticket') AND total > 0 AND (correct::numeric / total) >= 0.8
+            ) AS passed_count,
+            COUNT(*) FILTER (
+                WHERE mode IN ('mvs', 'ticket') AND total > 0 AND correct = total
+            ) AS perfect_count
+        FROM test_results
+        WHERE user_id = %s
+        """,
+        (user_id,),
+    ).fetchone()
+    total_answers = int(user.get("total_answers") or 0)
+    accuracy_percent = round((int(user.get("total_correct") or 0) / total_answers) * 100) if total_answers > 0 else 0
+    battle_stats = _battle_stats_for_email(conn, user.get("email"))
 
     created: list[dict[str, Any]] = []
     for achievement_id, tier, name, description, category, threshold in ACHIEVEMENTS_DEF:
@@ -2052,6 +2320,17 @@ def _check_achievements(conn: psycopg.Connection, user_id: int) -> list[dict[str
             should_create = (user.get("marathon_best") or 0) >= threshold
         elif category == "perfect":
             should_create = perfect_tests >= threshold
+        elif category == "exam":
+            if achievement_id in {"exam_perfect", "exam_perfect_5"}:
+                should_create = int(exam_stats.get("perfect_count") or 0) >= threshold
+            else:
+                should_create = int(exam_stats.get("passed_count") or 0) >= threshold
+        elif category == "accuracy":
+            should_create = total_answers >= 20 and accuracy_percent >= threshold
+        elif category == "battle":
+            should_create = int(battle_stats.get("battle_finished") or 0) >= threshold
+        elif category == "battle_wins":
+            should_create = int(battle_stats.get("battle_wins") or 0) >= threshold
 
         if not should_create:
             continue
@@ -2074,6 +2353,41 @@ def _check_achievements(conn: psycopg.Connection, user_id: int) -> list[dict[str
             }
         )
     return created
+
+
+def _achievement_progress_value(
+    achievement_id: str,
+    category: str,
+    threshold: int,
+    user: dict[str, Any],
+    perfect_tests: int,
+    exam_stats: dict[str, Any],
+    battle_stats: dict[str, int],
+) -> int:
+    if category == "tests":
+        return int(user.get("total_tests") or 0)
+    if category == "correct":
+        return int(user.get("total_correct") or 0)
+    if category == "streak":
+        return int(user.get("streak_days") or 0)
+    if category == "marathon":
+        return int(user.get("marathon_best") or 0)
+    if category == "perfect":
+        return int(perfect_tests or 0)
+    if category == "exam":
+        if achievement_id in {"exam_perfect", "exam_perfect_5"}:
+            return int(exam_stats.get("perfect_count") or 0)
+        return int(exam_stats.get("passed_count") or 0)
+    if category == "accuracy":
+        total_answers = int(user.get("total_answers") or 0)
+        if total_answers < 20:
+            return 0
+        return round((int(user.get("total_correct") or 0) / total_answers) * 100)
+    if category == "battle":
+        return int(battle_stats.get("battle_finished") or 0)
+    if category == "battle_wins":
+        return int(battle_stats.get("battle_wins") or 0)
+    return 0
 
 
 @app.get("/")
@@ -2265,6 +2579,28 @@ def auth_me(user=Depends(get_current_user)):
     return _user_public(user)
 
 
+@app.post("/admin/auth/login")
+@app.post("/api/admin/auth/login", include_in_schema=False)
+def admin_login(req: AdminLoginRequest):
+    if not _is_admin_password_configured():
+        raise HTTPException(503, "Адмін-пароль не налаштовано. Додайте ADMIN_PASSWORD або ADMIN_PASSWORD_HASH у змінні середовища.")
+    if not _check_admin_credentials(req.username, req.password):
+        raise HTTPException(401, "Невірний нік або пароль адміністратора")
+    token = create_admin_token(ADMIN_USERNAME, remember_me=req.remember_me)
+    return {"token": token, "admin": _admin_public()}
+
+
+@app.get("/admin/auth/me")
+@app.get("/api/admin/auth/me", include_in_schema=False)
+def admin_me(admin=Depends(require_admin)):
+    if admin.get("admin_session"):
+        return admin
+    return {
+        **_user_public(admin),
+        "admin_session": False,
+    }
+
+
 @app.get("/promo/status")
 @app.get("/api/promo/status", include_in_schema=False)
 def get_promo_status():
@@ -2277,6 +2613,8 @@ def update_promo_config(req: PromoConfigRequest, admin=Depends(require_promo_adm
     settings = _load_promo_settings()
     if req.duration_days is not None:
         settings["duration_days"] = max(1, int(req.duration_days))
+    if req.never_ends is not None:
+        settings["never_ends"] = bool(req.never_ends)
     if req.promo_prices is not None:
         settings["promo_prices"] = _normalize_price_map(req.promo_prices, settings["promo_prices"])
     if req.regular_prices is not None:
@@ -2294,6 +2632,8 @@ def start_promo(req: PromoConfigRequest, admin=Depends(require_promo_admin)):
     settings = _load_promo_settings()
     if req.duration_days is not None:
         settings["duration_days"] = max(1, int(req.duration_days))
+    if req.never_ends is not None:
+        settings["never_ends"] = bool(req.never_ends)
     if req.promo_prices is not None:
         settings["promo_prices"] = _normalize_price_map(req.promo_prices, settings["promo_prices"])
     if req.regular_prices is not None:
@@ -2302,7 +2642,7 @@ def start_promo(req: PromoConfigRequest, admin=Depends(require_promo_admin)):
     settings["started_at"] = datetime.utcnow().isoformat()
     _save_promo_settings(settings)
     return {
-        "message": f"Акцію запущено на {settings['duration_days']} днів",
+        "message": "Акцію запущено без дати завершення" if settings.get("never_ends") else f"Акцію запущено на {settings['duration_days']} днів",
         "status": _compute_promo_status(settings, persist=False),
     }
 
@@ -2313,11 +2653,67 @@ def stop_promo(admin=Depends(require_promo_admin)):
     settings = _load_promo_settings()
     settings["is_active"] = False
     settings["started_at"] = None
+    settings["never_ends"] = False
     _save_promo_settings(settings)
     return {
         "message": "Акцію зупинено",
         "status": _compute_promo_status(settings, persist=False),
     }
+
+
+@app.get("/premium/features")
+@app.get("/api/premium/features", include_in_schema=False)
+def get_premium_features():
+    return [feature for feature in _load_premium_features() if feature.get("is_enabled")]
+
+
+@app.get("/admin/premium/features")
+@app.get("/api/admin/premium/features", include_in_schema=False)
+def admin_premium_features(admin=Depends(require_admin)):
+    return _load_premium_features()
+
+
+@app.patch("/admin/premium/features")
+@app.patch("/api/admin/premium/features", include_in_schema=False)
+def admin_update_premium_features(req: PremiumFeaturesUpdateRequest, admin=Depends(require_admin)):
+    features = _normalize_premium_features(req.features)
+    _save_premium_features(features)
+    return {"message": "Premium-фічі оновлено", "features": features}
+
+
+@app.get("/admin/premium/orders")
+@app.get("/api/admin/premium/orders", include_in_schema=False)
+def admin_premium_orders(limit: int = Query(default=60, ge=1, le=200), admin=Depends(require_admin)):
+    with db() as conn:
+        rows = conn.execute(
+            """
+            SELECT
+                po.id,
+                po.user_id,
+                po.plan_code,
+                po.amount,
+                po.currency,
+                po.provider,
+                po.status,
+                po.provider_order_id,
+                po.provider_payment_id,
+                po.checkout_url,
+                po.created_at,
+                po.activated_at,
+                po.expires_at,
+                u.email,
+                u.username,
+                u.name,
+                u.surname,
+                u.is_premium
+            FROM premium_orders po
+            LEFT JOIN users u ON u.id = po.user_id
+            ORDER BY po.created_at DESC
+            LIMIT %s
+            """,
+            (limit,),
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 
 @app.post("/payment/checkout")
@@ -2894,6 +3290,7 @@ def get_user_profile(user_id: int, viewer=Depends(get_optional_user)):
         if not user:
             raise HTTPException(404, "Користувача не знайдено")
         passed_tests = _passed_tests_count(conn, user_id)
+        battle_stats = _battle_stats_for_email(conn, user.get("email"))
         achievements = conn.execute(
             "SELECT * FROM user_achievements WHERE user_id = %s ORDER BY earned_at DESC",
             (user_id,),
@@ -2910,6 +3307,7 @@ def get_user_profile(user_id: int, viewer=Depends(get_optional_user)):
     return {
         **payload,
         "passed_tests": passed_tests,
+        **battle_stats,
         "total_wrong": max(0, int(user_dict.get("total_answers", 0) or 0) - int(user_dict.get("total_correct", 0) or 0)),
         "achievements": [dict(achievement) for achievement in achievements],
     }
@@ -2925,6 +3323,7 @@ def get_user_profile_by_username(username: str, viewer=Depends(get_optional_user
         if not user:
             raise HTTPException(404, "Користувача не знайдено")
         passed_tests = _passed_tests_count(conn, user["id"])
+        battle_stats = _battle_stats_for_email(conn, user.get("email"))
         achievements = conn.execute(
             "SELECT * FROM user_achievements WHERE user_id = %s ORDER BY earned_at DESC",
             (user["id"],),
@@ -2941,6 +3340,7 @@ def get_user_profile_by_username(username: str, viewer=Depends(get_optional_user
     return {
         **payload,
         "passed_tests": passed_tests,
+        **battle_stats,
         "total_wrong": max(0, int(user_dict.get("total_answers", 0) or 0) - int(user_dict.get("total_correct", 0) or 0)),
         "achievements": [dict(achievement) for achievement in achievements],
     }
@@ -2987,6 +3387,7 @@ def get_random_questions(
     section: Optional[str] = None,
     category: Optional[str] = None,
     topic: Optional[str] = None,
+    difficulty: Optional[str] = None,
     exclude_ids: str = "",
     difficult_only: bool = False,
     seed: Optional[str] = None,
@@ -3000,6 +3401,9 @@ def get_random_questions(
     if topic:
         conds.append("q.section_name = %s")
         params.append(topic)
+    if difficulty:
+        conds.append("LOWER(COALESCE(q.difficulty, 'medium')) = %s")
+        params.append(difficulty.strip().lower())
     _append_category_condition(conds, params, category, prefix="q.")
     if exclude_ids.strip():
         parsed = [int(value) for value in exclude_ids.split(",") if value.strip().isdigit()]
@@ -3161,15 +3565,49 @@ def import_bundled_questions(user=Depends(get_optional_user)):
 @app.post("/progress/test-result")
 def submit_test_result(data: TestResultSubmit, user=Depends(get_current_user)):
     today = _server_today()
+    client_attempt_id = (data.client_attempt_id or "").strip()[:120] or None
     with db() as conn:
-        result_id = conn.execute(
-            """
-            INSERT INTO test_results (user_id, section, mode, total, correct, time_seconds)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING id
-            """,
-            (user["id"], data.section, data.mode, data.total, data.correct, data.time_seconds),
-        ).fetchone()["id"]
+        if client_attempt_id:
+            inserted_result = conn.execute(
+                """
+                INSERT INTO test_results (user_id, section, mode, total, correct, time_seconds, client_attempt_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (user_id, client_attempt_id) WHERE client_attempt_id IS NOT NULL DO NOTHING
+                RETURNING id
+                """,
+                (user["id"], data.section, data.mode, data.total, data.correct, data.time_seconds, client_attempt_id),
+            ).fetchone()
+            if not inserted_result:
+                existing_result = conn.execute(
+                    "SELECT id FROM test_results WHERE user_id = %s AND client_attempt_id = %s",
+                    (user["id"], client_attempt_id),
+                ).fetchone()
+                current_user = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone())
+                current_streak = _streak_snapshot(current_user)
+                total_stars = _available_stars(conn, current_user)
+                return {
+                    "result_id": existing_result["id"] if existing_result else None,
+                    "duplicate": True,
+                    "streak": current_streak["days"],
+                    "streak_days": current_streak["days"],
+                    "streak_status": current_streak["status"],
+                    "streak_restored": False,
+                    "streak_restores_left": current_streak["restores_left"],
+                    "earned_star": False,
+                    "total_stars": int(total_stars or 0),
+                    "available_stars": int(total_stars or 0),
+                    "new_achievements": [],
+                }
+            result_id = inserted_result["id"]
+        else:
+            result_id = conn.execute(
+                """
+                INSERT INTO test_results (user_id, section, mode, total, correct, time_seconds)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (user["id"], data.section, data.mode, data.total, data.correct, data.time_seconds),
+            ).fetchone()["id"]
 
         if data.answers:
             with conn.cursor() as cursor:
@@ -3295,8 +3733,9 @@ def get_stats(user=Depends(get_current_user)):
         by_section = conn.execute(
             """
             SELECT q.section, q.section_name,
-                   COUNT(*) FILTER (WHERE ua.is_correct = true) AS correct,
-                   COUNT(*) AS total
+                   SUM(CASE WHEN ua.is_correct THEN 1 ELSE 0 END)::int AS correct,
+                   COUNT(*)::int AS total,
+                   ROUND((SUM(CASE WHEN ua.is_correct THEN 1 ELSE 0 END)::numeric / NULLIF(COUNT(*), 0)) * 100)::int AS accuracy_percent
             FROM user_answers ua
             JOIN questions q ON q.id = ua.question_id
             WHERE ua.user_id = %s
@@ -3312,9 +3751,10 @@ def get_stats(user=Depends(get_current_user)):
             """
             SELECT q.section,
                    q.section_name,
-                   COUNT(*) FILTER (WHERE ua.is_correct = false) AS wrong,
-                   COUNT(*) FILTER (WHERE ua.is_correct = true) AS correct,
-                   COUNT(*) AS total
+                   SUM(CASE WHEN ua.is_correct THEN 0 ELSE 1 END)::int AS wrong,
+                   SUM(CASE WHEN ua.is_correct THEN 1 ELSE 0 END)::int AS correct,
+                   COUNT(*)::int AS total,
+                   ROUND((SUM(CASE WHEN ua.is_correct THEN 1 ELSE 0 END)::numeric / NULLIF(COUNT(*), 0)) * 100)::int AS accuracy_percent
             FROM user_answers ua
             JOIN questions q ON q.id = ua.question_id
             WHERE ua.user_id = %s
@@ -3338,6 +3778,24 @@ def get_stats(user=Depends(get_current_user)):
             """,
             (user["id"],),
         ).fetchall()
+        time_stats = dict(
+            conn.execute(
+                """
+                SELECT
+                    COALESCE(SUM(time_seconds), 0)::int AS total_test_time_seconds,
+                    COALESCE(SUM(time_seconds) FILTER (WHERE DATE(created_at) = CURRENT_DATE), 0)::int AS today_test_time_seconds,
+                    COALESCE(
+                        MIN(time_seconds) FILTER (
+                            WHERE mode IN ('mvs', 'ticket') AND total > 0 AND (correct::numeric / total) >= 0.8
+                        ),
+                        0
+                    )::int AS best_exam_time_seconds
+                FROM test_results
+                WHERE user_id = %s
+                """,
+                (user["id"],),
+            ).fetchone()
+        )
         difficult = conn.execute(
             """
             SELECT question_id, COUNT(*) AS wrong_count
@@ -3370,6 +3828,19 @@ def get_stats(user=Depends(get_current_user)):
             """,
             (user["id"],),
         ).fetchall()
+        daily_test_time = conn.execute(
+            """
+            SELECT DATE(created_at)::text AS day,
+                   COALESCE(SUM(time_seconds), 0)::int AS seconds,
+                   COUNT(*)::int AS tests
+            FROM test_results
+            WHERE user_id = %s
+              AND created_at > NOW() - INTERVAL '130 days'
+            GROUP BY DATE(created_at)
+            ORDER BY day
+            """,
+            (user["id"],),
+        ).fetchall()
         earned_achievement_ids = [str(row["achievement_id"]) for row in achievements]
         available_stars = _available_stars(conn, user_row)
 
@@ -3379,6 +3850,9 @@ def get_stats(user=Depends(get_current_user)):
         "total_correct": user_row.get("total_correct", 0),
         "total_answers": user_row.get("total_answers", 0),
         "total_wrong": max(0, int(user_row.get("total_answers", 0) or 0) - int(user_row.get("total_correct", 0) or 0)),
+        "total_test_time_seconds": time_stats.get("total_test_time_seconds", 0),
+        "today_test_time_seconds": time_stats.get("today_test_time_seconds", 0),
+        "best_exam_time_seconds": time_stats.get("best_exam_time_seconds", 0),
         "passed_tests": passed_tests,
         "streak_days": streak["days"],
         "streak_status": streak["status"],
@@ -3392,6 +3866,7 @@ def get_stats(user=Depends(get_current_user)):
         "difficult_question_ids": [row["question_id"] for row in difficult],
         "achievements": [dict(row) for row in achievements],
         "activity_days": sorted({str(row["day"]) for row in activity_days}),
+        "daily_test_time": [dict(row) for row in daily_test_time],
         "frame_shop": _frame_shop_payload(user_row, earned_achievement_ids, available_stars),
     }
 
@@ -3430,27 +3905,81 @@ def get_progress_results(user=Depends(get_current_user)):
 @app.get("/achievements")
 def get_achievements(user=Depends(get_optional_user)):
     earned: dict[str, Any] = {}
+    progress_context: dict[str, Any] = {
+        "user": {},
+        "perfect_tests": 0,
+        "exam_stats": {"passed_count": 0, "perfect_count": 0},
+        "battle_stats": {"battle_finished": 0, "battle_wins": 0},
+    }
     if user:
         with db() as conn:
+            _check_achievements(conn, user["id"])
+            conn.commit()
+            user_row = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone())
             rows = conn.execute(
                 "SELECT achievement_id, earned_at FROM user_achievements WHERE user_id = %s",
                 (user["id"],),
             ).fetchall()
             earned = {row["achievement_id"]: row["earned_at"] for row in rows}
+            perfect_tests = conn.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM test_results
+                WHERE user_id = %s AND total > 0 AND correct = total
+                """,
+                (user["id"],),
+            ).fetchone()["count"]
+            exam_stats = conn.execute(
+                """
+                SELECT
+                    COUNT(*) FILTER (
+                        WHERE mode IN ('mvs', 'ticket') AND total > 0 AND (correct::numeric / total) >= 0.8
+                    ) AS passed_count,
+                    COUNT(*) FILTER (
+                        WHERE mode IN ('mvs', 'ticket') AND total > 0 AND correct = total
+                    ) AS perfect_count
+                FROM test_results
+                WHERE user_id = %s
+                """,
+                (user["id"],),
+            ).fetchone()
+            progress_context = {
+                "user": user_row,
+                "perfect_tests": int(perfect_tests or 0),
+                "exam_stats": dict(exam_stats or {}),
+                "battle_stats": _battle_stats_for_email(conn, user_row.get("email")),
+            }
 
-    return [
-        {
-            "id": achievement_id,
-            "tier": tier,
-            "name": name,
-            "description": description,
-            "category": category,
-            "threshold": threshold,
-            "earned": achievement_id in earned,
-            "earned_at": str(earned[achievement_id]) if achievement_id in earned else None,
-        }
-        for achievement_id, tier, name, description, category, threshold in ACHIEVEMENTS_DEF
-    ]
+    result = []
+    for achievement_id, tier, name, description, category, threshold in ACHIEVEMENTS_DEF:
+        current = _achievement_progress_value(
+            achievement_id,
+            category,
+            int(threshold),
+            progress_context["user"],
+            progress_context["perfect_tests"],
+            progress_context["exam_stats"],
+            progress_context["battle_stats"],
+        )
+        progress_percent = min(100, round((current / max(1, int(threshold))) * 100))
+        result.append(
+            {
+                "id": achievement_id,
+                "tier": tier,
+                "name": name,
+                "description": description,
+                "category": category,
+                "threshold": threshold,
+                "target": threshold,
+                "current": min(current, int(threshold)),
+                "raw_current": current,
+                "progress_percent": progress_percent,
+                "progress_text": f"{min(current, int(threshold))}/{threshold}",
+                "earned": achievement_id in earned,
+                "earned_at": str(earned[achievement_id]) if achievement_id in earned else None,
+            }
+        )
+    return result
 
 
 @app.get("/leaderboard")
@@ -3458,6 +3987,17 @@ def leaderboard():
     with db() as conn:
         rows = conn.execute(
             """
+            WITH battle_stats AS (
+              SELECT email,
+                     COUNT(*) FILTER (WHERE status = 'finished') AS battle_finished,
+                     COUNT(*) FILTER (WHERE status = 'finished' AND LOWER(COALESCE(winner_email, '')) = email) AS battle_wins
+              FROM (
+                SELECT LOWER(challenger_email) AS email, status, winner_email FROM battles
+                UNION ALL
+                SELECT LOWER(opponent_email) AS email, status, winner_email FROM battles
+              ) battle_rows
+              GROUP BY email
+            )
             SELECT u.id, u.name, u.surname, u.username, u.email, u.avatar_url, u.avatar_version, u.active_frame,
                    u.total_correct, u.total_tests, u.total_answers, u.marathon_best, u.streak_days,
                    COALESCE((
@@ -3466,8 +4006,11 @@ def leaderboard():
                      WHERE tr.user_id = u.id
                        AND tr.total > 0
                        AND ROUND((tr.correct::numeric / tr.total::numeric) * 100) >= 80
-                   ), 0) AS passed_tests
+                   ), 0) AS passed_tests,
+                   COALESCE(bs.battle_wins, 0) AS battle_wins,
+                   COALESCE(bs.battle_finished, 0) AS battle_finished
             FROM users u
+            LEFT JOIN battle_stats bs ON bs.email = LOWER(u.email)
             WHERE u.email_verified = true
               AND LOWER(u.email) <> ALL(%s)
             ORDER BY u.total_correct DESC, u.total_tests DESC, u.created_at ASC
@@ -4629,6 +5172,275 @@ def admin_update_question(question_id: int, req: AdminQuestionUpdateRequest, adm
             (question_id,),
         ).fetchone()
     return _sanitize_question_row(dict(row))
+
+
+@app.get("/admin/theory/summary")
+def admin_theory_summary(admin=Depends(require_admin)):
+    with db() as conn:
+        totals = {
+            "categories": conn.execute("SELECT COUNT(*) AS count FROM theory_categories").fetchone()["count"],
+            "topics": conn.execute("SELECT COUNT(*) AS count FROM theory_topics").fetchone()["count"],
+            "sections": conn.execute("SELECT COUNT(*) AS count FROM theory_sections").fetchone()["count"],
+            "assets": conn.execute("SELECT COUNT(*) AS count FROM theory_assets").fetchone()["count"],
+        }
+        by_category = conn.execute(
+            """
+            SELECT
+                c.slug,
+                c.title,
+                COUNT(DISTINCT t.id) AS topics_count,
+                COUNT(DISTINCT s.id) AS sections_count,
+                COUNT(DISTINCT a.id) AS assets_count
+            FROM theory_categories c
+            LEFT JOIN theory_topics t ON t.category_id = c.id
+            LEFT JOIN theory_sections s ON s.topic_id = t.id
+            LEFT JOIN theory_assets a ON a.section_id = s.id
+            GROUP BY c.id, c.slug, c.title, c.sort_order
+            ORDER BY c.sort_order, c.title
+            """
+        ).fetchall()
+    return {
+        **{key: int(value or 0) for key, value in totals.items()},
+        "by_category": [dict(row) for row in by_category],
+    }
+
+
+_theory_parse_lock = threading.Lock()
+_theory_parse_process: subprocess.Popen | None = None
+
+
+def _now_iso() -> str:
+    return datetime.utcnow().isoformat(timespec="seconds") + "Z"
+
+
+def _write_theory_parse_status(payload: dict[str, Any]) -> dict[str, Any]:
+    RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+    current = _read_theory_parse_status(include_log=False)
+    current.update(payload)
+    THEORY_PARSE_STATUS_FILE.write_text(json.dumps(current, ensure_ascii=False), encoding="utf-8")
+    return current
+
+
+def _read_theory_parse_status(*, include_log: bool = True) -> dict[str, Any]:
+    if THEORY_PARSE_STATUS_FILE.exists():
+        try:
+            status = json.loads(THEORY_PARSE_STATUS_FILE.read_text(encoding="utf-8"))
+            if not isinstance(status, dict):
+                status = {}
+        except Exception:
+            status = {}
+    else:
+        status = {"running": False, "message": "Парсинг ще не запускався"}
+    if include_log and THEORY_PARSE_LOG_FILE.exists():
+        try:
+            lines = THEORY_PARSE_LOG_FILE.read_text(encoding="utf-8", errors="replace").splitlines()
+            status["log_tail"] = "\n".join(lines[-80:])
+        except Exception:
+            status["log_tail"] = ""
+    return status
+
+
+def _watch_theory_parse_process(process: subprocess.Popen) -> None:
+    exit_code = process.wait()
+    global _theory_parse_process
+    with _theory_parse_lock:
+      _theory_parse_process = None
+    _write_theory_parse_status(
+        {
+            "running": False,
+            "finished_at": _now_iso(),
+            "exit_code": exit_code,
+            "message": "Парсинг завершено" if exit_code == 0 else "Парсинг завершився з помилкою",
+        }
+    )
+
+
+@app.post("/admin/theory/parse")
+def admin_start_theory_parse(req: AdminTheoryParseRequest, admin=Depends(require_admin)):
+    global _theory_parse_process
+    with _theory_parse_lock:
+        if _theory_parse_process and _theory_parse_process.poll() is None:
+            status = _read_theory_parse_status()
+            status["running"] = True
+            return status
+
+        RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+        script_path = BASE_DIR / "scripts" / "import_vodiy_theory.py"
+        if not script_path.exists():
+            raise HTTPException(500, "Скрипт парсингу теорії не знайдено")
+
+        command = [sys.executable, str(script_path)]
+        if req.chapters:
+            command.extend(["--chapters", req.chapters])
+        if req.skip_signs:
+            command.append("--skip-signs")
+        if req.skip_markings:
+            command.append("--skip-markings")
+        if req.write_seed:
+            command.append("--write-seed")
+
+        log_file = THEORY_PARSE_LOG_FILE.open("w", encoding="utf-8")
+        process = subprocess.Popen(
+            command,
+            cwd=str(BASE_DIR.parent),
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            env=os.environ.copy(),
+            text=True,
+        )
+        log_file.close()
+        _theory_parse_process = process
+        status = _write_theory_parse_status(
+            {
+                "running": True,
+                "started_at": _now_iso(),
+                "finished_at": None,
+                "exit_code": None,
+                "message": "Парсинг теорії запущено",
+                "command": " ".join(command),
+            }
+        )
+        threading.Thread(target=_watch_theory_parse_process, args=(process,), daemon=True).start()
+        return status
+
+
+@app.get("/admin/theory/parse/status")
+def admin_theory_parse_status(admin=Depends(require_admin)):
+    status = _read_theory_parse_status()
+    if _theory_parse_process and _theory_parse_process.poll() is None:
+        status["running"] = True
+    return status
+
+
+@app.get("/admin/theory/sections")
+def admin_theory_sections(
+    search: str = Query(default=""),
+    topic: str = Query(default=""),
+    category: str = Query(default=""),
+    limit: int = Query(default=80, ge=1, le=200),
+    admin=Depends(require_admin),
+):
+    search_term = search.strip()
+    topic_filter = topic.strip()
+    category_filter = category.strip()
+    with db() as conn:
+        rows = conn.execute(
+            """
+            SELECT
+                s.id,
+                s.slug,
+                s.title,
+                s.description,
+                s.comment_html,
+                s.content_html,
+                s.video_url,
+                s.embed_url,
+                s.chapter_num,
+                s.sort_order,
+                s.source_url,
+                t.slug AS topic_slug,
+                t.title AS topic_title,
+                c.slug AS category_slug,
+                c.title AS category_title,
+                COUNT(a.id) AS assets_count,
+                COALESCE(jsonb_agg(a.asset_url ORDER BY a.sort_order) FILTER (WHERE a.id IS NOT NULL), '[]'::jsonb) AS assets
+            FROM theory_sections s
+            JOIN theory_topics t ON t.id = s.topic_id
+            JOIN theory_categories c ON c.id = t.category_id
+            LEFT JOIN theory_assets a ON a.section_id = s.id
+            WHERE (%s = '' OR t.slug = %s)
+              AND (%s = '' OR c.slug = %s)
+              AND (
+                    %s = ''
+                 OR s.title ILIKE %s
+                 OR s.description ILIKE %s
+                 OR s.content_text ILIKE %s
+                 OR t.title ILIKE %s
+                 OR c.title ILIKE %s
+              )
+            GROUP BY s.id, t.slug, t.title, c.slug, c.title, c.sort_order, t.sort_order
+            ORDER BY c.sort_order, t.sort_order, COALESCE(s.chapter_num, s.sort_order), s.sort_order, s.title
+            LIMIT %s
+            """,
+            (
+                topic_filter,
+                topic_filter,
+                category_filter,
+                category_filter,
+                search_term,
+                f"%{search_term}%",
+                f"%{search_term}%",
+                f"%{search_term}%",
+                f"%{search_term}%",
+                f"%{search_term}%",
+                limit,
+            ),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+@app.patch("/admin/theory/sections/{section_id}")
+def admin_update_theory_section(section_id: int, req: AdminTheorySectionUpdateRequest, admin=Depends(require_admin)):
+    fields: list[str] = []
+    params: list[Any] = []
+    for key in ("title", "description", "comment_html", "video_url", "embed_url"):
+        value = getattr(req, key)
+        if value is None:
+            continue
+        fields.append(f"{key} = %s")
+        params.append(str(value).strip())
+    if req.content_html is not None:
+        content_html = str(req.content_html).strip()
+        content_text = _sanitize_handbook_text(re.sub(r"<[^>]+>", " ", content_html))
+        fields.append("content_html = %s")
+        params.append(content_html)
+        fields.append("content_text = %s")
+        params.append(content_text)
+    if req.chapter_num is not None:
+        fields.append("chapter_num = %s")
+        params.append(int(req.chapter_num))
+    if req.sort_order is not None:
+        fields.append("sort_order = %s")
+        params.append(int(req.sort_order))
+    if not fields:
+        raise HTTPException(400, "Немає полів для оновлення")
+    params.append(section_id)
+    with db() as conn:
+        exists = conn.execute("SELECT id FROM theory_sections WHERE id = %s", (section_id,)).fetchone()
+        if not exists:
+            raise HTTPException(404, "Розділ теорії не знайдено")
+        conn.execute(f"UPDATE theory_sections SET {', '.join(fields)} WHERE id = %s", params)
+        conn.commit()
+        row = conn.execute(
+            """
+            SELECT
+                s.id,
+                s.slug,
+                s.title,
+                s.description,
+                s.comment_html,
+                s.content_html,
+                s.video_url,
+                s.embed_url,
+                s.chapter_num,
+                s.sort_order,
+                s.source_url,
+                t.slug AS topic_slug,
+                t.title AS topic_title,
+                c.slug AS category_slug,
+                c.title AS category_title,
+                COUNT(a.id) AS assets_count,
+                COALESCE(jsonb_agg(a.asset_url ORDER BY a.sort_order) FILTER (WHERE a.id IS NOT NULL), '[]'::jsonb) AS assets
+            FROM theory_sections s
+            JOIN theory_topics t ON t.id = s.topic_id
+            JOIN theory_categories c ON c.id = t.category_id
+            LEFT JOIN theory_assets a ON a.section_id = s.id
+            WHERE s.id = %s
+            GROUP BY s.id, t.slug, t.title, c.slug, c.title
+            """,
+            (section_id,),
+        ).fetchone()
+    return dict(row)
 
 
 @app.post("/frames/purchase")

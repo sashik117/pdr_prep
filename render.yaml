@@ -17,6 +17,10 @@ services:
         value: driveprep
       - key: JWT_SECRET
         generateValue: true
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
       - key: EMAIL_PROVIDER
         value: resend
       - key: EMAIL_FROM

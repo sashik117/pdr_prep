@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
 import { cn } from '@/lib/utils';
-import { fetchRandomQuestions, normalizeQuestion } from '@/api/questionsApi';
+import { fetchQuestions, fetchRandomQuestions, normalizeQuestion } from '@/api/questionsApi';
 import api from '@/api/apiClient';
 import { queuePendingTestResult } from '@/lib/offlineProgress';
 import QuestionCard from '@/components/test/QuestionCard';
@@ -26,11 +26,11 @@ import { playTone } from '@/lib/soundEffects';
 const AUTO_ADVANCE_DELAY_MS = 1100;
 
 const MODE_CONFIG = {
-  quick: { count: 10, label: 'Швидкий тест', time: 600 },
+  quick: { count: 10, label: 'Офіційні тести', time: 600 },
   full: { count: 20, label: 'Тренування 20 питань', time: 1200 },
   mvs: { count: 20, label: 'Іспит МВС', time: 1200 },
   difficult: { count: 10, label: 'Мої помилки', time: 600 },
-  top: { count: 20, label: 'Топ 100 помилок', time: 1200 },
+  top: { count: 20, label: 'Топ помилок багатьох', time: 1200 },
   section: { count: 20, label: 'Тест за розділом', time: 1200 },
   daily: { count: 15, label: 'Виклик дня', time: 900 },
   srs: { count: 20, label: 'Інтервальне повторення', time: 1200 },
@@ -51,15 +51,21 @@ export default function TakeTest() {
   const topic = params.get('topic') || '';
   const section = params.get('section') || '';
   const ticket = params.get('ticket') || '';
+  const idsParam = params.get('ids') || '';
+  const requestedIds = useMemo(() => idsParam.split(',').map((value) => value.trim()).filter(Boolean), [idsParam]);
+  const requestedCount = Math.max(0, Math.min(200, Number(params.get('count') || 0) || 0));
   const config = MODE_CONFIG[/** @type {keyof typeof MODE_CONFIG} */ (mode)] || MODE_CONFIG.quick;
   const requiresAuth = mode === 'difficult';
   const premiumOnly = mode === 'mvs' || mode === 'ticket';
   const guestLocked = !user && localStorage.getItem(guestTestKey) === '1';
+  const effectiveQuestionCount = requestedCount || requestedIds.length || config.count;
+  const effectiveTime = Math.max(config.time, effectiveQuestionCount * 60);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(config.time);
+  const [isFinishing, setIsFinishing] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(effectiveTime);
   const [questions, setQuestions] = useState([]);
   const [resultMeta, setResultMeta] = useState(null);
   const [analyzingQuestion, setAnalyzingQuestion] = useState(null);
@@ -73,6 +79,10 @@ export default function TakeTest() {
   const [limitBlocked, setLimitBlocked] = useState(false);
   const [, setSavedIds] = useState(() => getSavedQuestionIds());
   const startTimeRef = useRef(Date.now());
+  const attemptIdRef = useRef('');
+  const answeredAllAtRef = useRef(null);
+  const finishInProgressRef = useRef(false);
+  const finishedAtRef = useRef(null);
   const autoAdvanceRef = useRef(/** @type {number | null} */ (null));
   const allowNavigationRef = useRef(false);
   const { toast } = useToast();
@@ -84,10 +94,15 @@ export default function TakeTest() {
   );
 
   const { data: rawQuestions = [], isLoading } = useQuery({
-    queryKey: ['take-test', mode, category, topic, section, ticket, user?.id],
+    queryKey: ['take-test', mode, category, topic, section, ticket, idsParam, requestedCount, user?.id],
     enabled: (!requiresAuth || !!user) && !guestLocked,
     queryFn: async () => {
       const seed = mode === 'top' ? `top100:${category || 'all'}` : undefined;
+      if (requestedIds.length > 0) {
+        const limit = requestedCount > 0 ? Math.min(requestedCount, requestedIds.length) : requestedIds.length;
+        const response = await fetchQuestions({ ids: requestedIds.slice(0, limit), limit });
+        return (response?.items || response || []).map(normalizeQuestion).filter(Boolean);
+      }
       if (mode === 'mvs') {
         const response = await api.getMvsExamQuestions({ category: category || 'B' });
         return (response?.questions || response || []).map(normalizeQuestion).filter(Boolean);
@@ -97,11 +112,12 @@ export default function TakeTest() {
         return (response?.questions || []).map(normalizeQuestion).filter(Boolean);
       }
       const response = await fetchRandomQuestions({
-        count: config.count,
+        count: effectiveQuestionCount,
         category: category || undefined,
         section: section || undefined,
         topic: topic || undefined,
         difficultOnly: mode === 'difficult',
+        difficulty: mode === 'top' ? 'hard' : undefined,
         seed,
       });
       return response.map(normalizeQuestion).filter(Boolean);
@@ -114,9 +130,17 @@ export default function TakeTest() {
     setAnswers({});
     setCurrentIndex(0);
     setShowResults(false);
-    setTimeLeft(config.time);
+    setIsFinishing(false);
+    setTimeLeft(effectiveTime);
     startTimeRef.current = Date.now();
-  }, [rawQuestions, config.time]);
+    attemptIdRef.current =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    answeredAllAtRef.current = null;
+    finishInProgressRef.current = false;
+    finishedAtRef.current = null;
+  }, [rawQuestions, effectiveTime]);
 
   useEffect(() => () => {
     if (autoAdvanceRef.current) {
@@ -150,8 +174,12 @@ export default function TakeTest() {
     setGhostBestTime(Number.isFinite(raw) && raw > 0 ? raw : 0);
   }, [ghostKey]);
 
+  const currentQuestion = questions[currentIndex];
+  const answeredCount = Object.keys(answers).length;
+  const allQuestionsAnswered = questions.length > 0 && answeredCount >= questions.length;
+
   useEffect(() => {
-    if (showResults || questions.length === 0) return;
+    if (showResults || allQuestionsAnswered || questions.length === 0) return;
     const timer = setInterval(() => {
       setTimeLeft((value) => {
         if (value <= 1) {
@@ -163,7 +191,7 @@ export default function TakeTest() {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [showResults, questions.length]);
+  }, [showResults, allQuestionsAnswered, questions.length]);
 
   useEffect(() => {
     if (showResults || questions.length === 0) return undefined;
@@ -191,7 +219,13 @@ export default function TakeTest() {
     const question = questions[currentIndex];
     if (!question) return;
     if (answers[String(question.id)]) return;
-    setAnswers((prev) => ({ ...prev, [String(question.id)]: label }));
+    setAnswers((prev) => {
+      const next = { ...prev, [String(question.id)]: label };
+      if (Object.keys(next).length >= questions.length && !answeredAllAtRef.current) {
+        answeredAllAtRef.current = Date.now();
+      }
+      return next;
+    });
     playTone(label === question.correct_answer ? 'correct' : 'wrong');
 
     if (autoAdvanceRef.current) {
@@ -206,11 +240,15 @@ export default function TakeTest() {
   };
 
   const handleFinish = async () => {
-    if (showResults || questions.length === 0) return;
+    if (finishInProgressRef.current || showResults || questions.length === 0) return;
+    finishInProgressRef.current = true;
+    setIsFinishing(true);
     clearAutoAdvance();
     setShowResults(true);
     playTone('finish');
-    const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
+    const finishedAt = finishedAtRef.current || answeredAllAtRef.current || Date.now();
+    finishedAtRef.current = finishedAt;
+    const timeSpent = Math.floor((finishedAt - startTimeRef.current) / 1000);
     const correct = questions.filter((question) => answers[String(question.id)] === question.correct_answer).length;
     const nextBest = ghostBestTime > 0 ? Math.min(ghostBestTime, timeSpent) : timeSpent;
     setGhostBestTime(nextBest);
@@ -222,6 +260,7 @@ export default function TakeTest() {
       total: questions.length,
       correct,
       time_seconds: timeSpent,
+      client_attempt_id: attemptIdRef.current,
       answers: questions.map((question) => ({
         question_id: Number(question.id),
         selected_index: answerToIndex(answers[String(question.id)]),
@@ -302,10 +341,8 @@ export default function TakeTest() {
       syncStatus: resultSyncStatus,
       rewardDataMissing,
     });
+    setIsFinishing(false);
   };
-
-  const currentQuestion = questions[currentIndex];
-  const answeredCount = Object.keys(answers).length;
   const correctCount = questions.filter((question) => answers[String(question.id)] === question.correct_answer).length;
   const passed = questions.length > 0 && correctCount / questions.length >= 0.8;
   const hasStartedUnfinishedTest = !showResults && questions.length > 0;
@@ -415,7 +452,7 @@ export default function TakeTest() {
 
   if (guestLocked && !showResults) {
     return (
-      <div className="mx-auto max-w-xl space-y-4 py-16 text-center">
+      <div className="mx-auto max-w-xl space-y-4 px-4 py-16 text-center sm:px-6">
         <Ghost className="mx-auto h-12 w-12 text-slate-400" />
         <h2 className="text-xl font-medium text-slate-900 dark:text-white">Для гостей сьогодні тест уже використано</h2>
         <p className="text-sm text-slate-500 dark:text-slate-300">
@@ -431,7 +468,7 @@ export default function TakeTest() {
 
   if (limitBlocked) {
     return (
-      <div className="mx-auto max-w-xl space-y-4 py-16 text-center">
+      <div className="mx-auto max-w-xl space-y-4 px-4 py-16 text-center sm:px-6">
         <Star className="mx-auto h-12 w-12 text-amber-500" />
         <h2 className="text-xl font-medium text-slate-900 dark:text-white">Денний trial для цього режиму вичерпано</h2>
         <p className="text-sm text-slate-500 dark:text-slate-300">
@@ -453,7 +490,7 @@ export default function TakeTest() {
 
   if (!isLoading && questions.length === 0) {
     return (
-      <div className="mx-auto max-w-xl space-y-4 py-16 text-center">
+      <div className="mx-auto max-w-xl space-y-4 px-4 py-16 text-center sm:px-6">
         <AlertTriangle className="mx-auto h-12 w-12 text-slate-400" />
         <h2 className="text-xl font-medium text-slate-900 dark:text-white">Питань для цього набору не знайдено</h2>
         <p className="text-sm text-slate-500 dark:text-slate-300">Спробуйте іншу категорію або інший розділ.</p>
@@ -463,18 +500,23 @@ export default function TakeTest() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-5 pb-6">
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div>
-          <h1 className="flex items-center gap-2 text-xl font-semibold text-slate-900 dark:text-white">
-            {mode === 'srs' ? <Brain className="h-5 w-5 text-primary" /> : null}
-            {config.label}
-          </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">
-            {mode === 'ticket' && ticket ? `Білет ${ticket}` : category ? `Категорія ${category}` : 'Усі категорії'}
-            {section ? ` • Розділ ${section}` : ''}
-            {topic ? ` • ${topic}` : ''}
-          </p>
+        <div className="flex items-start gap-3">
+          <Button type="button" variant="ghost" size="icon" className="mt-0.5 shrink-0 rounded-full" aria-label="Назад" onClick={() => navigate(-1)}>
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="flex items-center gap-2 text-xl font-semibold text-slate-900 dark:text-white">
+              {mode === 'srs' ? <Brain className="h-5 w-5 text-primary" /> : null}
+              {config.label}
+            </h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">
+              {mode === 'ticket' && ticket ? `Білет ${ticket}` : category ? `Категорія ${category}` : 'Усі категорії'}
+              {section ? ` • Розділ ${section}` : ''}
+              {topic ? ` • ${topic}` : ''}
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -531,7 +573,7 @@ export default function TakeTest() {
           initial={{ opacity: 0, x: 14 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.28, ease: 'easeOut' }}
-          className="rounded-xl border border-slate-200 bg-card p-4 dark:border-slate-800 sm:p-5"
+          className="overflow-hidden rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-900 md:p-8"
         >
           <QuestionCard
             question={currentQuestion}
@@ -580,9 +622,9 @@ export default function TakeTest() {
         </div>
 
         {!showResults ? (
-          <Button className="w-full gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 sm:w-auto" onClick={requestFinish}>
+          <Button className="w-full gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 sm:w-auto" disabled={isFinishing} onClick={requestFinish}>
             <CheckCircle className="h-4 w-4" />
-            Завершити
+            {isFinishing ? 'Зберігаємо...' : 'Завершити'}
           </Button>
         ) : null}
       </div>
@@ -602,8 +644,9 @@ export default function TakeTest() {
                 setFinishDialogOpen(false);
                 void handleFinish();
               }}
+              disabled={isFinishing}
             >
-              Завершити
+              {isFinishing ? 'Зберігаємо...' : 'Завершити'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -617,7 +660,7 @@ export default function TakeTest() {
         />
       ) : null}
 
-      <Dialog open={showResults} onOpenChange={(open) => !open && setShowResults(false)}>
+      <Dialog open={showResults} onOpenChange={() => {}}>
         <DialogContent className="overflow-hidden rounded-xl border-slate-200 bg-card p-0 shadow-xl sm:max-w-xl dark:border-slate-800">
           <DialogTitle className="sr-only">Результат тесту</DialogTitle>
           <DialogDescription className="sr-only">Підсумок тесту, серії активності та ідеальних зірок.</DialogDescription>

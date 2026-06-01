@@ -1,23 +1,22 @@
 // @ts-nocheck
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, Medal, Star, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Trophy, Medal, Star, CheckCircle, Swords } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import api from '@/api/apiClient';
+import { Button } from '@/components/ui/button';
 
 export default function Leaderboard() {
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const [expanded, setExpanded] = useState(false);
   const { data: rawRows = [], isLoading } = useQuery({
     queryKey: ['leaderboard'],
     queryFn: () => api.getLeaderboard(),
   });
   const rows = rawRows || [];
-  const visibleCount = expanded ? 15 : 5;
 
   const rankIcon = (rank) => {
     if (rank === 1) return <Trophy className="h-5 w-5 text-yellow-500" />;
@@ -32,17 +31,22 @@ export default function Leaderboard() {
       const delta = (b.passed_tests || 0) - (a.passed_tests || 0);
       if (delta !== 0) return delta;
       return (b.total_correct || 0) - (a.total_correct || 0);
-    })
-    .slice(0, visibleCount);
+    });
   const topMarathon = [...rows]
     .filter((row) => (row.marathon_best || 0) > 0)
     .sort((a, b) => {
       const bestDelta = (b.marathon_best || 0) - (a.marathon_best || 0);
       if (bestDelta !== 0) return bestDelta;
       return (b.passed_tests || 0) - (a.passed_tests || 0);
-    })
-    .slice(0, visibleCount);
-  const topByCorrect = [...rows].sort((a, b) => (b.total_correct || 0) - (a.total_correct || 0)).slice(0, visibleCount);
+    });
+  const topBattles = [...rows]
+    .filter((row) => (row.battle_finished || 0) > 0)
+    .sort((a, b) => {
+      const winsDelta = (b.battle_wins || 0) - (a.battle_wins || 0);
+      if (winsDelta !== 0) return winsDelta;
+      return (b.battle_finished || 0) - (a.battle_finished || 0);
+    });
+  const topByCorrect = [...rows].sort((a, b) => (b.total_correct || 0) - (a.total_correct || 0));
 
   const LeaderTable = ({ data, valueKey, valueLabel }) => (
     <div className="space-y-2">
@@ -75,8 +79,12 @@ export default function Leaderboard() {
   );
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        <Button type="button" variant="ghost" className="mb-4 -ml-2 rounded-full px-3" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Назад
+        </Button>
         <h1 className="flex items-center gap-3 text-3xl font-bold text-foreground">
           <Trophy className="h-8 w-8 text-yellow-500" />
           Таблиця лідерів
@@ -105,27 +113,27 @@ export default function Leaderboard() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Trophy className="h-5 w-5 text-accent-foreground" />
-            Режим марафон
-          </CardTitle>
-        </CardHeader>
-        <CardContent>{isLoading ? <Spinner /> : <LeaderTable data={topMarathon} valueKey="marathon_best" valueLabel="питань" />}</CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Trophy className="h-5 w-5 text-amber-500" />
+              Режим марафон
+            </CardTitle>
+          </CardHeader>
+          <CardContent>{isLoading ? <Spinner /> : <LeaderTable data={topMarathon} valueKey="marathon_best" valueLabel="питань" />}</CardContent>
+        </Card>
 
-      {rows.length > 5 ? (
-        <div className="flex justify-center">
-          <button
-            type="button"
-            className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary/20 hover:text-primary dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            onClick={() => setExpanded((value) => !value)}
-          >
-            {expanded ? 'Показати менше' : 'Показати більше'}
-          </button>
-        </div>
-      ) : null}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Swords className="h-5 w-5 text-violet-500" />
+              Батли
+            </CardTitle>
+          </CardHeader>
+          <CardContent>{isLoading ? <Spinner /> : <LeaderTable data={topBattles} valueKey="battle_wins" valueLabel="перемог" />}</CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

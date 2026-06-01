@@ -140,7 +140,9 @@ export default function Friends() {
   }
 
   return !selectedFriendData ? (
-    <Card className="h-[calc(100dvh-11rem)] min-h-[34rem] flex flex-col overflow-hidden border-white/85 shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92 sm:h-[calc(100dvh-12rem)]">
+    <div className="lg:mx-auto lg:w-full lg:max-w-6xl lg:px-8 lg:py-6">
+    <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,780px)] lg:justify-center">
+      <Card className="h-[calc(100dvh-11rem)] min-h-[34rem] flex flex-col overflow-hidden border-white/85 shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92 sm:h-[calc(100dvh-12rem)]">
       <CardHeader className="shrink-0">
         <CardTitle className="flex items-center gap-2 dark:text-white">
           <Users className="h-5 w-5 text-primary" />
@@ -212,9 +214,23 @@ export default function Friends() {
           ) : null}
         </div>
       </CardContent>
-    </Card>
+      </Card>
+      <Card className="hidden h-[calc(100dvh-11rem)] min-h-[34rem] items-center justify-center border-white/85 bg-white/80 shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92 lg:flex">
+        <CardContent className="max-w-md text-center">
+          <MessageCircleMore className="mx-auto h-10 w-10 text-primary" />
+          <h2 className="mt-4 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">Оберіть друга</h2>
+          <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-300">
+            На комп’ютері список друзів залишається зліва, а чат відкривається тут справа.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+    </div>
   ) : (
-    <Card className="h-[calc(100dvh-11rem)] min-h-[34rem] flex flex-col overflow-hidden border-white/85 shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92 sm:h-[calc(100dvh-12rem)]">
+    <div className="lg:mx-auto lg:w-full lg:max-w-6xl lg:px-8 lg:py-6">
+    <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,780px)] lg:justify-center">
+      <FriendSidebar friends={friendsData?.friends || []} selectedFriend={selectedFriend} onSelect={setSelectedFriend} />
+      <Card className="h-[calc(100dvh-11rem)] min-h-[34rem] flex flex-col overflow-hidden border-white/85 shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92 sm:h-[calc(100dvh-12rem)]">
       <CardHeader className="shrink-0 pb-2">
         <CardTitle className="flex items-center gap-2 dark:text-white">
           <MessageCircleMore className="h-5 w-5 text-primary" />
@@ -249,7 +265,6 @@ export default function Friends() {
             const invite = item.result_data?.kind === 'battle_invite' && item.result_data?.battle_id;
             const battle = invite ? battlesById.get(item.result_data.battle_id) : null;
             const canAccept = battle?.status === 'pending' && battle?.role === 'opponent';
-            const canDecline = canAccept;
             const canOpen = !!battle?.id;
 
             return (
@@ -341,6 +356,53 @@ export default function Friends() {
           </div>
         </div>
       </CardContent>
+      </Card>
+    </div>
+    </div>
+  );
+}
+
+function FriendSidebar({ friends, selectedFriend, onSelect }) {
+  return (
+    <Card className="hidden h-[calc(100dvh-11rem)] min-h-[34rem] flex-col overflow-hidden border-white/85 shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92 lg:flex">
+      <CardHeader className="shrink-0">
+        <CardTitle className="flex items-center gap-2 text-lg dark:text-white">
+          <Users className="h-5 w-5 text-primary" />
+          Друзі
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 space-y-3 overflow-y-auto custom-scrollbar">
+        {friends.length ? friends.map((friend) => {
+          const username = friend.user?.username || null;
+          const active = username && username === selectedFriend;
+          return (
+            <button
+              key={friend.id}
+              type="button"
+              className={cn(
+                'w-full rounded-xl border p-3 text-left transition-all duration-200',
+                active
+                  ? 'border-primary/35 bg-primary/10'
+                  : 'border-slate-100 bg-white hover:border-primary/20 dark:border-slate-800 dark:bg-slate-900/70',
+              )}
+              onClick={() => onSelect(username)}
+            >
+              <div className="flex items-center gap-3">
+                <Avatar user={friend.user} small />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-slate-900 dark:text-white">{friend.user?.full_name || `${friend.user?.name || ''} ${friend.user?.surname || ''}`.trim()}</p>
+                  <p className="truncate text-sm text-slate-500 dark:text-slate-300">@{friend.user?.username || 'unknown'}</p>
+                </div>
+                {friend.unread_count ? <span className="rounded-lg bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground">{friend.unread_count}</span> : null}
+              </div>
+            </button>
+          );
+        }) : (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+            Список друзів поки порожній.
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 }
@@ -400,7 +462,7 @@ function Avatar({ user, small = false }) {
   return (
     <div className={frameClass}>
       <div className="h-full w-full overflow-hidden rounded-[inherit] bg-slate-200 dark:bg-slate-700">
-        {resolved ? <img src={resolved} alt={user?.username || 'avatar'} className="h-full w-full object-cover" /> : null}
+        {resolved ? <img src={resolved} alt={user?.username || 'avatar'} width={96} height={96} decoding="async" className="h-full w-full object-cover [backface-visibility:hidden]" /> : null}
       </div>
     </div>
   );

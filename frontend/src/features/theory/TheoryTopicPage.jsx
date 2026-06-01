@@ -36,15 +36,33 @@ function isPremiumSlug(slug) {
   return slug === 'video-lectures' || slug.startsWith('academy');
 }
 
-function topicLabel(count) {
-  if (count === 1) return 'розділ';
-  if (count >= 2 && count <= 4) return 'розділи';
-  return 'розділів';
+function cleanVideoTitle(title) {
+  return String(title || '')
+    .replace(/^Розділ\s*\d+(?:[.)]\s*)?/i, '')
+    .replace(/^\d+(?:[.)]\s*)?/, '')
+    .trim();
 }
 
 function sectionOrderValue(section, fallback) {
+  const numericSignature = String(`${section?.title || ''} ${section?.description || ''} ${section?.slug || ''}`).match(
+    /(?:^|\s|rozdil[-_\s])(\d{1,2})(?:[.\-_](\d{1,2}))?(?:[.\-_](\d{1,2}))?/i,
+  );
+  if (numericSignature) {
+    const major = Number(numericSignature[1] || 0);
+    const minor = Number(numericSignature[2] || 0);
+    const patch = Number(numericSignature[3] || 0);
+    return major * 10000 + minor * 100 + patch;
+  }
   const value = Number(section?.chapterNum || section?.sortOrder || fallback + 1);
   return Number.isFinite(value) ? value : fallback + 1;
+}
+
+function topicOrderValue(topic, fallback) {
+  const directValue = Number(topic?.sortOrder ?? topic?.order ?? topic?.chapterNum ?? topic?.position);
+  if (Number.isFinite(directValue) && directValue > 0) return directValue;
+  const match = String(topic?.title || topic?.slug || '').match(/^\s*(\d+(?:\.\d+)?)/);
+  const titleValue = match ? Number(match[1]) : Number.NaN;
+  return Number.isFinite(titleValue) ? titleValue : fallback + 1;
 }
 
 function normalizeSectionKey(section) {
@@ -74,25 +92,35 @@ export default function TheoryTopicPage() {
 
   const category = (categoriesQuery.data || []).find((item) => item.slug === topicKey);
   const topics = topicsQuery.data || [];
-  const hasNestedTopics = topics.length > 1;
+  const sortedTopics = useMemo(
+    () =>
+      [...topics].sort(
+        (left, right) =>
+          topicOrderValue(left, 0) - topicOrderValue(right, 0) ||
+          String(left.title || '').localeCompare(String(right.title || ''), 'uk'),
+      ),
+    [topics],
+  );
+  const hasNestedTopics = sortedTopics.length > 1;
 
   const resolvedTopic = useMemo(
     () =>
-      topics.find((item) => item.slug === selectedTopicSlug) ||
-      topics.find((item) => item.slug === topicKey) ||
-      topics[0] ||
+      sortedTopics.find((item) => item.slug === selectedTopicSlug) ||
+      sortedTopics.find((item) => item.slug === topicKey) ||
+      sortedTopics[0] ||
       null,
-    [selectedTopicSlug, topicKey, topics],
+    [selectedTopicSlug, topicKey, sortedTopics],
   );
 
   const resolvedTopicSlug = resolvedTopic?.slug || '';
   const topicIsPremium = isPremiumSlug(topicKey) || isPremiumSlug(resolvedTopicSlug);
+  const isVideoTopic = topicKey === 'video-lectures';
   const showAcademyRoadmap = resolvedTopicSlug === 'academy-driving-basics';
 
   const sectionsQuery = useQuery({
     queryKey: ['theory-sections', resolvedTopicSlug],
     queryFn: async () => (await api.getTheorySections(resolvedTopicSlug)).map(normalizeTheorySection),
-    enabled: Boolean(resolvedTopicSlug) && (!hasNestedTopics || Boolean(selectedTopicSlug) || topics.some((item) => item.slug === topicKey)),
+    enabled: Boolean(resolvedTopicSlug) && (!hasNestedTopics || Boolean(selectedTopicSlug) || sortedTopics.some((item) => item.slug === topicKey)),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -110,7 +138,7 @@ export default function TheoryTopicPage() {
   const previewSections = sections.slice(0, 3);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pb-6 sm:space-y-8">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-8 sm:space-y-8 sm:px-6 lg:px-8">
       <div className="flex items-center gap-3">
         <Button asChild variant="outline" className="rounded-lg">
           <Link to="/study">
@@ -120,7 +148,7 @@ export default function TheoryTopicPage() {
         </Button>
       </div>
 
-      <Card className="border-slate-200 bg-card shadow-sm dark:border-slate-800">
+      <Card className="border-slate-200 bg-card shadow-md dark:border-slate-800">
         <CardContent className="space-y-3 p-5 sm:p-6">
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Розділи теми</p>
@@ -137,22 +165,6 @@ export default function TheoryTopicPage() {
           <p className="text-sm leading-6 text-slate-600 dark:text-slate-300 sm:max-w-3xl">
             На телефоні всередині теми залишили лише назви розділів і швидкий перехід, щоб не перевантажувати екран.
           </p>
-          <div className="hidden gap-3 pt-2 sm:grid sm:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-sky-50/60 px-4 py-4 dark:border-slate-800 dark:bg-sky-950/15">
-              <div className="text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">{sections.length || topics.length || 0}</div>
-              <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {sections.length ? `${topicLabel(sections.length)} в темі` : 'підтеми в каталозі'}
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-emerald-50/50 px-4 py-4 dark:border-slate-800 dark:bg-emerald-950/15">
-              <div className="text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">{topicIsPremium ? 'Pro' : 'Free'}</div>
-              <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">рівень доступу</div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/40">
-              <div className="text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">Local</div>
-              <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">медіа із сервера</div>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
@@ -192,7 +204,7 @@ export default function TheoryTopicPage() {
 
           {hasNestedTopics ? (
             <div className="grid gap-4 md:grid-cols-2">
-              {topics.slice(0, 4).map((topic, index) => (
+              {sortedTopics.slice(0, 4).map((topic, index) => (
                 <motion.div key={topic.id || topic.slug} {...reveal} transition={{ ...reveal.transition, delay: index * 0.04 }}>
                   <Card className="overflow-hidden border-slate-200 bg-card dark:border-slate-700">
                     <CardContent className="relative p-5">
@@ -219,7 +231,7 @@ export default function TheoryTopicPage() {
                   <Card className="border-slate-200 bg-card shadow-none dark:border-slate-700">
                     <CardContent className="flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-950 dark:text-white">{section.title}</p>
+                        <p className="text-sm font-medium text-slate-950 dark:text-white">{isVideoTopic ? cleanVideoTitle(section.title) : section.title}</p>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Прев’ю матеріалу</p>
                       </div>
                       <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-200">
@@ -233,9 +245,9 @@ export default function TheoryTopicPage() {
             </div>
           )}
         </div>
-      ) : hasNestedTopics && !selectedTopicSlug && !topics.some((item) => item.slug === topicKey) ? (
+      ) : hasNestedTopics && !selectedTopicSlug && !sortedTopics.some((item) => item.slug === topicKey) ? (
         <div className="grid gap-4 md:grid-cols-2">
-          {topics.map((topic, index) => (
+          {sortedTopics.map((topic, index) => (
             <motion.div key={topic.id || topic.slug} {...reveal} transition={{ ...reveal.transition, delay: index * 0.04 }}>
               <Link to={`/study/${topicKey}?topic=${encodeURIComponent(topic.slug)}`} className="block">
                 <Card className="border-slate-200 bg-card shadow-sm transition-colors hover:border-primary/30 dark:border-slate-800 dark:hover:border-sky-500/30">
@@ -312,12 +324,15 @@ export default function TheoryTopicPage() {
           ) : (
             sections.map((section, index) => (
               <motion.div key={section.id} {...reveal} transition={{ ...reveal.transition, delay: index * 0.03 }}>
-                <Link to={`/study/${resolvedTopicSlug || topicKey}/${section.chapterNum || section.sortOrder || index + 1}`} className="block">
-                  <Card className="border-slate-200 bg-card shadow-sm transition-colors hover:border-primary/30 dark:border-slate-800 dark:hover:border-sky-500/30">
+                <Link to={`/study/${resolvedTopicSlug || topicKey}/${section.chapterNum || section.sortOrder || index + 1}`} className="group block">
+                  <Card className="border-2 border-transparent bg-card shadow-md transition-all hover:border-primary/30 hover:shadow-xl dark:border-slate-800 dark:hover:border-sky-500/40">
                     <CardContent className="p-4 sm:p-5">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-4">
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-base font-semibold text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-500/10 dark:text-blue-200">
+                          {section.chapterNum || section.sortOrder || index + 1}
+                        </span>
                         <div className="min-w-0">
-                          <p className="text-base font-medium text-slate-950 dark:text-white">{section.title}</p>
+                          <p className="text-base font-semibold text-slate-950 transition-colors group-hover:text-primary dark:text-white">{isVideoTopic ? cleanVideoTitle(section.title) : section.title}</p>
                           <div className="mt-2 flex flex-wrap items-center gap-2">
                             <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600 dark:bg-slate-800 dark:text-slate-200">
                               {section.chapterNum ? `Розділ ${section.chapterNum}` : `Сторінка ${index + 1}`}
@@ -330,9 +345,9 @@ export default function TheoryTopicPage() {
                             ) : null}
                           </div>
                         </div>
-                        <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
-                          Відкрити
-                          <ChevronRight className="h-3.5 w-3.5" />
+                        <span className="ml-auto inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-primary">
+                          <span className="hidden sm:inline">Відкрити</span>
+                          <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                         </span>
                       </div>
 

@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  ArrowLeft,
   ArrowRight,
   ChevronDown,
   CircleAlert,
@@ -25,8 +26,8 @@ const modes = [
   {
     id: 'quick',
     icon: ClipboardCheck,
-    label: 'Швидкий тест',
-    desc: '10 питань для короткої перевірки знань.',
+    label: 'Офіційні тести',
+    desc: '10 питань з бази ПДР для короткої перевірки знань.',
     questions: 10,
   },
   {
@@ -55,8 +56,8 @@ const modes = [
   {
     id: 'top',
     icon: Star,
-    label: 'Топ 100 помилок',
-    desc: 'Добірка складних питань, які варто повторити перед іспитом.',
+    label: 'Топ помилок багатьох',
+    desc: 'Добірка складних питань, які найчастіше плутають перед іспитом.',
     questions: 20,
   },
 ];
@@ -77,12 +78,14 @@ export default function TestSelection() {
     categoryGroups.some((item) => item.id === requestedCategory) ? requestedCategory : 'B',
   );
   const [categoryOpen, setCategoryOpen] = useState(false);
+  const [mobileModeStep, setMobileModeStep] = useState(null);
   const [limitOpen, setLimitOpen] = useState(false);
   const [limitText, setLimitText] = useState('');
 
   const currentMode = modes.find((item) => item.id === selectedMode) || modes[0];
   const selectedCategoryMeta = categoryGroups.find((item) => item.id === selectedCategory) || categoryGroups[1];
   const SelectedCategoryIcon = selectedCategoryMeta.icon;
+  const isMobileCategoryStep = Boolean(mobileModeStep);
 
   const openLimit = (text) => {
     setLimitText(text);
@@ -118,18 +121,33 @@ export default function TestSelection() {
     setCategoryOpen(false);
   };
 
+  const selectMode = (modeId) => {
+    setSelectedMode(modeId);
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+      setMobileModeStep(modeId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 pb-6">
-      <section className="space-y-3">
-        <div>
+    <div className="mx-auto w-full max-w-7xl space-y-8 px-5 pb-8 sm:px-6 lg:px-8">
+      <section className={cn('space-y-5', isMobileCategoryStep && 'hidden md:block')}>
+        <Button type="button" variant="ghost" className="-ml-2 rounded-full px-3" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Назад
+        </Button>
+        <div className="text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-200">
+            <ClipboardCheck className="h-8 w-8" />
+          </div>
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Режими тестування</p>
-          <h1 className="mt-1 text-2xl font-semibold text-slate-950 dark:text-white">Оберіть формат проходження</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white sm:text-4xl">Оберіть формат проходження</h1>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">
             Спершу виберіть категорію посвідчення, потім режим. Для окремих тем є самостійна сторінка тестів по розділах.
           </p>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {modes.map((mode, index) => (
             <motion.button
               key={mode.id}
@@ -137,15 +155,15 @@ export default function TestSelection() {
               {...reveal}
               transition={{ delay: index * 0.04, duration: 0.24 }}
               className={cn(
-                'rounded-xl border p-4 text-left transition-colors',
+                'group flex min-h-[178px] flex-col rounded-xl border-2 p-4 text-left shadow-sm transition-all hover:shadow-lg md:min-h-[204px]',
                 selectedMode === mode.id
-                  ? 'border-primary bg-primary/5 text-slate-950 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-white'
-                  : 'border-slate-200 bg-card text-slate-900 hover:border-primary/30 dark:border-slate-800 dark:text-white dark:hover:border-sky-500/30',
+                  ? 'border-primary bg-primary/5 text-slate-950 dark:border-sky-500/50 dark:bg-sky-500/10 dark:text-white'
+                  : 'border-transparent bg-card text-slate-900 hover:border-primary/30 dark:border-slate-800 dark:text-white dark:hover:border-sky-500/40',
               )}
-              onClick={() => setSelectedMode(mode.id)}
+              onClick={() => selectMode(mode.id)}
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-500/10 dark:text-blue-200">
                   <mode.icon className="h-5 w-5" />
                 </div>
                 <Badge variant="outline" className="border-slate-200 bg-transparent text-slate-600 dark:border-slate-700 dark:bg-transparent dark:text-slate-300">
@@ -153,14 +171,24 @@ export default function TestSelection() {
                   {mode.questions} питань
                 </Badge>
               </div>
-              <h2 className="mt-4 text-base font-medium">{mode.label}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{mode.desc}</p>
+              <h2 className="mt-4 text-sm font-semibold md:text-base">{mode.label}</h2>
+              <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{mode.desc}</p>
             </motion.button>
           ))}
         </div>
       </section>
 
-      <section className="space-y-4 rounded-xl border border-slate-200 bg-card p-4 dark:border-slate-800 sm:p-5">
+      <section className={cn('space-y-4 rounded-xl border border-slate-200 bg-card p-4 shadow-md dark:border-slate-800 sm:p-5', !isMobileCategoryStep && 'hidden md:block')}>
+        <div className="flex items-center gap-3 md:hidden">
+          <Button type="button" variant="ghost" size="icon" className="rounded-full" onClick={() => setMobileModeStep(null)} aria-label="Назад">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">Обраний режим</p>
+            <h2 className="truncate text-lg font-semibold text-slate-950 dark:text-white">{currentMode.label}</h2>
+          </div>
+        </div>
+
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Категорія посвідчення</p>
           <h2 className="mt-1 text-xl font-medium text-slate-950 dark:text-white">Оберіть свою категорію</h2>
@@ -213,25 +241,25 @@ export default function TestSelection() {
               key={category.id}
               type="button"
               className={cn(
-                'rounded-xl border px-4 py-4 text-left transition-colors',
+                'group rounded-xl border-2 px-3.5 py-3 text-left shadow-sm transition-all hover:shadow-md',
                 selectedCategory === category.id
                   ? 'border-primary bg-primary/5 dark:border-sky-500/40 dark:bg-sky-500/10'
                   : 'border-slate-200 bg-transparent hover:border-primary/30 dark:border-slate-700 dark:hover:border-sky-500/30',
               )}
               onClick={() => selectCategory(category.id)}
             >
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-                <category.icon className="h-5 w-5" />
+              <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary dark:bg-sky-400/10 dark:text-sky-200">
+                <category.icon className="h-[18px] w-[18px]" />
               </div>
-              <p className="text-base font-medium text-slate-950 dark:text-white">{category.label}</p>
-              <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{category.hint}</p>
+              <p className="text-sm font-medium text-slate-950 dark:text-white">{category.label}</p>
+              <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">{category.hint}</p>
             </button>
           ))}
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.42fr)]">
-        <div className="flex flex-col gap-4 rounded-xl border border-primary/20 bg-card p-4 dark:border-sky-500/30 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <section className={cn('grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.42fr)]', !isMobileCategoryStep && 'hidden md:grid')}>
+        <div className="flex flex-col gap-4 rounded-xl border border-primary/20 bg-card p-5 shadow-md dark:border-sky-500/30 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium text-slate-500 dark:text-slate-300">Готово до старту</p>
             <h3 className="mt-1 text-2xl font-semibold text-slate-950 dark:text-white">{currentMode.label}</h3>
@@ -253,7 +281,7 @@ export default function TestSelection() {
 
         <button
           type="button"
-          className="rounded-xl border border-slate-200 bg-card p-4 text-left transition-colors hover:border-primary/30 dark:border-slate-800 dark:hover:border-sky-500/30"
+          className="rounded-xl border border-slate-200 bg-card p-5 text-left shadow-md transition-all hover:border-primary/30 hover:shadow-xl dark:border-slate-800 dark:hover:border-sky-500/30"
           onClick={() => navigate(`/section-tests?category=${selectedCategory}`)}
         >
           <div className="flex items-start gap-3">

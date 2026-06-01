@@ -1,6 +1,6 @@
 ﻿// @ts-nocheck
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Area,
@@ -17,17 +17,17 @@ import {
   YAxis,
 } from 'recharts';
 import {
+  ArrowLeft,
   BarChart3,
   BookOpen,
-  CheckCircle2,
+  Clock,
   Crown,
   Flame,
+  Gauge,
   History,
   LayoutDashboard,
   LineChart,
-  RefreshCw,
-  Target,
-  TrendingUp,
+  Route,
   Trophy,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -41,22 +41,39 @@ import { cn } from '@/lib/utils';
 
 const tabs = [
   { id: 'overview', label: 'Огляд', icon: LayoutDashboard },
-  { id: 'analytics', label: 'Аналітика', premium: true, icon: LineChart },
+  { id: 'analytics', label: 'Динаміка', premium: true, icon: LineChart },
   { id: 'history', label: 'Історія', premium: true, icon: History },
 ];
 
 const MODE_LABELS = {
-  quick: 'Швидкий тест',
+  quick: 'Офіційні тести',
   full: 'Тренування 20 питань',
   mvs: 'Іспит МВС',
   difficult: 'Мої помилки',
   ticket: 'Білет',
   section: 'Тест за розділом',
-  top: 'Топ 100 помилок',
+  top: 'Топ помилок багатьох',
 };
+
+function formatDuration(seconds) {
+  const total = Math.max(0, Number(seconds) || 0);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  return [hours, minutes, secs].map((part) => String(part).padStart(2, '0')).join(':');
+}
 
 function formatDayLabel(date) {
   return new Intl.DateTimeFormat('uk-UA', { day: 'numeric', month: 'short' }).format(date);
+}
+
+function formatDayKey(date) {
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return '';
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function startOfDay(value) {
@@ -70,8 +87,8 @@ function buildLast30Days(results) {
   return Array.from({ length: 30 }, (_, index) => {
     const date = new Date(today);
     date.setDate(today.getDate() - (29 - index));
-    const dayKey = date.toISOString().slice(0, 10);
-    const dayResults = results.filter((item) => String(item.created_at || '').slice(0, 10) === dayKey);
+    const dayKey = formatDayKey(date);
+    const dayResults = results.filter((item) => formatDayKey(item.created_at) === dayKey);
     return {
       dayKey,
       date: formatDayLabel(date),
@@ -103,8 +120,10 @@ function buildLast7Weeks(results) {
 
 export default function Analytics() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, isCheckingAccess, canAccess } = useProtectedScreen();
-  const [tab, setTab] = useState('overview');
+  const requestedTab = searchParams.get('tab') || 'overview';
+  const [tab, setTab] = useState(tabs.some((item) => item.id === requestedTab) ? requestedTab : 'overview');
   const isPremiumUser = Boolean(user?.is_premium);
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   const axisColor = isDark ? '#dbe7ff' : '#0f172a';
@@ -133,6 +152,13 @@ export default function Analytics() {
     staleTime: 120000,
   });
 
+  useEffect(() => {
+    const nextTab = searchParams.get('tab') || 'overview';
+    if (tabs.some((item) => item.id === nextTab)) {
+      setTab(nextTab);
+    }
+  }, [searchParams]);
+
   if (isCheckingAccess || (!!user && (statsQuery.isLoading || resultsQuery.isLoading))) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -155,6 +181,8 @@ export default function Analytics() {
   const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
   const passedCount = results.filter((item) => item.passed).length;
   const failedCount = Math.max(0, results.length - passedCount);
+  const bestExamTime = stats.best_exam_time_seconds || 0;
+  const totalTestingTime = stats.total_test_time_seconds || 0;
   const averageScore = results.length
     ? Math.round(results.reduce((sum, item) => sum + (item.score_percent || 0), 0) / results.length)
     : 0;
@@ -171,14 +199,17 @@ export default function Analytics() {
     .map((item) => {
       const total = Number(item.total) || 0;
       const correct = Number(item.correct) || 0;
+      const accuracyFromApi = Number(item.accuracy_percent);
       return {
         name: item.section_name || `Розділ ${item.section || ''}`,
-        accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+        accuracy: Number.isFinite(accuracyFromApi) ? accuracyFromApi : total > 0 ? Math.round((correct / total) * 100) : 0,
+        correct,
         total,
       };
     })
-    .sort((left, right) => left.accuracy - right.accuracy)
-    .slice(0, 8);
+    .filter((item) => item.total > 0)
+    .sort((left, right) => right.total - left.total)
+    .slice(0, 10);
 
   const answerPieData = [
     { name: 'Правильні', value: totalCorrect, color: '#22c55e' },
@@ -197,44 +228,44 @@ export default function Analytics() {
       return;
     }
     setTab(nextTab);
+    setSearchParams(nextTab === 'overview' ? {} : { tab: nextTab });
   };
 
   const showPremiumSection = tab !== 'overview' && !isPremiumUser;
-
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 pb-6 sm:px-6">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-5 pb-6 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="surface-glass rounded-[1.7rem] p-5 shadow-[0_24px_60px_rgba(37,99,235,0.08)] sm:p-8"
+        className="space-y-5"
       >
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Аналітика профілю</p>
-            <h1 className="mt-2 flex items-center gap-3 text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white sm:text-4xl">
-              <BarChart3 className="h-8 w-8 text-primary" />
-              Прогрес і статистика
-            </h1>
-            <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-200 sm:text-base">
-              Базовий огляд відкритий для всіх. Розширена аналітика, історія спроб і повний розбір тем доступні у Premium.
-            </p>
-          </div>
-
+        <div className="mb-4">
           <Button
             type="button"
-            variant="outline"
-            className="rounded-full border-slate-300 bg-white/90 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            onClick={() => {
-              statsQuery.refetch();
-              resultsQuery.refetch();
-            }}
+            variant="ghost"
+            className="-ml-2 rounded-full px-3 text-slate-600 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white"
+            onClick={() => navigate(-1)}
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Оновити
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Назад
           </Button>
         </div>
 
-        <div className="-mx-5 mt-5 flex gap-2 overflow-x-auto bg-slate-100/80 px-5 py-2 shadow-inner dark:bg-slate-950/70 sm:mx-0 sm:grid sm:grid-cols-3 sm:rounded-xl sm:px-2">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Ваш прогрес</p>
+            <h1 className="mt-2 flex items-center gap-3 text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white sm:text-4xl">
+              <BarChart3 className="h-8 w-8 text-primary" />
+              Аналітика навчання
+            </h1>
+            <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-200 sm:text-base">
+              Тут видно Ваші результати, темп і теми, які варто повторити перед наступною спробою.
+            </p>
+          </div>
+
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:inline-grid sm:min-w-[360px] sm:gap-2">
           {tabs.map((item) => {
             const Icon = item.icon;
             const isActive = tab === item.id;
@@ -244,14 +275,14 @@ export default function Analytics() {
                 type="button"
                 onClick={() => handleTabClick(item.id)}
                 className={cn(
-                  'inline-flex min-w-[132px] flex-none items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-primary/30 sm:min-w-0',
+                  'inline-flex min-w-0 items-center justify-center gap-1 rounded-lg border px-2 py-2 text-[11px] font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-primary/30 sm:gap-2 sm:px-3.5 sm:py-2.5 sm:text-sm',
                   isActive
                     ? 'border-primary bg-primary text-white shadow-[0_10px_22px_rgba(37,99,235,0.24)]'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700 dark:hover:bg-slate-800',
                 )}
               >
-                <Icon className="h-4 w-4" />
-                <span className="inline-flex items-center gap-2">
+                <Icon className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+                <span className="inline-flex min-w-0 items-center gap-1 truncate sm:gap-2">
                   {item.label}
                   {item.premium && !isPremiumUser ? <Crown className="h-3.5 w-3.5 text-amber-500" /> : null}
                 </span>
@@ -265,21 +296,26 @@ export default function Analytics() {
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 xl:grid-cols-6">
             <StatCard icon={BookOpen} label="Тестів" value={totalTests} accent="blue" delay={0} />
-            <StatCard icon={Target} label="Точність" value={`${accuracy}%`} accent="green" delay={0.04} />
-            <StatCard icon={CheckCircle2} label="Правильних" value={totalCorrect} accent="emerald" delay={0.08} />
-            <StatCard icon={Trophy} label="Складено" value={passedCount} accent="violet" delay={0.12} />
+            <StatCard icon={Gauge} label="Точність" value={`${accuracy}%`} accent="violet" delay={0.04} />
+            <StatCard icon={Clock} label="Кращий іспит" value={formatDuration(bestExamTime)} accent="emerald" delay={0.08} />
+            <StatCard icon={Trophy} label="Час тестування" value={formatDuration(totalTestingTime)} accent="sky" delay={0.12} />
             <StatCard icon={Flame} label="Серія" value={`${streak}\u00A0дн.`} accent="orange" delay={0.16} />
-            <StatCard icon={TrendingUp} label="Марафон" value={marathonBest} accent="rose" delay={0.2} />
+            <StatCard icon={Route} label="Марафон" value={marathonBest} accent="blue" delay={0.2} />
           </div>
 
-          <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+          <div className="grid gap-5 xl:grid-cols-2">
+            <PiePanel title="Правильність відповідей" data={answerPieData} empty={!totalAnswered} emptyText="Після першого тесту тут з’явиться зріз по правильних і неправильних відповідях." />
+            <PiePanel title="Складено / не складено" data={passPieData} empty={!results.length} emptyText="Щойно накопичиться історія тестів, тут буде видно співвідношення вдалих і невдалих проходжень." />
+          </div>
+
+          <div className="grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
             <ChartCard title="Календар активності">
               <ActivityCalendar dates={stats.activity_days || []} startDate={stats?.user?.created_at || user?.created_at || null} />
             </ChartCard>
 
             <ChartCard title="Останні результати">
               {recentChartData.length > 0 ? (
-                <div className="h-[300px] w-full">
+                <div className="h-[300px] w-full sm:h-[340px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={recentChartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
@@ -295,11 +331,6 @@ export default function Analytics() {
               )}
             </ChartCard>
           </div>
-
-          <div className="grid gap-5 xl:grid-cols-2">
-            <PiePanel title="Правильність відповідей" data={answerPieData} empty={!totalAnswered} emptyText="Після першого тесту тут з’явиться зріз по правильних і неправильних відповідях." />
-            <PiePanel title="Складено / не складено" data={passPieData} empty={!results.length} emptyText="Щойно накопичиться історія тестів, тут буде видно співвідношення вдалих і невдалих проходжень." />
-          </div>
         </div>
       )}
 
@@ -308,7 +339,7 @@ export default function Analytics() {
           <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
             <ChartCard title="Динаміка балів за 30 днів">
               {scoreTrend.length > 0 ? (
-                <div className="h-[260px] w-full">
+                <div className="h-[220px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={scoreTrend}>
                       <defs>
@@ -342,9 +373,11 @@ export default function Analytics() {
 
           <div className="grid gap-5 xl:grid-cols-2">
             <ChartCard title="Тести по днях">
-              <div className="h-[240px] w-full">
+              <div className="h-[205px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={last30}>
+                  <BarChart
+                    data={last30}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: axisColor }} tickLine={false} axisLine={false} interval={6} stroke={axisColor} />
                     <YAxis tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} allowDecimals={false} stroke={axisColor} />
@@ -356,7 +389,7 @@ export default function Analytics() {
             </ChartCard>
 
             <ChartCard title="Тести по тижнях">
-              <div className="h-[240px] w-full">
+              <div className="h-[205px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={last7weeks}>
                     <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
@@ -371,21 +404,7 @@ export default function Analytics() {
           </div>
 
           <ChartCard title="Точність по розділах">
-            {sectionData.length > 0 ? (
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={sectionData} layout="vertical" margin={{ left: 10, right: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                    <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
-                    <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11, fill: axisColor }} tickLine={false} axisLine={false} stroke={axisColor} />
-                    <Tooltip formatter={(value) => [`${value}%`, 'Точність']} contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} isAnimationActive={false} />
-                    <Bar dataKey="accuracy" radius={[0, 8, 8, 0]} fill="#60a5fa" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <EmptyState text="Щойно по розділах накопичиться більше даних, тут буде видно точність по темах." />
-            )}
+            {sectionData.length > 0 ? <SectionAccuracyList items={sectionData} /> : <EmptyState text="Щойно по розділах накопичиться більше даних, тут буде видно точність по темах." />}
           </ChartCard>
         </div>
       )}
@@ -403,8 +422,8 @@ export default function Analytics() {
                   className={cn(
                     'rounded-[22px] border p-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]',
                     item.passed
-                      ? 'border-emerald-100 bg-[linear-gradient(135deg,rgba(34,197,94,0.08),rgba(255,255,255,0.96))] dark:border-emerald-500/20 dark:bg-emerald-950/20'
-                      : 'border-rose-100 bg-[linear-gradient(135deg,rgba(244,63,94,0.08),rgba(255,255,255,0.96))] dark:border-rose-500/20 dark:bg-rose-950/20',
+                      ? 'border-emerald-200 bg-emerald-50/90 dark:border-emerald-400/30 dark:bg-emerald-950/35'
+                      : 'border-rose-200 bg-rose-50/90 dark:border-rose-400/30 dark:bg-rose-950/35',
                   )}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -456,43 +475,51 @@ export default function Analytics() {
 function StatCard({ icon: Icon, label, value, accent = 'blue', delay = 0 }) {
   const accentMap = {
     blue: {
-      card: 'border-sky-100 bg-[linear-gradient(135deg,rgba(14,165,233,0.12),rgba(255,255,255,0.98)_52%,rgba(219,234,254,0.92))] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(14,165,233,0.16),rgba(15,23,42,0.98)_52%,rgba(30,41,59,0.96))]',
-      icon: 'from-sky-500 to-blue-600',
+      card: 'border-slate-200 bg-card dark:border-slate-800',
+      icon: 'bg-blue-600 text-white',
     },
     green: {
-      card: 'border-emerald-100 bg-[linear-gradient(135deg,rgba(34,197,94,0.14),rgba(255,255,255,0.98)_52%,rgba(209,250,229,0.92))] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(34,197,94,0.16),rgba(15,23,42,0.98)_52%,rgba(30,41,59,0.96))]',
-      icon: 'from-emerald-500 to-teal-500',
+      card: 'border-slate-200 bg-card dark:border-slate-800',
+      icon: 'bg-emerald-500 text-white',
     },
     emerald: {
-      card: 'border-teal-100 bg-[linear-gradient(135deg,rgba(20,184,166,0.14),rgba(255,255,255,0.98)_52%,rgba(204,251,241,0.92))] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(20,184,166,0.16),rgba(15,23,42,0.98)_52%,rgba(30,41,59,0.96))]',
-      icon: 'from-teal-500 to-emerald-500',
+      card: 'border-slate-200 bg-card dark:border-slate-800',
+      icon: 'bg-emerald-500 text-white',
+    },
+    sky: {
+      card: 'border-slate-200 bg-card dark:border-slate-800',
+      icon: 'bg-sky-500 text-white',
+    },
+    amber: {
+      card: 'border-slate-200 bg-card dark:border-slate-800',
+      icon: 'bg-amber-500 text-white',
     },
     violet: {
-      card: 'border-violet-100 bg-[linear-gradient(135deg,rgba(139,92,246,0.14),rgba(255,255,255,0.98)_52%,rgba(237,233,254,0.92))] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(139,92,246,0.16),rgba(15,23,42,0.98)_52%,rgba(30,41,59,0.96))]',
-      icon: 'from-violet-500 to-fuchsia-500',
+      card: 'border-slate-200 bg-card dark:border-slate-800',
+      icon: 'bg-violet-500 text-white',
     },
     orange: {
-      card: 'border-orange-100 bg-[linear-gradient(135deg,rgba(251,146,60,0.14),rgba(255,255,255,0.98)_52%,rgba(255,237,213,0.92))] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(249,115,22,0.16),rgba(15,23,42,0.98)_52%,rgba(30,41,59,0.96))]',
-      icon: 'from-amber-400 to-orange-500',
+      card: 'border-slate-200 bg-card dark:border-slate-800',
+      icon: 'bg-orange-500 text-white',
     },
     rose: {
-      card: 'border-rose-100 bg-[linear-gradient(135deg,rgba(244,63,94,0.14),rgba(255,255,255,0.98)_52%,rgba(255,228,230,0.92))] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(244,63,94,0.16),rgba(15,23,42,0.98)_52%,rgba(30,41,59,0.96))]',
-      icon: 'from-rose-500 to-orange-500',
+      card: 'border-slate-200 bg-card dark:border-slate-800',
+      icon: 'bg-rose-500 text-white',
     },
   };
   const palette = accentMap[accent] || accentMap.blue;
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}>
-      <Card className={`h-full overflow-hidden border shadow-[0_18px_45px_rgba(15,23,42,0.05)] ${palette.card}`}>
-        <CardContent className="flex h-full min-h-[92px] items-center p-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-[0_12px_24px_rgba(15,23,42,0.14)] ${palette.icon}`}>
+      <Card className={`flex h-full overflow-hidden border shadow-[0_12px_28px_rgba(15,23,42,0.04)] ${palette.card}`}>
+        <CardContent className="flex min-h-[152px] flex-1 items-center justify-center p-5 text-center">
+          <div className="m-auto flex min-h-[112px] w-full min-w-0 flex-col items-center justify-center gap-2.5">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-[0_12px_24px_rgba(15,23,42,0.12)] ${palette.icon}`}>
               <Icon className="h-5 w-5" />
             </div>
-            <div className="min-w-0">
-              <p className="whitespace-nowrap text-2xl font-semibold leading-tight text-slate-950 dark:text-white">{value}</p>
-              <p className="truncate text-xs font-medium text-slate-600 dark:text-slate-200">{label}</p>
+            <div className="flex min-w-0 flex-col items-center justify-center">
+              <p className="whitespace-nowrap text-center text-xl font-semibold leading-none text-slate-950 dark:text-white sm:text-[1.35rem]">{value}</p>
+              <p className="mt-1 text-center text-xs font-medium leading-5 text-slate-600 dark:text-slate-200">{label}</p>
             </div>
           </div>
         </CardContent>
@@ -567,6 +594,37 @@ function MiniHighlight({ label, value, accent = 'blue' }) {
     <div className={`rounded-[22px] border p-4 ${accentMap[accent] || accentMap.blue}`}>
       <p className="text-xs font-semibold uppercase tracking-[0.16em] opacity-75">{label}</p>
       <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">{value}</p>
+    </div>
+  );
+}
+
+function SectionAccuracyList({ items = [] }) {
+  return (
+    <div className="space-y-3">
+      {items.map((item, index) => {
+        const tone =
+          item.accuracy >= 85
+            ? 'from-emerald-500 to-teal-400'
+            : item.accuracy >= 65
+              ? 'from-sky-500 to-blue-500'
+              : 'from-amber-400 to-orange-500';
+        return (
+          <div key={`${item.name}-${index}`} className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/50">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="line-clamp-2 text-sm font-semibold text-slate-900 dark:text-white">{item.name}</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{item.correct}/{item.total} правильних відповідей</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-900 dark:bg-slate-800 dark:text-white">
+                {item.accuracy}%
+              </span>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+              <div className={`h-full rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${Math.max(6, Math.min(100, item.accuracy))}%` }} />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

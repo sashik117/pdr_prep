@@ -1,71 +1,41 @@
-﻿import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Crown, LifeBuoy, LogOut, Menu, MessageCircleMore, Settings, UserCircle2, X } from 'lucide-react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  BookOpen,
+  ClipboardList,
+  CreditCard,
+  LayoutDashboard,
+  Layers,
+  LineChart,
+  LogOut,
+  Menu,
+  MessageCircleMore,
+  MessageSquareText,
+  Settings,
+  User,
+  X,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
-import InternalBackButton from '@/components/layout/InternalBackButton';
-import { desktopSidebarGroups } from '@/components/layout/navigation-config';
 import SiteFooter from '@/components/layout/SiteFooter';
 import api, { resolveApiUrl, resolveWsUrl, tokenStore } from '@/api/apiClient';
 import { getPendingTestResults, removePendingTestResult } from '@/lib/offlineProgress';
 import { applyTheme, getStoredTheme } from '@/lib/theme';
 
-const CONNECTIVITY_CHECK_URL = 'https://www.gstatic.com/generate_204';
+const navItems = [
+  { path: '/cabinet', label: 'Кабінет', icon: LayoutDashboard, auth: true },
+  { path: '/study', label: 'Теорія', icon: BookOpen },
+  { path: '/section-tests', label: 'Практика', icon: Layers },
+  { path: '/tickets', label: 'Білети', icon: ClipboardList },
+  { path: '/tests', label: 'Тести', icon: MessageSquareText },
+  { path: '/analytics', label: 'Аналітика', icon: LineChart, auth: true },
+  { path: '/pricing', label: 'Тарифи', icon: CreditCard },
+];
 
-/** @type {Record<string, string>} */
-const pageTitles = {
-  '/tests': 'Тести',
-  '/section-tests': 'Тести по розділах',
-  '/test': 'Проходження тесту',
-  '/daily': 'Виклик дня',
-  '/signs': 'Дорожні знаки',
-  '/study': 'Теорія',
-  '/lectures': 'Відеолекції',
-  '/tickets': 'Білети',
-  '/saved-questions': 'Збережені запитання',
-  '/pricing': 'Premium',
-  '/mistakes': 'Помилки',
-  '/marathon': 'Марафон',
-  '/analytics': 'Аналітика',
-  '/leaderboard': 'Рейтинг',
-  '/friends': 'Друзі',
-  '/battle': 'Батли',
-  '/cabinet': 'Профіль',
-  '/u/': 'Профіль користувача',
-  '/privacy': 'Конфіденційність',
-  '/terms': 'Угода підписника',
-  '/settings': 'Налаштування',
-  '/support': 'Підтримка',
-  '/achievements': 'Досягнення',
-  '/import': 'Імпорт питань',
-};
-
-/**
- * @param {string} pathname
- * @returns {string}
- */
-function resolveTitle(pathname) {
-  const directMatch = Object.entries(pageTitles)
-    .sort((a, b) => b[0].length - a[0].length)
-    .find(([path]) => pathname.startsWith(path));
-  return directMatch?.[1] || '';
-}
-
-/**
- * @param {string} pathname
- * @returns {boolean}
- */
-function shouldShowBackButton(pathname) {
-  return pathname !== '/';
-}
-
-/**
- * @param {{ value: number }} props
- */
 function Badge({ value }) {
   if (!value) return null;
   return (
@@ -78,8 +48,7 @@ function Badge({ value }) {
 export default function AppLayout() {
   const location = useLocation();
   const queryClient = useQueryClient();
-  const [mobileSection, setMobileSection] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
   const networkBootRef = useRef(true);
   const previousOnlineRef = useRef(/** @type {boolean | null} */ (null));
@@ -95,46 +64,26 @@ export default function AppLayout() {
   });
 
   const notificationSummary = notificationsQuery.data || { friends: 0, battles: 0, support: 0 };
-  const isAdminUser = /** @type {any} */ (user)?.is_admin;
-  const profileAvatar = user?.avatar_url || null;
-  const desktopMenuGroups = useMemo(
+  const visibleNavItems = useMemo(
     () =>
-      desktopSidebarGroups
-        .map((group) => ({
-          ...group,
-          items: group.items.filter((item) => {
-            if (item.path === '/pricing' && (!isAuthenticated || user?.is_premium)) return false;
-            if (!isAuthenticated && item.premium) return false;
-            return item.path !== '/cabinet' && item.path !== '/support';
-          }),
-        }))
-        .filter((group) => group.items.length > 0),
-    [isAuthenticated, user?.is_premium],
-  );
-  const mobileMenuGroups = useMemo(
-    () =>
-      desktopSidebarGroups
-        .map((group) => ({
-          ...group,
-          items: group.items.filter((item) => {
-            if (item.path === '/pricing' && (!isAuthenticated || user?.is_premium)) return false;
-            if (!isAuthenticated && item.premium) return false;
-            return item.path !== '/cabinet';
-          }),
-        }))
-        .filter((group) => group.items.length > 0),
+      navItems.filter((item) => {
+        if (item.path === '/pricing' && isAuthenticated && user?.is_premium) return false;
+        if (item.auth && !isAuthenticated) return false;
+        return true;
+      }),
     [isAuthenticated, user?.is_premium],
   );
 
-  const pageTitle = useMemo(() => {
-    if (location.pathname === '/cabinet' && isAdminUser) {
-      return 'Панель керування';
-    }
-    return resolveTitle(location.pathname);
-  }, [isAdminUser, location.pathname]);
+  const isItemActive = (path) => {
+    if (path === '/cabinet') return location.pathname === '/cabinet' || location.pathname === '/progress';
+    if (path === '/tests') return location.pathname === '/tests' || location.pathname === '/test';
+    return location.pathname.startsWith(path);
+  };
 
-  const showBackButton = useMemo(() => shouldShowBackButton(location.pathname), [location.pathname]);
-  const showPageHeader = location.pathname !== '/' && !!pageTitle;
+  const handleLogout = () => {
+    setIsOpen(false);
+    logout();
+  };
 
   useEffect(() => {
     const savedFontSize = parseInt(localStorage.getItem('fontSize') || '16', 10);
@@ -143,9 +92,7 @@ export default function AppLayout() {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const handleTheme = () => applyTheme(getStoredTheme());
     const handleStorage = (event) => {
-      if (!event.key || event.key === 'theme') {
-        handleTheme();
-      }
+      if (!event.key || event.key === 'theme') handleTheme();
       if (!event.key || event.key === 'fontSize') {
         document.documentElement.style.fontSize = `${parseInt(localStorage.getItem('fontSize') || '16', 10)}px`;
       }
@@ -164,8 +111,7 @@ export default function AppLayout() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
-    setMobileSection('');
-    setMobileMenuOpen(false);
+    setIsOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -185,13 +131,13 @@ export default function AppLayout() {
     };
 
     const checkServerConnection = async () => {
-      const healthUrl = resolveApiUrl('/health');
+      const healthUrl = resolveApiUrl('/api/health');
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         setIsOnline(false);
         if (!networkBootRef.current && previousOnlineRef.current !== false) {
           toast({
             title: 'З’єднання втрачено',
-            description: 'Працюємо офлайн!',
+            description: 'Ви можете продовжити, а ми синхронізуємо прогрес після відновлення.',
             variant: 'destructive',
           });
         }
@@ -205,31 +151,18 @@ export default function AppLayout() {
           previousOnlineRef.current = false;
           return;
         }
-        const [healthResponse] = await Promise.all([
-          fetch(healthUrl, {
-            method: 'GET',
-            cache: 'no-store',
-          }),
-          fetch(CONNECTIVITY_CHECK_URL, {
-            method: 'GET',
-            mode: 'no-cors',
-            cache: 'no-store',
-          }),
-        ]);
+        const healthResponse = await fetch(healthUrl, { method: 'GET', cache: 'no-store' });
         const nextOnline = healthResponse.ok;
         setIsOnline(nextOnline);
 
         if (!networkBootRef.current && previousOnlineRef.current !== null && previousOnlineRef.current !== nextOnline) {
           if (nextOnline) {
-            toast({
-              title: 'З’єднання відновлено',
-              description: 'Дані синхронізуються.',
-            });
+            toast({ title: 'З’єднання відновлено', description: 'Дані синхронізуються.' });
             void syncPendingResults();
           } else {
             toast({
               title: 'З’єднання втрачено',
-              description: 'Працюємо офлайн!',
+              description: 'Ви можете продовжити, а ми синхронізуємо прогрес після відновлення.',
               variant: 'destructive',
             });
           }
@@ -240,7 +173,7 @@ export default function AppLayout() {
         if (!networkBootRef.current && previousOnlineRef.current !== false) {
           toast({
             title: 'З’єднання втрачено',
-            description: 'Працюємо офлайн!',
+            description: 'Ви можете продовжити, а ми синхронізуємо прогрес після відновлення.',
             variant: 'destructive',
           });
         }
@@ -248,15 +181,13 @@ export default function AppLayout() {
       }
     };
 
-    const handleOnline = () => {
-      void checkServerConnection();
-    };
+    const handleOnline = () => void checkServerConnection();
     const handleOffline = () => {
       setIsOnline(false);
       if (!networkBootRef.current && previousOnlineRef.current !== false) {
         toast({
           title: 'З’єднання втрачено',
-          description: 'Працюємо офлайн!',
+          description: 'Ви можете продовжити, а ми синхронізуємо прогрес після відновлення.',
           variant: 'destructive',
         });
       }
@@ -307,283 +238,234 @@ export default function AppLayout() {
       }
     };
 
-    return () => {
-      socket.close();
-    };
+    return () => socket.close();
   }, [isAuthenticated, queryClient]);
 
   return (
-    <div className="min-h-screen bg-page-gradient pt-16 text-foreground">
-      <header className="fixed inset-x-0 top-0 z-50 h-16 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
-        <div className="flex h-full w-full items-center gap-3 px-3 sm:px-4">
-          <Link
-            to={isAuthenticated ? '/cabinet' : '/auth'}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-transparent text-slate-700 transition-colors hover:bg-slate-100 sm:hidden dark:text-slate-100 dark:hover:bg-slate-900"
-            aria-label={isAuthenticated ? 'Профіль' : 'Увійти'}
-          >
-            {profileAvatar ? (
-              <img src={profileAvatar} alt="Профіль" className="h-11 w-11 rounded-full object-cover" />
-            ) : (
-              <UserCircle2 className="!h-8 !w-8" />
-            )}
-          </Link>
-
-          <Link to="/" className="flex h-11 shrink-0 items-center rounded-xl transition-transform duration-200 hover:scale-[1.01]" aria-label="DrivePrep">
-            <img src="/logo.png" alt="DrivePrep" className="h-11 w-11 rounded-xl object-contain sm:hidden" style={{ imageRendering: 'auto' }} />
-            <img src="/logo-wordmark.png" alt="DrivePrep" className="hidden h-11 w-auto max-w-[190px] object-contain sm:block" style={{ imageRendering: 'auto' }} />
-          </Link>
-
-          <div className="ml-auto flex items-center gap-0.5 sm:gap-2">
-            {isAuthenticated ? (
-              <Button
-                asChild
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-10 w-10 rounded-full border-transparent bg-transparent text-amber-600 shadow-none hover:bg-amber-50 dark:text-amber-200 dark:hover:bg-amber-950/30 sm:rounded-lg sm:border-amber-200 sm:bg-amber-50 sm:shadow-sm dark:sm:border-amber-500/30 dark:sm:bg-amber-950/25"
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-slate-950 dark:text-slate-50">
+      <nav className="sticky top-0 z-40 border-b border-gray-100 bg-white/90 shadow-sm backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/90">
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex min-w-0 items-center gap-2 lg:hidden">
+              <Link
+                to={isAuthenticated ? '/profile' : '/auth?tab=login'}
+                className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-800"
+                aria-label="Профіль"
               >
-                <Link to="/pricing" aria-label="Premium">
-                  <Crown className="h-5 w-5" />
-                </Link>
-              </Button>
-            ) : null}
-
-            {isAuthenticated ? (
-              <Button
-                asChild
-                type="button"
-                variant="outline"
-                size="icon"
-                className="relative h-10 w-10 rounded-full border-transparent bg-transparent text-slate-700 shadow-none hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-900 sm:rounded-lg sm:border-slate-200 sm:bg-background sm:shadow-sm dark:sm:border-slate-700"
-              >
-                <Link to="/friends" aria-label="Повідомлення">
-                  <MessageCircleMore className="h-5 w-5" />
-                  <Badge value={notificationSummary.friends} />
-                </Link>
-              </Button>
-            ) : null}
-
-            <Button
-              asChild
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-10 w-10 rounded-full border-transparent bg-transparent text-slate-700 shadow-none hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-900 sm:rounded-lg sm:border-slate-200 sm:bg-background sm:shadow-sm dark:sm:border-slate-700"
-            >
-              <Link to="/settings" aria-label="Налаштування">
-                <Settings className="h-5 w-5" />
+                {isAuthenticated && user?.avatar_url ? (
+                  <img src={resolveApiUrl(user.avatar_url) || user.avatar_url} alt="Профіль" width={96} height={96} decoding="async" className="h-full w-full object-cover [backface-visibility:hidden]" />
+                ) : (
+                  <User className="h-6 w-6" />
+                )}
               </Link>
-            </Button>
-
-            <Button
-              asChild
-              type="button"
-              variant={isAuthenticated ? 'default' : 'outline'}
-              size="icon"
-              className="hidden h-10 w-10 rounded-lg sm:inline-flex sm:w-auto sm:px-4 sm:py-2.5"
-            >
-              <Link to={isAuthenticated ? '/cabinet' : '/auth'}>
-                <UserCircle2 className="!h-7 !w-7 sm:mr-2" />
-                <span className="hidden sm:inline">{isAuthenticated ? 'Профіль' : 'Увійти'}</span>
+              <Link to="/" className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl">
+                <img src="/logo.png" alt="DrivePrep" width={96} height={96} decoding="async" fetchPriority="high" className="h-10 w-10 object-contain [backface-visibility:hidden]" />
               </Link>
-            </Button>
-
-            <button
-              type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-transparent bg-transparent text-slate-700 transition-colors hover:bg-slate-100 sm:hidden dark:text-slate-100 dark:hover:bg-slate-900"
-              onClick={() => setMobileMenuOpen((value) => !value)}
-              aria-label={mobileMenuOpen ? 'Закрити меню' : 'Відкрити меню'}
-            >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
-          </div>
-        </div>
-
-        {mobileMenuOpen ? (
-          <div className="max-h-[calc(100dvh-64px)] overflow-y-auto border-t border-slate-200/70 bg-white px-3 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.12)] sm:hidden dark:border-slate-800 dark:bg-slate-950">
-            <div className="space-y-3">
-              {mobileMenuGroups.map((group) => (
-                <div key={group.title} className="rounded-xl border border-slate-200 bg-slate-50/80 p-2 dark:border-slate-800 dark:bg-slate-900/70">
-                  <div className="flex items-center gap-2 px-2 py-1.5 text-sm font-semibold text-slate-900 dark:text-white">
-                    <group.icon className="h-5 w-5 text-primary" />
-                    {group.title}
-                  </div>
-                  <div className="mt-1 grid gap-1">
-                    {group.items.map((item) => {
-                      const active = location.pathname.startsWith(item.path);
-                      const badgeCount = item.badgeKey ? notificationSummary[item.badgeKey] : 0;
-                      return (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className={cn(
-                            'relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                            active
-                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200'
-                              : 'text-slate-600 hover:bg-white hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-950 dark:hover:text-white',
-                          )}
-                        >
-                          <item.icon className="h-5 w-5 shrink-0" />
-                          <span>{item.label}</span>
-                          {item.premium && !user?.is_premium ? (
-                            <span className="ml-auto rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">
-                              Pro
-                            </span>
-                          ) : badgeCount ? (
-                            <span className="ml-auto inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold text-white">
-                              {Math.min(badgeCount, 9)}
-                            </span>
-                          ) : null}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-
-              <div className="grid gap-2">
-                {isAuthenticated ? (
-                  <button
-                    type="button"
-                    className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-semibold text-red-600 dark:border-red-500/20 dark:bg-red-950/25 dark:text-red-300"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      logout();
-                    }}
-                  >
-                    <LogOut className="h-5 w-5" />
-                    Вийти
-                  </button>
-                ) : null}
-              </div>
             </div>
-          </div>
-        ) : null}
-      </header>
 
-      <aside className="group/sidebar fixed bottom-0 left-0 top-16 z-40 hidden w-16 overflow-visible border-r border-slate-200 bg-white transition-[width] duration-200 hover:w-36 dark:border-slate-800 dark:bg-slate-950 xl:block">
-        <div className="flex h-full flex-col justify-between px-2 py-3">
-          <div className="flex w-full flex-col gap-2">
-            {desktopMenuGroups.map((group, groupIndex) => {
-              const GroupIcon = group.icon;
-              const activeGroup = group.items.some((item) => location.pathname.startsWith(item.path));
-              const openSection = mobileSection === group.title;
-              return (
-                <motion.div
-                  key={group.title}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: groupIndex * 0.04 }}
-                  className="group relative before:absolute before:left-full before:top-0 before:hidden before:h-full before:w-4 before:content-[''] group-hover/sidebar:before:block"
-                  onMouseEnter={() => setMobileSection(group.title)}
-                  onMouseLeave={() => setMobileSection('')}
-                >
-                  <button
-                    type="button"
-                    className={cn(
-                      'flex h-11 w-full items-center gap-3 overflow-hidden rounded-lg px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-sky-50 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white',
-                      activeGroup && 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200',
-                    )}
-                    onClick={() => setMobileSection((value) => (value === group.title ? '' : group.title))}
-                    aria-label={group.title}
-                  >
-                    <GroupIcon className="h-6 w-6 shrink-0" />
-                    <span className="whitespace-nowrap opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100">{group.title}</span>
-                  </button>
-
-                  <div
-                    className={cn(
-                      'absolute left-[132px] top-0 hidden w-[248px] rounded-xl border border-slate-200 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.14)] dark:border-slate-800 dark:bg-slate-950',
-                      'group-hover:block group-focus-within:block',
-                      openSection && 'block',
-                    )}
-                  >
-                    <p className="px-3 pb-2 pt-1 text-xs font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{group.title}</p>
-                    <div className="space-y-1">
-                      {group.items.map((item) => {
-                        const active = location.pathname.startsWith(item.path);
-                        const badgeCount = item.badgeKey ? notificationSummary[item.badgeKey] : 0;
-                        return (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            onClick={() => setMobileSection('')}
-                            className={cn(
-                              'relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                              active
-                                ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200'
-                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white',
-                            )}
-                          >
-                            <item.icon className="h-5 w-5 shrink-0" />
-                            <span>{item.label}</span>
-                            {item.premium && !user?.is_premium ? (
-                              <span className="ml-auto rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">
-                                Pro
-                              </span>
-                            ) : badgeCount ? (
-                              <span className="ml-auto inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold text-white">
-                                {Math.min(badgeCount, 9)}
-                              </span>
-                            ) : null}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          <div className="flex w-full flex-col gap-2">
-            <Link
-              to="/support"
-              className="relative flex h-11 w-full items-center gap-3 overflow-hidden rounded-lg px-3 text-sm font-medium text-slate-500 transition-colors hover:bg-sky-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white"
-              aria-label="Підтримка"
-            >
-              <LifeBuoy className="h-6 w-6 shrink-0" />
-              <span className="whitespace-nowrap opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100">Підтримка</span>
-              {notificationSummary.support ? (
-                <span className="absolute right-2 top-2 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold text-white">
-                  {Math.min(notificationSummary.support, 9)}
-                </span>
-              ) : null}
+            <Link to="/" className="group hidden shrink-0 items-center lg:flex">
+              <img src="/logo-wordmark.png" alt="DrivePrep" className="h-12 w-auto object-contain" />
             </Link>
 
-            {isAuthenticated ? (
+            <div className="hidden items-center gap-0.5 lg:flex">
+              {visibleNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = isItemActive(item.path);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={cn(
+                      'relative flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
+                      isActive
+                        ? 'bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-200'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white',
+                    )}
+                  >
+                    <Icon className={cn('h-4 w-4', isActive ? 'text-primary-600 dark:text-primary-300' : 'text-gray-400')} />
+                    {item.label}
+                    {isActive ? (
+                      <motion.div
+                        layoutId="nav-indicator"
+                        className="absolute -bottom-[13px] left-2 right-2 h-0.5 rounded-full bg-primary-600"
+                        transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
+                      />
+                    ) : null}
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="hidden shrink-0 items-center gap-4 lg:flex">
+              {isAuthenticated ? (
+                <div className="flex items-center gap-3">
+                  <Link
+                    to="/friends"
+                    className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-gray-500 transition-colors hover:bg-primary-50 hover:text-primary-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-primary-500/10 dark:hover:text-primary-200"
+                    aria-label="Повідомлення"
+                  >
+                    <MessageCircleMore className="h-5 w-5" />
+                    <Badge value={notificationSummary.friends} />
+                  </Link>
+                  <Link
+                    to="/settings"
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-gray-500 transition-colors hover:bg-primary-50 hover:text-primary-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-primary-500/10 dark:hover:text-primary-200"
+                    aria-label="Налаштування"
+                  >
+                    <Settings className="h-5 w-5" />
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-50 text-gray-500 transition-colors hover:bg-primary-50 hover:text-primary-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-primary-500/10 dark:hover:text-primary-200"
+                    aria-label="Профіль"
+                  >
+                    {user?.avatar_url ? (
+                      <img src={resolveApiUrl(user.avatar_url) || user.avatar_url} alt="Профіль" width={96} height={96} decoding="async" className="h-full w-full object-cover [backface-visibility:hidden]" />
+                    ) : (
+                      <User className="h-5 w-5 text-gray-500" />
+                    )}
+                  </Link>
+                  <Button variant="ghost" size="sm" onClick={handleLogout} className="text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-300">
+                    <LogOut className="mr-1.5 h-4 w-4" />
+                    Вийти
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Link to="/auth?tab=login">
+                    <Button variant="ghost" size="sm" className="font-semibold text-gray-700 hover:bg-primary-50 hover:text-primary-600 dark:text-slate-200 dark:hover:bg-primary-500/10">
+                      Вхід
+                    </Button>
+                  </Link>
+                  <Link to="/auth?tab=register">
+                    <Button size="sm" className="shadow-lg shadow-primary-500/20 transition-shadow hover:shadow-primary-500/30">
+                      Реєстрація
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 lg:hidden">
+              <Link
+                to="/settings"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-900"
+                aria-label="Налаштування"
+              >
+                <Settings className="h-5 w-5" />
+              </Link>
               <button
                 type="button"
-                className="flex h-11 w-full items-center gap-3 overflow-hidden rounded-lg px-3 text-sm font-medium text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-slate-300 dark:hover:bg-red-950/30 dark:hover:text-red-300"
-                onClick={logout}
-                aria-label="Вийти"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 active:bg-slate-200 dark:text-slate-200 dark:hover:bg-slate-900"
+                onClick={() => setIsOpen((value) => !value)}
+                aria-label={isOpen ? 'Закрити меню' : 'Відкрити меню'}
               >
-                <LogOut className="h-6 w-6 shrink-0" />
-                <span className="whitespace-nowrap opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100">Вийти</span>
+                {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
-            ) : null}
+            </div>
           </div>
         </div>
-      </aside>
 
-      <div className="w-full px-3 py-5 sm:px-5 sm:py-7 xl:pl-24">
-        {showPageHeader ? (
-          <div className="mb-5 px-1 py-2 sm:px-2">
-            {showBackButton ? <InternalBackButton className="mb-4" /> : null}
-            <h1 className="text-2xl font-semibold text-slate-950 dark:text-white sm:text-3xl">
-              {pageTitle}
-            </h1>
-          </div>
-        ) : null}
+        <AnimatePresence>
+          {isOpen ? (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden border-t border-gray-100 bg-white dark:border-slate-800 dark:bg-slate-950 lg:hidden"
+            >
+              <div className="space-y-1 px-4 py-4">
+                {visibleNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = isItemActive(item.path);
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors',
+                        isActive
+                          ? 'bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-200'
+                          : 'text-gray-600 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-900',
+                      )}
+                    >
+                      <Icon className={cn('h-5 w-5', isActive ? 'text-primary-600 dark:text-primary-300' : 'text-gray-400')} />
+                      {item.label}
+                    </Link>
+                  );
+                })}
 
-        <main className="app-content">
-          <Outlet />
-        </main>
-      </div>
+                <div className="mt-2 border-t border-gray-100 pt-4 dark:border-slate-800">
+                  {isAuthenticated ? (
+                    <div className="space-y-3">
+                      <Link
+                        to="/friends"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-900"
+                      >
+                        <MessageCircleMore className="h-5 w-5 text-gray-400" />
+                        Друзі
+                      </Link>
+                      <Link
+                        to="/settings"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-900"
+                      >
+                        <Settings className="h-5 w-5 text-gray-400" />
+                        Налаштування
+                      </Link>
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-900"
+                      >
+                        <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-50 text-gray-500 dark:bg-slate-900 dark:text-slate-200">
+                          {user?.avatar_url ? (
+                            <img src={resolveApiUrl(user.avatar_url) || user.avatar_url} alt="Профіль" width={96} height={96} decoding="async" className="h-full w-full object-cover [backface-visibility:hidden]" />
+                          ) : (
+                            <User className="h-5 w-5 text-gray-500" />
+                          )}
+                        </span>
+                        Профіль
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="flex w-full items-center gap-3 rounded-xl px-6 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30"
+                      >
+                        <LogOut className="h-5 w-5" />
+                        Вийти
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 px-2">
+                      <Link to="/auth?tab=login" onClick={() => setIsOpen(false)} className="block w-full">
+                        <Button variant="outline" className="w-full justify-center">Вхід</Button>
+                      </Link>
+                      <Link to="/auth?tab=register" onClick={() => setIsOpen(false)} className="block w-full">
+                        <Button className="w-full justify-center shadow-lg shadow-primary-500/20">Реєстрація</Button>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </nav>
+
+      {!isOnline ? (
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-700 dark:border-amber-500/20 dark:bg-amber-950/30 dark:text-amber-200">
+          З’єднання нестабільне. Ви можете продовжувати, а ми синхронізуємо дані після відновлення.
+        </div>
+      ) : null}
+
+      <main className="app-content min-h-[calc(100vh-4rem)] flex-1 overflow-x-hidden bg-gray-50 dark:bg-slate-950">
+        <Outlet />
+      </main>
 
       <SiteFooter />
     </div>
   );
 }
-

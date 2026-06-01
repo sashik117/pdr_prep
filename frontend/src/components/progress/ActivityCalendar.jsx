@@ -83,19 +83,19 @@ export default function ActivityCalendar({ dates = [], startDate = null }) {
   const monthLabel = currentMonth.toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="w-full rounded-[22px] border border-slate-200 bg-slate-50/90 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-900/90 sm:p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <div className="mx-auto w-full max-w-[330px] rounded-2xl border border-slate-200 bg-slate-50/90 p-2.5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-900/90">
+      <div className="mb-2 flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={() => setMonthOffset((value) => Math.min(initialOffset, value + 1))}
           disabled={minReached}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-800"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-800"
           aria-label="Попередній місяць"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
 
-        <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-100 sm:text-sm">
+        <p className="text-center text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-100">
           {monthLabel}
         </p>
 
@@ -103,7 +103,7 @@ export default function ActivityCalendar({ dates = [], startDate = null }) {
           type="button"
           onClick={() => setMonthOffset((value) => Math.max(0, value - 1))}
           disabled={maxReached}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-800"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-800"
           aria-label="Наступний місяць"
         >
           <ChevronRight className="h-4 w-4" />
@@ -112,7 +112,7 @@ export default function ActivityCalendar({ dates = [], startDate = null }) {
 
       <div className="grid grid-cols-7 gap-1 text-center">
         {weekDays.map((day) => (
-          <div key={day} className="pb-1 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500 sm:text-[10px]">
+          <div key={day} className="pb-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">
             {day}
           </div>
         ))}
@@ -128,7 +128,7 @@ export default function ActivityCalendar({ dates = [], startDate = null }) {
               key={dayKey}
               title={dayKey}
               className={cn(
-                'flex aspect-square min-h-[30px] items-center justify-center rounded-[10px] border text-[10px] font-bold transition-all sm:min-h-[36px] sm:text-xs',
+                'flex aspect-square min-h-[24px] items-center justify-center rounded-md border text-[10px] font-semibold transition-all sm:min-h-[26px]',
                 isCurrentMonth
                   ? 'border-slate-200 bg-white text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100'
                   : 'border-transparent bg-slate-100/70 text-slate-300 dark:bg-slate-950/60 dark:text-slate-700',
@@ -142,7 +142,7 @@ export default function ActivityCalendar({ dates = [], startDate = null }) {
         })}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-slate-500 dark:text-slate-300">
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] text-slate-500 dark:text-slate-300">
         <span className="inline-flex items-center gap-2">
           <span className="h-3 w-3 rounded-[4px] border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950" />
           Без активності

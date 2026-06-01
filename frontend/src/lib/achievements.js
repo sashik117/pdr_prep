@@ -1,156 +1,82 @@
 // @ts-nocheck
-/** @typedef {import('@/types/app').StatsResponse} StatsResponse */
-/** @typedef {import('@/types/app').TestResult} TestResult */
 
 export const ACHIEVEMENTS_DEF = [
-  // ── Тести (Твоя кар'єра водія) ──────────────────────────────
-  {
-    id: 'first_test', tier: 1, category: 'tests',
-    name: '🐣 Ще не збив жодного конуса', desc: 'Перший тест пройдено!',
-    check: (/** @type {StatsResponse} */ p) => (p.total_tests || 0) >= 1,
-  },
-  {
-    id: 'ten_tests', tier: 2, category: 'tests',
-    name: '🛴 Король самокатів', desc: '10 тестів за плечима',
-    check: (/** @type {StatsResponse} */ p) => (p.total_tests || 0) >= 10,
-  },
-  {
-    id: 'fifty_tests', tier: 3, category: 'tests',
-    name: '🚕 Таксист на мінімалках', desc: 'Пройти 50 тестів',
-    check: (/** @type {StatsResponse} */ p) => (p.total_tests || 0) >= 50,
-  },
-  {
-    id: 'hundred_tests', tier: 4, category: 'tests',
-    name: '🏎️ Шумахер на зв\'язку', desc: '100 тестів. Ти взагалі спиш?',
-    check: (/** @type {StatsResponse} */ p) => (p.total_tests || 0) >= 100,
-    frame: 'crown',
-  },
-
-  // ── Правильні відповіді (Твій інтелект) ──────────────────────
-  {
-    id: 'correct_100', tier: 1, category: 'correct',
-    name: '🧐 Знаю, де головна', desc: '100 правильних відповідей',
-    check: (/** @type {StatsResponse} */ p) => (p.total_correct || 0) >= 100,
-  },
-  {
-    id: 'correct_1000', tier: 3, category: 'correct',
-    name: '🧙‍♂️ ПДР-Магістр', desc: '1000 правильних відповідей',
-    check: (/** @type {StatsResponse} */ p) => (p.total_correct || 0) >= 1000,
-    frame: 'gold',
-  },
-  {
-    id: 'correct_5000', tier: 4, category: 'correct',
-    name: '🧠 Ходяча енциклопедія МВС', desc: '5000 правильних! Можеш йти викладати',
-    check: (/** @type {StatsResponse} */ p) => (p.total_correct || 0) >= 5000,
-    frame: 'galaxy',
-  },
-
-  // ── Стрік (Твоя витримка) ──────────────────────────────────
-  {
-    id: 'streak_3', tier: 1, category: 'streak',
-    name: '🌱 Паросток дисципліни', desc: '3 дні активності підряд',
-    check: (/** @type {StatsResponse} */ p) => (p.streak_days || 0) >= 3,
-  },
-  {
-    id: 'streak_28', tier: 3, category: 'streak',
-    name: '🌋 ПДР-залежність', desc: 'Майже місяць щодня. Це любов?',
-    check: (/** @type {StatsResponse} */ p) => (p.streak_days || 0) >= 28,
-    frame: 'fire',
-  },
-  {
-    id: 'streak_90', tier: 4, category: 'streak',
-    name: '💎 Сталевий хребет', desc: '90 днів підряд. Ти як швейцарський годинник',
-    check: (/** @type {StatsResponse} */ p) => (p.streak_days || 0) >= 90,
-    frame: 'sun',
-  },
-
-  // ── Марафон (Твоя швидкість) ────────────────────────────────
-  {
-    id: 'marathon_10', tier: 1, category: 'marathon',
-    name: '🏃 Не задихаюсь', desc: '10 правильних у марафоні підряд',
-    check: (/** @type {StatsResponse} */ p) => (p.marathon_best || 0) >= 10,
-  },
-  {
-    id: 'marathon_100', tier: 3, category: 'marathon',
-    name: '⚡ Ультраінстинкт', desc: '100 правильних. Як ти це робиш?',
-    check: (/** @type {StatsResponse} */ p) => (p.marathon_best || 0) >= 100,
-    frame: 'speed',
-  },
-
-  // ── Ідеальні результати та точність ──────────────────────────
-  {
-    id: 'perfect_1', tier: 1, category: 'perfect',
-    name: '✨ Чистий як дзеркало', desc: 'Перший тест без жодної помилки',
-    check: (/** @type {StatsResponse} */ _, /** @type {TestResult[]=} */ r) => r?.some((t) => t.score_percent === 100),
-  },
-  {
-    id: 'accuracy_90', tier: 2, category: 'accuracy',
-    name: '🎯 Снайпер', desc: 'Загальна точність понад 90%',
-    check: (/** @type {StatsResponse} */ p) => {
-      const total = p.total_questions_answered || p.total_answers || 0;
-      return total > 20 && ((p.total_correct || 0) / total) >= 0.9;
-    },
-  },
-  {
-    id: 'perfect_20', tier: 3, category: 'perfect',
-    name: '🎓 Золота голова', desc: '20 тестів без помилок',
-    check: (/** @type {StatsResponse} */ _, /** @type {TestResult[]=} */ r) => (r ?? []).filter((t) => t.score_percent === 100).length >= 20,
-    frame: 'diamond',
-  },
-
-  // ── Спеціальні (Студентські реалії) ──────────────────────────
-  {
-    id: 'night_owl', tier: 2, category: 'special',
-    name: '🦉 Нічний гонщик', desc: 'Вчив правила після 22:00. Кава замість сну?',
-    check: (/** @type {StatsResponse} */ _, /** @type {TestResult[]=} */ r) => r?.some(t => {
-      const h = new Date(t.created_date).getHours();
-      return h >= 22 || h < 4;
-    }),
-  },
-  {
-    id: 'speed_demon', tier: 3, category: 'special',
-    name: '🏎️ Форсаж: Ужгородський дрифт', desc: 'Тест за 5 хв. Куди поспішаєш?',
-    check: (/** @type {StatsResponse} */ _, /** @type {TestResult[]=} */ r) => r?.some(t => t.passed && t.time_spent_seconds < 300 && t.total_questions >= 20),
-    frame: 'speed',
-  },
-  {
-    id: 'close_call', tier: 2, category: 'special',
-    name: '🧘 На грані фолу', desc: 'Скласти екзамен з 2 дозволеними помилками',
-    check: (/** @type {StatsResponse} */ _, /** @type {TestResult[]=} */ r) => r?.some(t => t.test_type === 'exam' && t.passed && t.errors_count === 2),
-  },
-  {
-    id: 'exam_perfect', tier: 4, category: 'exam',
-    name: '🕶️ Агент 0 помилок', desc: 'Ідеальний екзамен. Посвідчення вже в кишені!',
-    check: (/** @type {StatsResponse} */ _, /** @type {TestResult[]=} */ r) => r?.some(t => t.test_type === 'exam' && t.score_percent === 100),
-    frame: 'platinum',
-  },
+  { id: 'first_step', tier: 1, category: 'tests', name: 'Перший виїзд', desc: 'Пройти перший тест', target: 1 },
+  { id: 'rookie', tier: 2, category: 'tests', name: 'Новачок', desc: 'Пройти 10 тестів', target: 10 },
+  { id: 'driver', tier: 3, category: 'tests', name: 'Водій', desc: 'Пройти 50 тестів', target: 50 },
+  { id: 'pro_driver', tier: 4, category: 'tests', name: 'Профі', desc: 'Пройти 100 тестів', target: 100 },
+  { id: 'veteran_driver', tier: 4, category: 'tests', name: 'Досвідчений водій', desc: 'Пройти 250 тестів', target: 250 },
+  { id: 'hundred', tier: 1, category: 'correct', name: 'Сотня', desc: '100 правильних відповідей', target: 100 },
+  { id: 'five_hundred', tier: 2, category: 'correct', name: "П'ятисотня", desc: '500 правильних відповідей', target: 500 },
+  { id: 'thousand', tier: 3, category: 'correct', name: 'Тисячник', desc: '1000 правильних відповідей', target: 1000 },
+  { id: 'legend', tier: 4, category: 'correct', name: 'Легенда', desc: '5000 правильних відповідей', target: 5000 },
+  { id: 'streak_3', tier: 1, category: 'streak', name: 'Розігрів', desc: '3 дні підряд', target: 3 },
+  { id: 'streak_7', tier: 2, category: 'streak', name: 'Темп', desc: '7 днів підряд', target: 7 },
+  { id: 'streak_28', tier: 3, category: 'streak', name: 'Вогонь', desc: '28 днів підряд', target: 28 },
+  { id: 'streak_90', tier: 4, category: 'streak', name: 'Стабільний темп', desc: '90 днів активності підряд', target: 90 },
+  { id: 'marathon_10', tier: 1, category: 'marathon', name: 'Бігун', desc: '10 у марафоні', target: 10 },
+  { id: 'marathon_50', tier: 2, category: 'marathon', name: 'Спринтер', desc: '50 у марафоні', target: 50 },
+  { id: 'marathon_100', tier: 3, category: 'marathon', name: 'Блискавка', desc: '100 у марафоні', target: 100 },
+  { id: 'perfect_1', tier: 1, category: 'perfect', name: 'Без помилок', desc: 'Перший ідеальний тест', target: 1 },
+  { id: 'perfect_5', tier: 2, category: 'perfect', name: 'Відмінник', desc: '5 ідеальних тестів', target: 5 },
+  { id: 'perfect_20', tier: 3, category: 'perfect', name: 'Чиста серія', desc: '20 тестів без помилок', target: 20 },
+  { id: 'exam_passed', tier: 2, category: 'exam', name: 'Іспит складено', desc: 'Скласти перший іспит МВС або білет', target: 1 },
+  { id: 'exam_5', tier: 3, category: 'exam', name: 'Стабільний іспит', desc: 'Скласти 5 іспитів МВС або білетів', target: 5 },
+  { id: 'exam_20', tier: 4, category: 'exam', name: 'Екзаменаційний темп', desc: 'Скласти 20 іспитів МВС або білетів', target: 20 },
+  { id: 'exam_perfect', tier: 4, category: 'exam', name: 'Ідеальний іспит', desc: 'Скласти іспит МВС або білет без помилок', target: 1 },
+  { id: 'exam_perfect_5', tier: 4, category: 'exam', name: "П'ять чистих іспитів", desc: 'Скласти 5 іспитів або білетів без помилок', target: 5 },
+  { id: 'accuracy_70', tier: 1, category: 'accuracy', name: 'Рівна їзда', desc: 'Тримати загальну точність від 70%', target: 70 },
+  { id: 'accuracy_80', tier: 2, category: 'accuracy', name: 'Впевнена точність', desc: 'Тримати загальну точність від 80%', target: 80 },
+  { id: 'accuracy_90', tier: 3, category: 'accuracy', name: 'Точний маршрут', desc: 'Тримати загальну точність від 90%', target: 90 },
+  { id: 'accuracy_95', tier: 4, category: 'accuracy', name: 'Ювелірна точність', desc: 'Тримати загальну точність від 95%', target: 95 },
+  { id: 'battle_first', tier: 1, category: 'battle', name: 'Перший батл', desc: 'Завершити перший батл', target: 1 },
+  { id: 'battle_5', tier: 2, category: 'battle', name: 'Батл-серія', desc: 'Завершити 5 батлів', target: 5 },
+  { id: 'battle_20', tier: 3, category: 'battle', name: 'Арена досвіду', desc: 'Завершити 20 батлів', target: 20 },
+  { id: 'battle_winner', tier: 2, category: 'battle_wins', name: 'Перемога в батлі', desc: 'Виграти перший батл', target: 1 },
+  { id: 'battle_wins_5', tier: 3, category: 'battle_wins', name: "П'ять перемог", desc: 'Виграти 5 батлів', target: 5 },
+  { id: 'battle_champion', tier: 3, category: 'battle_wins', name: 'Чемпіон батлів', desc: 'Виграти 10 батлів', target: 10 },
+  { id: 'battle_wins_25', tier: 4, category: 'battle_wins', name: 'Лідер батлів', desc: 'Виграти 25 батлів', target: 25 },
 ];
 
 export const TIER_COLORS = {
-  1: { bg: 'bg-orange-100 dark:bg-orange-950/35', text: 'text-orange-700 dark:text-orange-200', border: 'border-orange-300 dark:border-orange-500/35', label: 'Бронза' },
+  1: { bg: 'bg-orange-50 dark:bg-orange-950/25', text: 'text-orange-700 dark:text-orange-200', border: 'border-orange-200 dark:border-orange-500/30', label: 'Бронза' },
   2: { bg: 'bg-slate-100 dark:bg-slate-800/80', text: 'text-slate-700 dark:text-slate-100', border: 'border-slate-300 dark:border-slate-600', label: 'Срібло' },
-  3: { bg: 'bg-yellow-100 dark:bg-yellow-950/35', text: 'text-yellow-700 dark:text-yellow-200', border: 'border-yellow-300 dark:border-yellow-500/35', label: 'Золото' },
-  4: { bg: 'bg-purple-100 dark:bg-purple-950/35', text: 'text-purple-700 dark:text-purple-200', border: 'border-purple-300 dark:border-purple-500/35', label: 'Легенда' },
+  3: { bg: 'bg-amber-50 dark:bg-amber-950/25', text: 'text-amber-700 dark:text-amber-200', border: 'border-amber-200 dark:border-amber-500/30', label: 'Золото' },
+  4: { bg: 'bg-violet-50 dark:bg-violet-950/25', text: 'text-violet-700 dark:text-violet-200', border: 'border-violet-200 dark:border-violet-500/30', label: 'Легендарне' },
 };
 
 export const FRAMES = {
-  default: { label: 'Стандартна', style: 'ring-2 ring-primary' },
-  fire: { label: '🔥 Вогняна', style: 'ring-4 ring-orange-500 ring-offset-2 shadow-lg shadow-orange-500/50' },
-  sun: { label: '☀️ Сонячна', style: 'ring-4 ring-yellow-400 ring-offset-2 shadow-lg shadow-yellow-400/50' },
-  gold: { label: '👑 Золота', style: 'ring-4 ring-yellow-600 ring-offset-2' },
-  diamond: { label: '💎 Алмазна', style: 'ring-4 ring-cyan-400 ring-offset-2 shadow-lg shadow-cyan-400/50' },
-  speed: { label: '💨 Швидкість', style: 'ring-4 ring-blue-400 ring-offset-2' },
-  crown: { label: '👑 Корона', style: 'ring-4 ring-amber-500 ring-offset-4' },
-  galaxy: { label: '🌌 Галактика', style: 'ring-4 ring-purple-600 ring-offset-2 shadow-xl shadow-purple-500/50' },
-  platinum: { label: '🏅 Платина', style: 'ring-4 ring-slate-300 ring-offset-2' },
+  default: { label: 'Без рамки', style: '' },
+  fire: { label: 'Вогняна', style: 'ring-4 ring-orange-500 ring-offset-2 shadow-lg shadow-orange-500/40' },
+  sun: { label: 'Сонячна', style: 'ring-4 ring-yellow-400 ring-offset-2 shadow-lg shadow-yellow-400/40' },
+  gold: { label: 'Золота', style: 'ring-4 ring-yellow-600 ring-offset-2' },
+  diamond: { label: 'Діамантова', style: 'ring-4 ring-cyan-400 ring-offset-2 shadow-lg shadow-cyan-400/40' },
+  speed: { label: 'Швидкість', style: 'ring-4 ring-blue-400 ring-offset-2' },
+  crown: { label: 'Корона', style: 'ring-4 ring-amber-500 ring-offset-4' },
+  galaxy: { label: 'Галактика', style: 'ring-4 ring-purple-600 ring-offset-2 shadow-xl shadow-purple-500/40' },
+  platinum: { label: 'Платина', style: 'ring-4 ring-slate-300 ring-offset-2' },
+  mint: { label: "М'ятна", style: 'ring-4 ring-emerald-400 ring-offset-2' },
+  sunset: { label: 'Захід сонця', style: 'ring-4 ring-rose-400 ring-offset-2' },
+  neon: { label: 'Неон', style: 'ring-4 ring-fuchsia-500 ring-offset-2' },
+  aurora: { label: 'Аврора', style: 'ring-4 ring-teal-400 ring-offset-2' },
 };
 
-/** @param {string[]} earnedIds */
+const FRAME_BY_ACHIEVEMENT = {
+  streak_28: 'fire',
+  streak_90: 'sun',
+  thousand: 'gold',
+  perfect_20: 'diamond',
+  marathon_100: 'speed',
+  pro_driver: 'crown',
+  legend: 'galaxy',
+  exam_perfect: 'platinum',
+};
+
 export function getUnlockedFrames(earnedIds) {
   const set = new Set(earnedIds);
   const unlocked = ['default'];
-  ACHIEVEMENTS_DEF.forEach((achievement) => {
-    if (achievement.frame && set.has(achievement.id)) unlocked.push(achievement.frame);
+  Object.entries(FRAME_BY_ACHIEVEMENT).forEach(([achievementId, frameId]) => {
+    if (set.has(achievementId)) unlocked.push(frameId);
   });
   return unlocked;
 }

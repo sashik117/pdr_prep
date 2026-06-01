@@ -1,11 +1,12 @@
 ﻿// @ts-nocheck
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent } from '../components/ui/card';
 import { motion } from 'framer-motion';
 import {
-  BookOpen, Zap, ArrowRight, RotateCcw, Search,
+  BookOpen, Zap, ArrowLeft, ArrowRight, RotateCcw, Search,
   TriangleAlert, Flag, Ban, Circle, Info, Wrench, Tags,
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
@@ -329,6 +330,7 @@ function generateOptions(correctSign) {
 
 // Компонент SignTrainer (повністю той самий, що раніше)
 export default function SignTrainer() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState('browse');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -381,11 +383,19 @@ export default function SignTrainer() {
   const currentQuizSign = quizQueue[quizIndex];
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="-ml-2 inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Назад
+      </button>
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">🚦 Тренажер знаків ПДР</h1>
+          <h1 className="text-2xl font-semibold tracking-[-0.03em] text-foreground sm:text-3xl">Тренажер знаків ПДР</h1>
           <p className="text-muted-foreground mt-1">Вивчай та перевіряй знання дорожніх знаків</p>
         </div>
         <div className="flex gap-2">

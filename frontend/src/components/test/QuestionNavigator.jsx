@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 /** @param {import('@/types/questions').QuestionNavigatorProps} props */
 export default function QuestionNavigator({ questions, answers, currentIndex, onNavigate, showResults = false }) {
   return (
-    <div className="grid grid-cols-5 gap-2 min-[420px]:grid-cols-7 sm:flex sm:flex-wrap">
+    <div className="flex flex-wrap gap-2">
       {questions.map((question, index) => {
         const hasAnswer = answers[question.id] !== undefined;
         const isCurrent = index === currentIndex;
@@ -15,15 +15,15 @@ export default function QuestionNavigator({ questions, answers, currentIndex, on
             key={question.id}
             onClick={() => onNavigate(index)}
             className={cn(
-              'h-10 w-full rounded-lg text-sm font-medium transition-colors sm:w-10',
-              isCurrent && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
+              'h-10 w-10 rounded-lg text-sm font-medium transition-all duration-200',
+              isCurrent && 'ring-2 ring-primary-500 ring-offset-2 ring-offset-background',
               isCorrect
-                ? 'bg-success text-success-foreground'
+                ? 'bg-success-500 text-white'
                 : isWrong
-                  ? 'bg-destructive text-destructive-foreground'
+                  ? 'bg-error-500 text-white'
                   : hasAnswer
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
             )}
           >
             {index + 1}

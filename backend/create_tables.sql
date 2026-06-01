@@ -71,10 +71,12 @@ CREATE TABLE IF NOT EXISTS test_results (
     total         INT NOT NULL,
     correct       INT NOT NULL,
     time_seconds  INT NOT NULL,
+    client_attempt_id TEXT,
     created_at    TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_test_results_user ON test_results(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_test_results_user_attempt ON test_results(user_id, client_attempt_id) WHERE client_attempt_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS user_answers (
     id              BIGSERIAL PRIMARY KEY,

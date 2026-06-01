@@ -1,6 +1,5 @@
 import { PlayCircle } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 
 function getYouTubeId(url) {
   if (url.hostname.includes('youtu.be')) {
@@ -26,6 +25,12 @@ function normalizeEmbedUrl(value) {
         const embed = new URL(`https://www.youtube-nocookie.com/embed/${videoId}`);
         embed.searchParams.set('rel', '0');
         embed.searchParams.set('modestbranding', '1');
+        embed.searchParams.set('controls', '1');
+        embed.searchParams.set('showinfo', '0');
+        embed.searchParams.set('fs', '0');
+        embed.searchParams.set('iv_load_policy', '3');
+        embed.searchParams.set('playsinline', '1');
+        embed.searchParams.set('disablekb', '1');
         return embed.toString();
       }
       url.hostname = 'www.youtube-nocookie.com';
@@ -33,6 +38,12 @@ function normalizeEmbedUrl(value) {
       url.searchParams.delete('origin');
       url.searchParams.set('rel', '0');
       url.searchParams.set('modestbranding', '1');
+      url.searchParams.set('controls', '1');
+      url.searchParams.set('showinfo', '0');
+      url.searchParams.set('fs', '0');
+      url.searchParams.set('iv_load_policy', '3');
+      url.searchParams.set('playsinline', '1');
+      url.searchParams.set('disablekb', '1');
     }
     return url.toString();
   } catch {
@@ -57,17 +68,21 @@ export default function TheoryVideoPanel({ title, embedUrl = '', videoUrl = '' }
 
       <div className="p-3 sm:p-5">
         {safeEmbedUrl ? (
-          <div className="overflow-hidden rounded-lg bg-slate-950 shadow-sm">
+          <div className="relative overflow-hidden rounded-lg bg-slate-950 shadow-sm">
             {loaded ? (
-              <iframe
-                src={safeEmbedUrl}
-                title={`Відео: ${title}`}
-                className="aspect-video w-full bg-slate-950"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                loading="lazy"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-              />
+              <>
+                <div className="pointer-events-auto absolute left-0 top-0 z-10 h-[60px] w-full bg-transparent" />
+                <div className="pointer-events-auto absolute bottom-0 right-0 z-10 h-[40px] w-[80px] bg-transparent" />
+                <iframe
+                  src={safeEmbedUrl}
+                  title={`Відео: ${title}`}
+                  className="aspect-video w-full bg-slate-950"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  sandbox="allow-scripts allow-same-origin allow-presentation"
+                />
+              </>
             ) : (
               <button
                 type="button"
@@ -85,11 +100,9 @@ export default function TheoryVideoPanel({ title, embedUrl = '', videoUrl = '' }
             )}
           </div>
         ) : (
-          <Button asChild variant="outline" className="rounded-lg">
-            <a href={videoUrl} target="_blank" rel="noreferrer">
-              Відкрити відео
-            </a>
-          </Button>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+            Відео тимчасово недоступне. Спробуйте відкрити цей розділ трохи пізніше.
+          </div>
         )}
       </div>
     </div>

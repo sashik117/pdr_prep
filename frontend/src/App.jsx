@@ -33,6 +33,7 @@ import Tickets from '@/pages/Tickets';
 import TicketDetail from '@/pages/TicketDetail';
 import SavedQuestions from '@/pages/SavedQuestions';
 import TheoryTopicPage from '@/features/theory/TheoryTopicPage';
+import AdminApp from '@/features/admin/AdminApp';
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Navigate to="/auth" replace />} />
+            <Route path="/admin/*" element={<AdminApp />} />
 
             <Route element={<AppLayout />}>
               <Route path="/" element={<Home />} />
@@ -68,10 +70,10 @@ function App() {
               <Route path="/study/:topicKey/:entryId" element={<StudyChapter />} />
               <Route path="/study/section/:entryId" element={<StudyChapter />} />
               <Route path="/library" element={<Navigate to="/study/library" replace />} />
-              <Route path="/cabinet" element={<Progress />} />
+              <Route path="/cabinet" element={<Progress view="dashboard" />} />
               <Route path="/progress" element={<Navigate to="/cabinet" replace />} />
               <Route path="/analytics" element={<Analytics />} />
-              <Route path="/profile" element={<Navigate to="/cabinet" replace />} />
+              <Route path="/profile" element={<Progress view="profile" />} />
               <Route path="/u/:username" element={<UserProfile />} />
               <Route path="/users/:userId" element={<UserProfile />} />
               <Route path="/privacy" element={<Privacy />} />
