@@ -8,9 +8,12 @@ import api from '@/api/apiClient';
 import { normalizeQuestion } from '@/api/questionsApi';
 import QuestionCard from '@/components/test/QuestionCard';
 import { getSavedQuestionIds, isQuestionSaved, toggleSavedQuestion } from '@/lib/savedQuestions';
+import { useAuth } from '@/lib/AuthContext';
+import LoginPrompt from '@/components/auth/LoginPrompt';
 
 export default function SavedQuestions() {
   const navigate = useNavigate();
+  const { user, isLoadingAuth } = useAuth();
   const [savedIds, setSavedIds] = useState(() => getSavedQuestionIds());
   const idsKey = savedIds.join(',');
 
@@ -26,7 +29,7 @@ export default function SavedQuestions() {
 
   const questionsQuery = useQuery({
     queryKey: ['saved-questions', idsKey],
-    enabled: savedIds.length > 0,
+    enabled: Boolean(user) && savedIds.length > 0,
     queryFn: async () => {
       const response = await api.getQuestions({ ids: idsKey, limit: Math.max(savedIds.length, 1) });
       const items = (response?.items || []).map(normalizeQuestion).filter(Boolean);
@@ -36,6 +39,17 @@ export default function SavedQuestions() {
   });
 
   const questions = useMemo(() => questionsQuery.data || [], [questionsQuery.data]);
+
+  if (isLoadingAuth) return null;
+
+  if (!user) {
+    return (
+      <LoginPrompt
+        title="Збережені запитання доступні після входу"
+        description="Увійдіть або створіть профіль, щоб відкладати важливі питання й повертатися до них у будь-який момент."
+      />
+    );
+  }
 
   if (!savedIds.length) {
     return (
@@ -88,7 +102,7 @@ export default function SavedQuestions() {
                 onSelectAnswer={() => {}}
                 isFavorite={isQuestionSaved(question.id)}
                 onToggleFavorite={() => {
-                  toggleSavedQuestion(question.id);
+                  toggleSavedQuestion(question.id, user);
                   setSavedIds(getSavedQuestionIds());
                 }}
               />

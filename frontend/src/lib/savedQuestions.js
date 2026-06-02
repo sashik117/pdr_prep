@@ -23,7 +23,8 @@ export function isQuestionSaved(questionId) {
   return readSavedIds().includes(String(questionId));
 }
 
-export function toggleSavedQuestion(questionId) {
+export function toggleSavedQuestion(questionId, user = null) {
+  if (!user) return false;
   if (questionId === undefined || questionId === null) return false;
   const id = String(questionId);
   const ids = readSavedIds();

@@ -196,8 +196,18 @@ copy backend\.env.example backend\.env
 ```bash
 npm run dev
 npm run build
+npm run lint
 npm run typecheck
+npm run backend:test
+npm run backend:audit-media
+npm run backend:smoke
+npm run verify
 ```
+
+Media deployment notes:
+
+- See `docs/deployment-media.md` before deploying from a clean Git checkout.
+- Run `npm run backend:audit-media` before release. It should report `missing=0`.
 
 Frontend only:
 

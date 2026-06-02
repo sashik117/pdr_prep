@@ -84,12 +84,14 @@ const extraModes = [
     title: 'Збережені запитання',
     description: 'Ваш особистий список важливого матеріалу для повторення в будь-який момент.',
     to: '/saved-questions',
+    auth: true,
   },
   {
     icon: LineChart,
     title: 'Аналітика',
     description: 'Прогрес, історія проходжень і теми, які варто підтягнути.',
     to: '/analytics',
+    auth: true,
   },
 ];
 
@@ -136,13 +138,15 @@ const testimonials = [
 ];
 
 const supportActions = [
-  { label: 'Написати в підтримку', to: '/support', icon: MessageCircleHeart },
+  { label: 'Написати в підтримку', to: '/support', icon: MessageCircleHeart, auth: true },
   { label: 'Відкрити відеолекції', to: '/study/video-lectures', icon: PlayCircle },
   { label: 'Переглянути Premium', to: '/pricing', icon: Trophy },
 ];
 
 export default function HomePage() {
   const { isAuthenticated } = useAuth();
+  const visibleExtraModes = extraModes.filter((mode) => !mode.auth || isAuthenticated);
+  const visibleSupportActions = supportActions.filter((action) => !action.auth || isAuthenticated);
   const accountCta = isAuthenticated
     ? { to: '/cabinet', label: 'До профілю' }
     : { to: '/auth?tab=register', label: 'Зареєструватися' };
@@ -275,7 +279,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {extraModes.map((mode, index) => {
+            {visibleExtraModes.map((mode, index) => {
               const Icon = mode.icon;
               return (
                 <motion.div key={mode.title} {...reveal} transition={{ ...reveal.transition, delay: 0.18 + index * 0.05 }}>
@@ -426,7 +430,7 @@ export default function HomePage() {
 
       <section className="bg-slate-50 py-12 dark:bg-slate-900/60">
         <div className="ml-auto mr-auto grid w-full max-w-[1100px] gap-3 px-5 sm:px-6 md:grid-cols-3 lg:px-8">
-          {supportActions.map((action) => {
+          {visibleSupportActions.map((action) => {
             const Icon = action.icon;
             return (
               <Link

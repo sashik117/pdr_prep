@@ -21,13 +21,16 @@
 - `api/` reserved for extracted route modules
 - `config/` runtime JSON config such as promo settings
 - `data/questions/` source question JSON files
+- `domain/` pure business rules with no database access
 - `legacy/` archived importers, cleanup scripts, and old specs
 - `logs/` background import logs
 - `migrations/` SQL schema snapshots
 - `parsers/` active parser sources and seeds
+- `repositories/` PostgreSQL queries and persistence boundaries
 - `schemas/` shared backend models
 - `scripts/` one-off maintenance and import helpers
 - `services/` active business logic
+- `tests/` backend unit and smoke tests
 - `uploads/` local assets served by the API
 - `utils/` shared helpers
 
@@ -36,6 +39,21 @@
 - Main theory/content importer: `import_driveprep_content.py`
 - Question bootstrap: `scripts/database_setup.py`
 - Question JSON normalization helper: `scripts/rebuild_category_json.py`
+- Media consistency audit: `scripts/audit_media.py`
+
+## Quality checks
+
+From the repository root:
+
+```bash
+npm run backend:test
+npm run backend:audit-media
+npm run backend:smoke
+```
+
+`backend:audit-media` checks theory HTML, theory assets, media maps and question images. It must report `missing=0` before deployment.
+
+The repository intentionally does not track every generated upload image because theory media is heavy. If you deploy from a clean Git checkout, make sure your deployment process restores `backend/uploads/theory/**` or runs the importer before serving theory pages.
 
 ## Main environment variables
 

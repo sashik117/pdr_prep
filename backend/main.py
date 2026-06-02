@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-import random
 import re
 import shutil
 import subprocess
@@ -31,12 +30,9 @@ from core.config import (
     ADMIN_PASSWORD,
     ADMIN_PASSWORD_HASH,
     ADMIN_USERNAME,
-    ALLOW_MOCK_PAYMENTS,
     BACKEND_PUBLIC_URL,
     BASE_DIR,
-    BROKEN_OPTION_RE,
     CATEGORY_ALIASES,
-    CATEGORY_SECTION_RULES,
     DEFAULT_IMPORT_FILE,
     DEFAULT_PREMIUM_FEATURES,
     DEFAULT_PROMO_SETTINGS,
@@ -46,7 +42,6 @@ from core.config import (
     FRONTEND_URL,
     HANDBOOK_TOPIC_CATEGORY_MAP,
     HANDBOOK_TOPICS,
-    IMAGE_REQUIRED_MARKERS,
     IS_PRODUCTION,
     JWT_REMEMBER_DAYS,
     JWT_SECRET,
@@ -54,10 +49,7 @@ from core.config import (
     LIQPAY_PRIVATE_KEY,
     LIQPAY_PUBLIC_KEY,
     MULTI_TOPIC_CATEGORY_SLUGS,
-    MVS_BLOCKS,
-    MVS_CATEGORY_BLOCKS,
     MVS_TICKET_COUNT,
-    PAYMENT_MODE,
     PORT,
     PREMIUM_FEATURES_FILE,
     PREMIUM_PLAN_ALIASES,
@@ -70,15 +62,23 @@ from core.config import (
     RUNTIME_DIR,
     RUN_STARTUP_MAINTENANCE,
     SUPPORT_EMAIL,
-    SUPPORT_NAME,
     THEORY_CATEGORY_FALLBACKS,
     THEORY_PARSE_LOG_FILE,
     THEORY_PARSE_STATUS_FILE,
     UPLOAD_DIR,
-    USERNAME_RE,
 )
-from core.database import db
+from domain.auth import (
+    email_is_verified as domain_email_is_verified,
+    normalize_username as domain_normalize_username,
+)
+from domain.questions import (
+    clean_text as domain_clean_text,
+    sanitize_question_row as domain_sanitize_question_row,
+    strip_embedded_options_from_question as domain_strip_embedded_options_from_question,
+)
 from parsers.theory_sources import THEORY_SOURCE_MAP
+from repositories.auth_repository import AuthRepository
+from repositories.stars_repository import StarsRepository
 from schemas.requests import (
     AdminAchievementUpdateRequest,
     AdminLoginRequest,
@@ -88,7 +88,6 @@ from schemas.requests import (
     AdminTheorySectionUpdateRequest,
     AdminUserUpdateRequest,
     BattleCreateRequest,
-    BattleDecisionRequest,
     BattleSubmitRequest,
     ForgotPasswordRequest,
     FramePurchaseRequest,
@@ -107,14 +106,122 @@ from schemas.requests import (
     UpdateProfileRequest,
     VerifyEmailRequest,
 )
+from schemas.battles import BattleSubmitResponse
+from schemas.auth import AuthMessageResponse, AuthTokenResponse
+from schemas.progress import ProgressResultResponse, ProgressStatsResponse, TestResultResponse
+from schemas.questions import MvsExamResponse
+from services.achievement_service import (
+    check_achievements as check_achievements_use_case,
+    list_achievement_progress as list_achievement_progress_use_case,
+)
+from services.battle_service import (
+    accept_battle as accept_battle_use_case,
+    cancel_battle as cancel_battle_use_case,
+    create_battle as create_battle_use_case,
+    decline_battle as decline_battle_use_case,
+    get_battle_detail as get_battle_detail_use_case,
+    list_battles as list_battles_use_case,
+    submit_battle_answers as submit_battle_answers_use_case,
+)
 from services.email import email_delivery_response, gen_code, send_email
+from services.errors import ServiceError
+from services.auth_service import (
+    get_session_user as get_session_user_use_case,
+    login_user as login_user_use_case,
+    register_user as register_user_use_case,
+    request_password_reset as request_password_reset_use_case,
+    resend_verification_code as resend_verification_code_use_case,
+    reset_password as reset_password_use_case,
+    verify_email as verify_email_use_case,
+)
+from services.progress_service import (
+    get_progress_stats as get_progress_stats_use_case,
+    list_progress_results as list_progress_results_use_case,
+    restore_streak as restore_streak_use_case,
+    submit_marathon_score as submit_marathon_score_use_case,
+    submit_test_result as submit_test_result_use_case,
+)
+from services.profile_service import (
+    get_public_profile_by_id as get_public_profile_by_id_use_case,
+    get_public_profile_by_username as get_public_profile_by_username_use_case,
+    update_avatar as update_avatar_use_case,
+    update_profile as update_profile_use_case,
+)
+from services.payment_service import (
+    activate_mock_payment as activate_mock_payment_use_case,
+    create_premium_checkout as create_premium_checkout_use_case,
+    get_payment_status as get_payment_status_use_case,
+    handle_liqpay_callback as handle_liqpay_callback_use_case,
+    list_admin_premium_orders as list_admin_premium_orders_use_case,
+)
+from services.friend_service import (
+    accept_friend as accept_friend_use_case,
+    invite_friend as invite_friend_use_case,
+    list_friends as list_friends_use_case,
+    remove_friend as remove_friend_use_case,
+)
+from services.message_service import (
+    list_messages as list_messages_use_case,
+    send_message as send_message_use_case,
+)
+from services.notification_service import get_notifications_summary as get_notifications_summary_use_case
+from services.support_service import (
+    get_admin_support_thread as get_admin_support_thread_use_case,
+    list_user_support_messages as list_user_support_messages_use_case,
+    list_admin_support_conversations as list_admin_support_conversations_use_case,
+    send_admin_support_reply as send_admin_support_reply_use_case,
+    send_user_support_message as send_user_support_message_use_case,
+)
+from services.admin_user_service import (
+    create_admin_password_reset as create_admin_password_reset_use_case,
+    delete_admin_user as delete_admin_user_use_case,
+    get_admin_user_audit as get_admin_user_audit_use_case,
+    list_admin_users as list_admin_users_use_case,
+    update_admin_user as update_admin_user_use_case,
+    update_admin_user_achievement as update_admin_user_achievement_use_case,
+)
+from services.admin_theory_service import (
+    get_admin_theory_summary as get_admin_theory_summary_use_case,
+    list_admin_theory_sections as list_admin_theory_sections_use_case,
+    update_admin_theory_section as update_admin_theory_section_use_case,
+)
+from services.admin_question_service import (
+    list_admin_question_sections as list_admin_question_sections_use_case,
+    search_admin_questions as search_admin_questions_use_case,
+    update_admin_question as update_admin_question_use_case,
+)
+from services.question_service import (
+    get_question as get_question_use_case,
+    import_questions as import_questions_use_case,
+    list_questions as list_questions_use_case,
+    list_sections as list_sections_use_case,
+    random_questions as random_questions_use_case,
+)
+from services.frame_service import purchase_frame as purchase_frame_use_case
+from services.handbook_service import (
+    get_handbook_entry as get_handbook_entry_use_case,
+    list_handbook_entries as list_handbook_entries_use_case,
+    list_handbook_topics as list_handbook_topics_use_case,
+    search_handbook_entries as search_handbook_entries_use_case,
+)
+from services.leaderboard_service import list_leaderboard as list_leaderboard_use_case
 from services.realtime import RealtimeHub
-from services.ticket_service import get_ticket_questions, list_tickets
+from services.test_session_service import (
+    build_mvs_exam_questions as build_mvs_exam_questions_use_case,
+    build_mvs_exam_session,
+)
+from services.ticket_service import get_ticket as get_ticket_use_case
+from services.ticket_service import list_tickets as list_tickets_use_case
 from services.theory_service import (
-    get_theory_section,
-    list_theory_categories,
-    list_theory_sections,
-    list_theory_topics,
+    get_theory_section_payload as get_theory_section_payload_use_case,
+    list_theory_category_payloads as list_theory_category_payloads_use_case,
+    list_theory_section_payloads as list_theory_section_payloads_use_case,
+    list_theory_topic_payloads as list_theory_topic_payloads_use_case,
+)
+from services.theory_maintenance_service import (
+    ensure_question_metadata as ensure_question_metadata_use_case,
+    ensure_theory_seed_data as ensure_theory_seed_data_use_case,
+    sync_theory_data as sync_theory_data_use_case,
 )
 
 app = FastAPI(title="PDRPrep API", version="3.0.0")
@@ -386,42 +493,6 @@ def _decode_liqpay_data(data: str) -> dict[str, Any]:
     return json.loads(raw)
 
 
-def _add_months(base_value: datetime, months: int) -> datetime:
-    month_index = base_value.month - 1 + months
-    year = base_value.year + month_index // 12
-    month = month_index % 12 + 1
-    day = min(base_value.day, 28)
-    return base_value.replace(year=year, month=month, day=day)
-
-
-def _activate_premium_order(conn: psycopg.Connection, order_row: dict[str, Any], provider_payment_id: Optional[str] = None) -> dict[str, Any]:
-    plan = _get_premium_plan(order_row["plan_code"])
-    now = datetime.utcnow()
-    expires_at = _add_months(now, int(plan["months"]))
-    conn.execute(
-        """
-        UPDATE premium_orders
-        SET status = 'paid',
-            provider_payment_id = COALESCE(%s, provider_payment_id),
-            activated_at = %s,
-            expires_at = %s,
-            updated_at = %s
-        WHERE id = %s
-        """,
-        (provider_payment_id, now, expires_at, now, order_row["id"]),
-    )
-    conn.execute(
-        """
-        UPDATE users
-        SET is_premium = TRUE
-        WHERE id = %s
-        """,
-        (order_row["user_id"],),
-    )
-    updated_order = conn.execute("SELECT * FROM premium_orders WHERE id = %s", (order_row["id"],)).fetchone()
-    return dict(updated_order) if updated_order else {}
-
-
 @app.on_event("startup")
 def on_startup() -> None:
     if not RUN_STARTUP_MAINTENANCE:
@@ -444,38 +515,15 @@ def on_startup() -> None:
 
 
 def _clean_text(value: Any) -> str:
-    text = str(value or "").replace("\r", " ").replace("\n", " ").strip()
-    for marker in QUESTION_UI_MARKERS:
-        text = text.replace(marker, " ")
-    return re.sub(r"\s+", " ", text).strip()
+    return domain_clean_text(value, QUESTION_UI_MARKERS)
 
 
 def _strip_embedded_options_from_question(value: Any) -> str:
-    text = _clean_text(value)
-    match = EMBEDDED_OPTION_RE.search(text)
-    if not match:
-        return text
-    question_part = text[: match.start()].strip()
-    if question_part.endswith("?") or len(question_part.split()) >= 8:
-        return question_part
-    return text
-
-
-def _question_requires_image(question: dict[str, Any]) -> bool:
-    text = f"{question.get('question_text') or ''} {question.get('section_name') or ''}".casefold()
-    return any(marker in text for marker in IMAGE_REQUIRED_MARKERS)
-
-
-def _question_has_available_image(question: dict[str, Any]) -> bool:
-    for image in question.get("images") or []:
-        image_ref = str(image or "").strip()
-        if not image_ref:
-            continue
-        if image_ref.startswith(("http://", "https://")):
-            return True
-        if (PUBLIC_IMAGES_DIR / Path(image_ref.split("?")[0]).name).exists():
-            return True
-    return False
+    return domain_strip_embedded_options_from_question(
+        value,
+        ui_markers=QUESTION_UI_MARKERS,
+        embedded_option_re=EMBEDDED_OPTION_RE,
+    )
 
 
 def _sanitize_handbook_text(value: Any) -> str:
@@ -500,24 +548,6 @@ def _normalize_category(category: Optional[str]) -> Optional[str]:
         return None
     raw = category.strip().upper()
     return CATEGORY_ALIASES.get(raw, raw)
-
-
-def _category_sections(category: Optional[str]) -> list[int]:
-    normalized = _normalize_category(category)
-    return CATEGORY_SECTION_RULES.get(normalized or "", [])
-
-
-def _section_number_sql(column: str) -> str:
-    return f"NULLIF(SUBSTRING(TRIM(COALESCE({column}::text, '')) FROM '^\\d+'), '')::INT"
-
-
-def _append_category_condition(conds: list[str], params: list[Any], category: Optional[str], prefix: str = "") -> None:
-    sections = _category_sections(category)
-    if not sections:
-        return
-    column = f"{prefix}section" if prefix else "section"
-    conds.append(f"{_section_number_sql(column)} = ANY(%s)")
-    params.append(sections)
 
 
 def _coerce_json_list(value: Any) -> list[Any]:
@@ -604,15 +634,7 @@ def _streak_snapshot(user: dict[str, Any], today: Optional[date] = None) -> dict
 
 
 def _earned_stars(conn: psycopg.Connection, user_id: int) -> int:
-    row = conn.execute(
-        """
-        SELECT COUNT(*) AS count
-        FROM test_results
-        WHERE user_id = %s AND total > 0 AND correct = total
-        """,
-        (user_id,),
-    ).fetchone()
-    return int((row or {}).get("count") or 0)
+    return StarsRepository(conn).earned_stars(user_id=user_id)
 
 
 def _purchased_frames(user: dict[str, Any]) -> list[str]:
@@ -625,40 +647,6 @@ def _total_stars(conn: psycopg.Connection, user: dict[str, Any]) -> int:
 
 def _available_stars(conn: psycopg.Connection, user: dict[str, Any]) -> int:
     return max(0, _total_stars(conn, user) - int(user.get("spent_stars") or 0))
-
-
-def _passed_tests_count(conn: psycopg.Connection, user_id: int) -> int:
-    row = conn.execute(
-        """
-        SELECT COUNT(*) AS count
-        FROM test_results
-        WHERE user_id = %s
-          AND total > 0
-          AND ROUND((correct::numeric / total::numeric) * 100) >= 80
-        """,
-        (user_id,),
-    ).fetchone()
-    return int((row or {}).get("count") or 0)
-
-
-def _battle_stats_for_email(conn: psycopg.Connection, email: Optional[str]) -> dict[str, int]:
-    normalized = str(email or "").strip().lower()
-    if not normalized:
-        return {"battle_wins": 0, "battle_finished": 0}
-    row = conn.execute(
-        """
-        SELECT
-          COUNT(*) FILTER (WHERE status = 'finished') AS battle_finished,
-          COUNT(*) FILTER (WHERE status = 'finished' AND LOWER(COALESCE(winner_email, '')) = %s) AS battle_wins
-        FROM battles
-        WHERE LOWER(challenger_email) = %s OR LOWER(opponent_email) = %s
-        """,
-        (normalized, normalized, normalized),
-    ).fetchone()
-    return {
-        "battle_wins": int((row or {}).get("battle_wins") or 0),
-        "battle_finished": int((row or {}).get("battle_finished") or 0),
-    }
 
 
 def _frame_shop_payload(user: dict[str, Any], earned_achievement_ids: list[str], available_stars: int) -> list[dict[str, Any]]:
@@ -682,119 +670,11 @@ def _frame_shop_payload(user: dict[str, Any], earned_achievement_ids: list[str],
 
 
 def _sanitize_question_row(row: dict[str, Any]) -> dict[str, Any]:
-    options = [_clean_text(option) for option in (row.get("options") or []) if _clean_text(option)]
-    images = [str(image) for image in (row.get("images") or []) if str(image).strip()]
-    question_text = _strip_embedded_options_from_question(row.get("question_text"))
-    return {
-        **row,
-        "section": str(row.get("section") or ""),
-        "section_name": _clean_text(row.get("section_name")),
-        "question_text": question_text,
-        "difficulty": _clean_text(row.get("difficulty")) or "medium",
-        "explanation": _clean_text(row.get("explanation")),
-        "options": options,
-        "images": images,
-    }
-
-
-def _question_is_usable(row: dict[str, Any]) -> bool:
-    question = _sanitize_question_row(row)
-    options = question.get("options") or []
-    correct_ans = int(question.get("correct_ans") or 0)
-    if not question.get("question_text") or len(options) < 2:
-        return False
-    if correct_ans < 1 or correct_ans > len(options):
-        return False
-    if any(BROKEN_OPTION_RE.search(option) for option in options):
-        return False
-    if _question_requires_image(question) and not _question_has_available_image(question):
-        return False
-    return True
-
-
-def _dedupe_and_filter_questions(rows: list[dict[str, Any]], count: Optional[int] = None) -> list[dict[str, Any]]:
-    prepared: list[dict[str, Any]] = []
-    seen_ids: set[Any] = set()
-    seen_texts: set[str] = set()
-
-    for row in rows:
-        if not _question_is_usable(row):
-            continue
-        question = _sanitize_question_row(row)
-        qid = question.get("id")
-        text_key = question.get("question_text", "").casefold()
-        if qid in seen_ids or text_key in seen_texts:
-            continue
-        seen_ids.add(qid)
-        seen_texts.add(text_key)
-        prepared.append(question)
-        if count and len(prepared) >= count:
-            break
-    return prepared
-
-
-def _mvs_block_sections(category: Optional[str], block_key: str) -> list[int]:
-    normalized = _normalize_category(category) or "B"
-    common_sections = list(MVS_BLOCKS.get(block_key, {}).get("sections") or [])
-    category_sections = list((MVS_CATEGORY_BLOCKS.get(normalized) or {}).get(block_key) or [])
-    return common_sections + category_sections
-
-
-def _fetch_mvs_block_questions(
-    conn: psycopg.Connection,
-    sections: list[int],
-    count: int,
-    excluded_ids: set[int],
-    seed: str,
-    block_key: str,
-) -> list[dict[str, Any]]:
-    if not sections or count <= 0:
-        return []
-
-    conds = [f"{_section_number_sql('q.section')} = ANY(%s)"]
-    params: list[Any] = [sections]
-    if excluded_ids:
-        conds.append("NOT (q.id = ANY(%s))")
-        params.append(list(excluded_ids))
-
-    rows = conn.execute(
-        f"""
-        SELECT *
-        FROM questions q
-        WHERE {' AND '.join(conds)}
-        ORDER BY md5(q.id::text || %s)
-        LIMIT %s
-        """,
-        params + [f"{seed}:{block_key}", max(count * 40, 120)],
-    ).fetchall()
-
-    prepared = _dedupe_and_filter_questions([dict(row) for row in rows], count=count)
-    label = MVS_BLOCKS.get(block_key, {}).get("label") or block_key
-    for question in prepared:
-        question["exam_block"] = block_key
-        question["exam_block_label"] = label
-    return prepared
-
-
-def _build_mvs_exam_questions(conn: psycopg.Connection, category: Optional[str], seed: Optional[str] = None) -> list[dict[str, Any]]:
-    normalized = _normalize_category(category) or "B"
-    stable_seed = seed or f"mvs:{normalized}:{uuid4().hex}"
-    questions: list[dict[str, Any]] = []
-    excluded_ids: set[int] = set()
-
-    for block_key, meta in MVS_BLOCKS.items():
-        block_questions = _fetch_mvs_block_questions(
-            conn,
-            _mvs_block_sections(normalized, block_key),
-            int(meta["count"]),
-            excluded_ids,
-            stable_seed,
-            block_key,
-        )
-        questions.extend(block_questions)
-        excluded_ids.update(int(item["id"]) for item in block_questions if item.get("id") is not None)
-
-    return questions
+    return domain_sanitize_question_row(
+        row,
+        ui_markers=QUESTION_UI_MARKERS,
+        embedded_option_re=EMBEDDED_OPTION_RE,
+    )
 
 
 def _user_public(user: dict[str, Any]) -> dict[str, Any]:
@@ -848,49 +728,19 @@ def _user_public(user: dict[str, Any]) -> dict[str, Any]:
 
 
 def _normalize_username(value: Optional[str]) -> Optional[str]:
-    if value is None:
-        return None
-    username = value.strip().lower()
-    if username.startswith("@"):
-        username = username[1:]
-    return username or None
+    return domain_normalize_username(value)
 
 
 def _is_email_verified(user: Optional[dict[str, Any]]) -> bool:
-    if not user:
-        return False
-    if "email_verified" in user and user.get("email_verified") is not None:
-        return bool(user.get("email_verified"))
-    return bool(user.get("email_confirmed"))
-
-
-def _validate_username(value: str) -> str:
-    username = _normalize_username(value) or ""
-    if not USERNAME_RE.fullmatch(username):
-        raise HTTPException(400, "Username має містити лише латиницю, цифри або _, від 3 до 32 символів")
-    return username
+    return domain_email_is_verified(user)
 
 
 def _resolve_user_by_login(conn: psycopg.Connection, identifier: str) -> Optional[dict[str, Any]]:
-    normalized = identifier.strip().lower()
-    if "@" in normalized and not normalized.startswith("@"):
-        row = conn.execute("SELECT * FROM users WHERE email = %s", (normalized,)).fetchone()
-    else:
-        username = _normalize_username(normalized)
-        row = conn.execute("SELECT * FROM users WHERE LOWER(username) = %s", (username,)).fetchone() if username else None
-    return dict(row) if row else None
+    return AuthRepository(conn).get_user_by_login(identifier)
 
 
 def _resolve_user_by_handle(conn: psycopg.Connection, handle: str) -> Optional[dict[str, Any]]:
-    normalized = handle.strip()
-    if not normalized:
-        return None
-    if "@" in normalized and not normalized.startswith("@"):
-        row = conn.execute("SELECT * FROM users WHERE email = %s", (normalized.lower(),)).fetchone()
-    else:
-        username = _normalize_username(normalized)
-        row = conn.execute("SELECT * FROM users WHERE LOWER(username) = %s", (username,)).fetchone() if username else None
-    return dict(row) if row else None
+    return AuthRepository(conn).get_user_by_login(handle)
 
 
 def _resolve_social_user_by_handle(
@@ -1006,14 +856,10 @@ def get_current_user(authorization: Optional[str] = Header(default=None)) -> dic
     except Exception as exc:
         raise HTTPException(401, "Невалідний токен") from exc
 
-    with db() as conn:
-        user = conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
-    if not user:
-        raise HTTPException(401, "Користувача не знайдено")
-    payload = dict(user)
-    if payload.get("is_blocked") and not _is_admin_email(payload.get("email")):
-        raise HTTPException(403, "Акаунт заблоковано")
-    return payload
+    try:
+        return get_session_user_use_case(user_id, is_admin_email=_is_admin_email)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 def get_optional_user(authorization: Optional[str] = Header(default=None)) -> Optional[dict[str, Any]]:
@@ -1044,16 +890,9 @@ def _resolve_user_from_token(token: str) -> Optional[dict[str, Any]]:
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         user_id = int(payload["sub"])
+        return get_session_user_use_case(user_id, is_admin_email=_is_admin_email)
     except Exception:
         return None
-    with db() as conn:
-        user = conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
-    if not user:
-        return None
-    user_payload = dict(user)
-    if user_payload.get("is_blocked") and not _is_admin_email(user_payload.get("email")):
-        return None
-    return user_payload
 
 
 @app.websocket("/ws")
@@ -1069,147 +908,6 @@ async def websocket_bridge(websocket: WebSocket, token: str = Query(default=""))
             await websocket.receive_text()
     except WebSocketDisconnect:
         realtime_hub.disconnect(user["email"], websocket)
-
-
-def _friend_counterpart(friendship: dict[str, Any], current_user_id: int) -> tuple[int, str]:
-    if friendship["requester_id"] == current_user_id:
-        return friendship["addressee_id"], "outgoing"
-    return friendship["requester_id"], "incoming"
-
-
-def _serialize_question_ids(question_ids: list[int]) -> str:
-    return json.dumps(question_ids, ensure_ascii=False)
-
-
-def _serialize_json(data: Any) -> str:
-    return json.dumps(data, ensure_ascii=False)
-
-
-def _answer_label_to_index(answer: Optional[str], question: dict[str, Any]) -> int:
-    if not answer:
-        return 0
-    options = question.get("options") or []
-    labels = ["A", "B", "C", "D", "E", "F"]
-    for index in range(len(options)):
-        if labels[index] == answer:
-            return index + 1
-    return 0
-
-
-def _battle_role(battle: dict[str, Any], email: str) -> Optional[str]:
-    normalized = email.strip().lower()
-    if battle["challenger_email"].lower() == normalized:
-        return "challenger"
-    if battle["opponent_email"].lower() == normalized:
-        return "opponent"
-    return None
-
-
-def _normalize_battle_record(battle: dict[str, Any]) -> dict[str, Any]:
-    battle["challenger_email"] = str(battle.get("challenger_email") or "").strip().lower()
-    battle["opponent_email"] = str(battle.get("opponent_email") or "").strip().lower()
-    battle["challenger_name"] = str(battle.get("challenger_name") or "").strip() or None
-    battle["opponent_name"] = str(battle.get("opponent_name") or "").strip() or None
-    battle["status"] = str(battle.get("status") or "pending").strip().lower() or "pending"
-    battle["category"] = str(battle.get("category") or "B").strip().upper() or "B"
-    battle["question_ids"] = _coerce_json_list(battle.get("question_ids"))
-    battle["challenger_answers"] = _coerce_json_dict(battle.get("challenger_answers"))
-    battle["opponent_answers"] = _coerce_json_dict(battle.get("opponent_answers"))
-    battle["challenger_score"] = int(battle.get("challenger_score") or 0)
-    battle["opponent_score"] = int(battle.get("opponent_score") or 0)
-    battle["challenger_time"] = int(battle.get("challenger_time") or 0)
-    battle["opponent_time"] = int(battle.get("opponent_time") or 0)
-    return battle
-
-
-def _battle_table_columns(conn: psycopg.Connection) -> set[str]:
-    rows = conn.execute(
-        """
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_name = 'battles'
-        """
-    ).fetchall()
-    return {str(row["column_name"]) for row in rows}
-
-
-def _update_battle_declined(conn: psycopg.Connection, battle_id: int, seen_column: Optional[str]) -> None:
-    available = _battle_table_columns(conn)
-    updates = ["status = 'declined'"]
-    if seen_column and seen_column in available:
-        updates.append(f"{seen_column} = NOW()")
-    if "finished_at" in available:
-        updates.append("finished_at = COALESCE(finished_at, NOW())")
-    sql = f"UPDATE battles SET {', '.join(updates)} WHERE id = %s"
-    conn.execute(sql, (battle_id,))
-
-
-def _pick_winner(battle: dict[str, Any]) -> Optional[str]:
-    challenger_score = int(battle.get("challenger_score") or 0)
-    opponent_score = int(battle.get("opponent_score") or 0)
-    challenger_time = int(battle.get("challenger_time") or 0)
-    opponent_time = int(battle.get("opponent_time") or 0)
-
-    if challenger_score > opponent_score:
-        return battle["challenger_email"]
-    if opponent_score > challenger_score:
-        return battle["opponent_email"]
-    if challenger_time and opponent_time:
-        if challenger_time < opponent_time:
-            return battle["challenger_email"]
-        if opponent_time < challenger_time:
-            return battle["opponent_email"]
-    return None
-
-
-def _battle_deadline_seconds(battle: dict[str, Any]) -> Optional[int]:
-    expires_at = battle.get("expires_at")
-    if not expires_at:
-        return None
-    remaining = int((expires_at - datetime.utcnow()).total_seconds())
-    return max(0, remaining)
-
-
-def _battle_seen_column(role: Optional[str]) -> Optional[str]:
-    if role == "challenger":
-        return "challenger_seen_at"
-    if role == "opponent":
-        return "opponent_seen_at"
-    return None
-
-
-def _battle_invite_seen(battle: dict[str, Any], role: Optional[str]) -> bool:
-    column = _battle_seen_column(role)
-    return bool(column and battle.get(column))
-
-
-def _mark_battle_seen(conn: psycopg.Connection, battle: dict[str, Any], role: Optional[str]) -> dict[str, Any]:
-    column = _battle_seen_column(role)
-    if not column or battle.get(column):
-        return battle
-    conn.execute(f"UPDATE battles SET {column} = NOW() WHERE id = %s", (battle["id"],))
-    battle[column] = datetime.utcnow()
-    return battle
-
-
-def _finalize_battle_state(conn: psycopg.Connection, battle: dict[str, Any]) -> dict[str, Any]:
-    battle = _normalize_battle_record(battle)
-    expires_at = battle.get("expires_at")
-    if battle.get("status") != "active" or not expires_at or expires_at > datetime.utcnow():
-        return battle
-
-    battle["status"] = "finished"
-    battle["winner_email"] = _pick_winner(battle)
-    conn.execute(
-        """
-        UPDATE battles
-        SET status = %s,
-            winner_email = %s
-        WHERE id = %s
-        """,
-        (battle["status"], battle["winner_email"], battle["id"]),
-    )
-    return battle
 
 
 def _prepare_import_question(item: dict[str, Any]) -> dict[str, Any]:
@@ -1309,124 +1007,7 @@ ACHIEVEMENTS_DEF = [
 
 
 def _check_achievements(conn: psycopg.Connection, user_id: int) -> list[dict[str, Any]]:
-    earned = {
-        row["achievement_id"]
-        for row in conn.execute(
-            "SELECT achievement_id FROM user_achievements WHERE user_id = %s",
-            (user_id,),
-        ).fetchall()
-    }
-    user = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone())
-    perfect_tests = conn.execute(
-        """
-        SELECT COUNT(*) AS count
-        FROM test_results
-        WHERE user_id = %s AND total > 0 AND correct = total
-        """,
-        (user_id,),
-    ).fetchone()["count"]
-    exam_stats = conn.execute(
-        """
-        SELECT
-            COUNT(*) FILTER (
-                WHERE mode IN ('mvs', 'ticket') AND total > 0 AND (correct::numeric / total) >= 0.8
-            ) AS passed_count,
-            COUNT(*) FILTER (
-                WHERE mode IN ('mvs', 'ticket') AND total > 0 AND correct = total
-            ) AS perfect_count
-        FROM test_results
-        WHERE user_id = %s
-        """,
-        (user_id,),
-    ).fetchone()
-    total_answers = int(user.get("total_answers") or 0)
-    accuracy_percent = round((int(user.get("total_correct") or 0) / total_answers) * 100) if total_answers > 0 else 0
-    battle_stats = _battle_stats_for_email(conn, user.get("email"))
-
-    created: list[dict[str, Any]] = []
-    for achievement_id, tier, name, description, category, threshold in ACHIEVEMENTS_DEF:
-        if achievement_id in earned:
-            continue
-
-        should_create = False
-        if category == "tests":
-            should_create = (user.get("total_tests") or 0) >= threshold
-        elif category == "correct":
-            should_create = (user.get("total_correct") or 0) >= threshold
-        elif category == "streak":
-            should_create = (user.get("streak_days") or 0) >= threshold
-        elif category == "marathon":
-            should_create = (user.get("marathon_best") or 0) >= threshold
-        elif category == "perfect":
-            should_create = perfect_tests >= threshold
-        elif category == "exam":
-            if achievement_id in {"exam_perfect", "exam_perfect_5", "exam_perfect_10"}:
-                should_create = int(exam_stats.get("perfect_count") or 0) >= threshold
-            else:
-                should_create = int(exam_stats.get("passed_count") or 0) >= threshold
-        elif category == "accuracy":
-            should_create = total_answers >= 20 and accuracy_percent >= threshold
-        elif category == "battle":
-            should_create = int(battle_stats.get("battle_finished") or 0) >= threshold
-        elif category == "battle_wins":
-            should_create = int(battle_stats.get("battle_wins") or 0) >= threshold
-
-        if not should_create:
-            continue
-
-        conn.execute(
-            """
-            INSERT INTO user_achievements
-                (user_id, achievement_id, achievement_name, achievement_desc, tier, category)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (user_id, achievement_id) DO NOTHING
-            """,
-            (user_id, achievement_id, name, description, tier, category),
-        )
-        created.append(
-            {
-                "id": achievement_id,
-                "name": name,
-                "description": description,
-                "tier": tier,
-            }
-        )
-    return created
-
-
-def _achievement_progress_value(
-    achievement_id: str,
-    category: str,
-    threshold: int,
-    user: dict[str, Any],
-    perfect_tests: int,
-    exam_stats: dict[str, Any],
-    battle_stats: dict[str, int],
-) -> int:
-    if category == "tests":
-        return int(user.get("total_tests") or 0)
-    if category == "correct":
-        return int(user.get("total_correct") or 0)
-    if category == "streak":
-        return int(user.get("streak_days") or 0)
-    if category == "marathon":
-        return int(user.get("marathon_best") or 0)
-    if category == "perfect":
-        return int(perfect_tests or 0)
-    if category == "exam":
-        if achievement_id in {"exam_perfect", "exam_perfect_5", "exam_perfect_10"}:
-            return int(exam_stats.get("perfect_count") or 0)
-        return int(exam_stats.get("passed_count") or 0)
-    if category == "accuracy":
-        total_answers = int(user.get("total_answers") or 0)
-        if total_answers < 20:
-            return 0
-        return round((int(user.get("total_correct") or 0) / total_answers) * 100)
-    if category == "battle":
-        return int(battle_stats.get("battle_finished") or 0)
-    if category == "battle_wins":
-        return int(battle_stats.get("battle_wins") or 0)
-    return 0
+    return check_achievements_use_case(conn, user_id, ACHIEVEMENTS_DEF)
 
 
 @app.get("/")
@@ -1436,181 +1017,58 @@ def root():
     return {"status": "ok", "version": "3.0.0"}
 
 
-@app.post("/auth/register")
+@app.post("/auth/register", response_model=AuthMessageResponse)
 def register(req: RegisterRequest):
-    email = req.email.strip().lower()
-    name = req.name.strip()
-    surname = req.surname.strip()
-    if len(req.password) < 6:
-        raise HTTPException(400, "Пароль має містити щонайменше 6 символів")
-    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-        raise HTTPException(400, "Невалідний email")
-
-    if not name:
-        raise HTTPException(400, "Вкажіть ім'я")
-    if not surname:
-        raise HTTPException(400, "Вкажіть прізвище")
-    username = _validate_username(req.username)
-
-    code = gen_code()
-    with db() as conn:
-        existing = conn.execute(
-            "SELECT id, email_verified FROM users WHERE email = %s",
-            (email,),
-        ).fetchone()
-        username_owner = conn.execute(
-            "SELECT id, email FROM users WHERE LOWER(username) = %s",
-            (username,),
-        ).fetchone()
-        password_hash = hash_password(req.password)
-        if username_owner and username_owner["email"] != email:
-            raise HTTPException(409, "Цей нікнейм вже зайнятий")
-        if existing and _is_email_verified(dict(existing)):
-            raise HTTPException(409, "Ця пошта вже зареєстрована")
-        if existing:
-            conn.execute(
-                """
-                UPDATE users
-                SET name = %s, surname = %s, username = %s, password_hash = %s, email_code = %s
-                WHERE email = %s
-                """,
-                (name, surname, username, password_hash, code, email),
-            )
-        else:
-            conn.execute(
-                """
-                INSERT INTO users (name, surname, username, email, password_hash, email_code, email_verified)
-                VALUES (%s, %s, %s, %s, %s, %s, false)
-                """,
-                (name, surname, username, email, password_hash, code),
-            )
-        conn.commit()
-
-    sent = send_email(
-        email,
-        "Код підтвердження PDRPrep",
-        f"<p>Ваш код підтвердження: <b style='font-size:24px'>{code}</b></p>",
-    )
-    return email_delivery_response(sent, code, "Код підтвердження надіслано на email")
+    try:
+        return register_user_use_case(req, hash_password=hash_password)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
-@app.post("/auth/verify-email")
+@app.post("/auth/verify-email", response_model=AuthTokenResponse)
 def verify_email(req: VerifyEmailRequest):
-    email = req.email.strip().lower()
-    with db() as conn:
-        user = conn.execute(
-            "SELECT * FROM users WHERE email = %s",
-            (email,),
-        ).fetchone()
-        if not user or user["email_code"] != req.code.strip():
-            raise HTTPException(400, "Невірний код")
-        conn.execute(
-            """
-            UPDATE users
-            SET email_verified = true, email_code = null
-            WHERE email = %s
-            """,
-            (email,),
-        )
-        conn.commit()
-        verified = conn.execute("SELECT * FROM users WHERE email = %s", (email,)).fetchone()
-    token = create_token(verified["id"], remember_me=True)
-    return {"token": token, "user": _user_public(dict(verified))}
+    try:
+        return verify_email_use_case(req, create_token=create_token, present_user=_user_public)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
-@app.post("/auth/login")
+@app.post("/auth/login", response_model=AuthTokenResponse)
 def login(req: LoginRequest):
-    identifier = req.identifier.strip()
-    with db() as conn:
-        user = _resolve_user_by_login(conn, identifier)
-    is_email_login = "@" in identifier and not identifier.strip().startswith("@")
-    if not user:
-        raise HTTPException(401, "Такого E-mail не існує" if is_email_login else "Такого нікнейму не існує")
-    if not check_password(req.password, user["password_hash"]):
-        raise HTTPException(401, "Невірний пароль")
-    if user.get("is_blocked") and not _is_admin_email(user.get("email")):
-        raise HTTPException(403, "Акаунт заблоковано")
-    if not _is_email_verified(user):
-        raise HTTPException(403, "Спочатку підтвердіть email")
-    token = create_token(user["id"], remember_me=req.remember_me)
-    return {"token": token, "user": _user_public(dict(user))}
+    try:
+        return login_user_use_case(
+            req,
+            check_password=check_password,
+            create_token=create_token,
+            present_user=_user_public,
+            is_admin_email=_is_admin_email,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
-@app.post("/auth/resend-verification")
+@app.post("/auth/resend-verification", response_model=AuthMessageResponse)
 def resend_verification(req: ResendVerificationRequest):
-    email = req.email.strip().lower()
-    with db() as conn:
-        user = conn.execute(
-            "SELECT id, email_verified FROM users WHERE email = %s",
-            (email,),
-        ).fetchone()
-        if not user:
-            raise HTTPException(404, "Такого E-mail не існує")
-        if _is_email_verified(dict(user)):
-            return {"message": "Email уже підтверджено"}
-        code = gen_code()
-        conn.execute("UPDATE users SET email_code = %s WHERE email = %s", (code, email))
-        conn.commit()
-
-    sent = send_email(
-        email,
-        "Новий код підтвердження PDRPrep",
-        f"<p>Ваш новий код: <b style='font-size:24px'>{code}</b></p>",
-    )
-    return email_delivery_response(sent, code, "Новий код надіслано на email")
+    try:
+        return resend_verification_code_use_case(req)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
-@app.post("/auth/forgot-password")
+@app.post("/auth/forgot-password", response_model=AuthMessageResponse)
 def forgot_password(req: ForgotPasswordRequest):
-    email = req.email.strip().lower()
-    with db() as conn:
-        user = conn.execute("SELECT id FROM users WHERE email = %s", (email,)).fetchone()
-        if not user:
-            raise HTTPException(404, "Такого E-mail не існує")
-        code = gen_code()
-        conn.execute(
-            """
-            UPDATE users
-            SET reset_code = %s, reset_code_exp = %s
-            WHERE email = %s
-            """,
-            (code, datetime.utcnow() + timedelta(minutes=15), email),
-        )
-        conn.commit()
-
-    sent = send_email(
-        email,
-        "Скидання пароля PDRPrep",
-        f"<p>Ваш код для скидання: <b style='font-size:24px'>{code}</b></p>",
-    )
-    return email_delivery_response(sent, code, "Код надіслано на email")
+    try:
+        return request_password_reset_use_case(req)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
-@app.post("/auth/reset-password")
+@app.post("/auth/reset-password", response_model=AuthMessageResponse)
 def reset_password(req: ResetPasswordRequest):
-    email = req.email.strip().lower()
-    if len(req.new_password) < 6:
-        raise HTTPException(400, "Пароль має містити щонайменше 6 символів")
-
-    with db() as conn:
-        user = conn.execute(
-            "SELECT reset_code, reset_code_exp FROM users WHERE email = %s",
-            (email,),
-        ).fetchone()
-        if not user or user["reset_code"] != req.code.strip():
-            raise HTTPException(400, "Невірний код")
-        if not user["reset_code_exp"] or user["reset_code_exp"] < datetime.utcnow():
-            raise HTTPException(400, "Код застарів")
-        conn.execute(
-            """
-            UPDATE users
-            SET password_hash = %s, reset_code = null, reset_code_exp = null
-            WHERE email = %s
-            """,
-            (hash_password(req.new_password), email),
-        )
-        conn.commit()
-    return {"message": "Пароль змінено успішно"}
+    try:
+        return reset_password_use_case(req, hash_password=hash_password)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.get("/auth/me")
@@ -1723,318 +1181,70 @@ def admin_update_premium_features(req: PremiumFeaturesUpdateRequest, admin=Depen
 @app.get("/admin/premium/orders")
 @app.get("/api/admin/premium/orders", include_in_schema=False)
 def admin_premium_orders(limit: int = Query(default=60, ge=1, le=200), admin=Depends(require_admin)):
-    with db() as conn:
-        rows = conn.execute(
-            """
-            SELECT
-                po.id,
-                po.user_id,
-                po.plan_code,
-                po.amount,
-                po.currency,
-                po.provider,
-                po.status,
-                po.provider_order_id,
-                po.provider_payment_id,
-                po.checkout_url,
-                po.created_at,
-                po.activated_at,
-                po.expires_at,
-                u.email,
-                u.username,
-                u.name,
-                u.surname,
-                u.is_premium
-            FROM premium_orders po
-            LEFT JOIN users u ON u.id = po.user_id
-            ORDER BY po.created_at DESC
-            LIMIT %s
-            """,
-            (limit,),
-        ).fetchall()
-    return [dict(row) for row in rows]
+    return list_admin_premium_orders_use_case(limit=limit)
 
 
 @app.post("/payment/checkout")
 def create_premium_checkout(req: PremiumCheckoutRequest, user=Depends(get_current_user)):
-    plan = _get_premium_plan(req.plan_code)
-    if PAYMENT_MODE == "liqpay":
-        if not LIQPAY_PUBLIC_KEY or not LIQPAY_PRIVATE_KEY:
-            raise HTTPException(503, "Оплата LiqPay ще не налаштована. Додайте ключі LiqPay у змінні середовища.")
-        provider = "liqpay"
-    elif PAYMENT_MODE == "mock" and (not IS_PRODUCTION or ALLOW_MOCK_PAYMENTS):
-        provider = "mock"
-    else:
-        raise HTTPException(503, "Оплата тимчасово недоступна. Будь ласка, спробуйте трохи пізніше.")
-
-    order_uuid = f"premium_{user['id']}_{uuid4().hex[:16]}"
-    result_url = req.return_url or f"{FRONTEND_URL.rstrip('/')}/pricing?checkout=success"
-    separator = "&" if "?" in result_url else "?"
-    result_url = f"{result_url}{separator}orderId={order_uuid}"
-
-    with db() as conn:
-        created = conn.execute(
-            """
-            INSERT INTO premium_orders (
-                user_id, plan_code, amount, currency, provider, status,
-                provider_order_id, checkout_url, provider_payload, created_at, updated_at
-            )
-            VALUES (%s, %s, %s, %s, %s, 'pending', %s, %s, %s::jsonb, NOW(), NOW())
-            RETURNING *
-            """,
-            (
-                user["id"],
-                plan["code"],
-                int(plan["amount"]),
-                plan["currency"],
-                provider,
-                order_uuid,
-                "https://www.liqpay.ua/api/3/checkout" if provider == "liqpay" else None,
-                _json_dumps({}),
-            ),
-        ).fetchone()
-        order = dict(created)
-        response_payload: dict[str, Any] = {
-            "provider": provider,
-            "order_id": order_uuid,
-            "order_db_id": order["id"],
-            "status": order["status"],
-            "plan_code": plan["code"],
-            "amount": int(plan["amount"]),
-            "currency": plan["currency"],
-            "is_premium": bool(user.get("is_premium", False)),
-        }
-        if provider == "liqpay":
-            liqpay_payload = _build_liqpay_payload(order_id=order_uuid, plan=plan, result_url=result_url)
-            data, signature = _encode_liqpay_payload(liqpay_payload)
-            conn.execute(
-                """
-                UPDATE premium_orders
-                SET provider_payload = %s::jsonb, checkout_url = %s, updated_at = NOW()
-                WHERE id = %s
-                """,
-                (_json_dumps(liqpay_payload), "https://www.liqpay.ua/api/3/checkout", order["id"]),
-            )
-            conn.commit()
-            response_payload.update(
-                {
-                    "checkout_action": "https://www.liqpay.ua/api/3/checkout",
-                    "data": data,
-                    "signature": signature,
-                    "public_key": LIQPAY_PUBLIC_KEY,
-                }
-            )
-            return response_payload
-
-        conn.commit()
-        response_payload["mock_checkout"] = True
-        return response_payload
+    try:
+        return create_premium_checkout_use_case(
+            req,
+            user,
+            get_plan=_get_premium_plan,
+            build_liqpay_payload=_build_liqpay_payload,
+            encode_liqpay_payload=_encode_liqpay_payload,
+            dump_json=_json_dumps,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.get("/payment/status/{order_id}")
 def get_payment_status(order_id: str, user=Depends(get_current_user)):
-    with db() as conn:
-        order = conn.execute(
-            """
-            SELECT *
-            FROM premium_orders
-            WHERE provider_order_id = %s AND user_id = %s
-            """,
-            (order_id, user["id"]),
-        ).fetchone()
-        if not order:
-            raise HTTPException(404, "Замовлення не знайдено")
-        refreshed_user = conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone()
-        return {
-            "order": dict(order),
-            "is_premium": bool(refreshed_user["is_premium"]) if refreshed_user else False,
-        }
+    try:
+        return get_payment_status_use_case(order_id, user)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.post("/payment/mock/activate/{order_id}")
 def activate_mock_payment(order_id: str, user=Depends(get_current_user)):
-    if IS_PRODUCTION and not ALLOW_MOCK_PAYMENTS:
-        raise HTTPException(403, "Mock-активація вимкнена у production-режимі")
-    if PAYMENT_MODE == "liqpay" and LIQPAY_PUBLIC_KEY and LIQPAY_PRIVATE_KEY:
-        raise HTTPException(403, "Mock-активація вимкнена у production-режимі")
-    with db() as conn:
-        order = conn.execute(
-            """
-            SELECT *
-            FROM premium_orders
-            WHERE provider_order_id = %s AND user_id = %s
-            """,
-            (order_id, user["id"]),
-        ).fetchone()
-        if not order:
-            raise HTTPException(404, "Замовлення не знайдено")
-        activated = _activate_premium_order(conn, dict(order), provider_payment_id=f"mock_{uuid4().hex[:12]}")
-        conn.commit()
-        refreshed_user = conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone()
-        return {
-            "status": "paid",
-            "order": activated,
-            "user": _user_public(dict(refreshed_user)) if refreshed_user else None,
-        }
+    try:
+        return activate_mock_payment_use_case(
+            order_id,
+            user,
+            get_plan=_get_premium_plan,
+            present_user=_user_public,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.post("/payment/liqpay-callback")
 def handle_liqpay_callback(data: str = Form(...), signature: str = Form(...)):
-    if not data or not signature:
-        raise HTTPException(400, "Missing data or signature")
-    if not _verify_liqpay_signature(data, signature):
-        raise HTTPException(400, "Invalid signature")
-    payload = _decode_liqpay_data(data)
-    order_id = str(payload.get("order_id") or "").strip()
-    status = str(payload.get("status") or "").strip().lower()
-    payment_id = payload.get("payment_id") or payload.get("transaction_id")
-    if not order_id:
-        raise HTTPException(400, "Відсутній order_id")
-
-    with db() as conn:
-        order = conn.execute(
-            "SELECT * FROM premium_orders WHERE provider_order_id = %s",
-            (order_id,),
-        ).fetchone()
-        if not order:
-            raise HTTPException(404, "Замовлення не знайдено")
-
-        if status in {"success", "subscribed", "sandbox"}:
-            updated = _activate_premium_order(conn, dict(order), provider_payment_id=str(payment_id) if payment_id else None)
-            conn.commit()
-            return {"ok": True, "status": "paid", "order": updated}
-
-        conn.execute(
-            """
-            UPDATE premium_orders
-            SET status = %s,
-                provider_payment_id = COALESCE(%s, provider_payment_id),
-                provider_payload = %s::jsonb,
-                updated_at = NOW()
-            WHERE id = %s
-            """,
-            (status or "failed", str(payment_id) if payment_id else None, _json_dumps(payload), order["id"]),
+    try:
+        return handle_liqpay_callback_use_case(
+            data,
+            signature,
+            verify_signature=_verify_liqpay_signature,
+            decode_payload=_decode_liqpay_data,
+            dump_json=_json_dumps,
+            get_plan=_get_premium_plan,
         )
-        conn.commit()
-    return {"ok": True, "status": status or "accepted"}
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.patch("/users/me")
 def update_profile(req: UpdateProfileRequest, user=Depends(get_current_user)):
-    fields: list[str] = []
-    params: list[Any] = []
-    if req.name is not None:
-        fields.append("name = %s")
-        params.append(req.name.strip() or user["name"])
-    if req.surname is not None:
-        fields.append("surname = %s")
-        params.append(req.surname.strip() or None)
-    if req.username is not None:
-        username = _validate_username(req.username)
-        current_username = _normalize_username(user.get("username"))
-        if username != current_username:
-            with db() as conn:
-                existing = conn.execute(
-                    "SELECT id FROM users WHERE LOWER(username) = %s AND id <> %s",
-                    (username, user["id"]),
-                ).fetchone()
-            if existing:
-                raise HTTPException(409, "Цей нікнейм вже зайнятий")
-            change_count = int(user.get("username_change_count") or 0)
-            last_changed_at = user.get("username_last_changed_at")
-            if change_count >= 2 and last_changed_at:
-                unlock_at = last_changed_at + timedelta(days=7)
-                if datetime.now() < unlock_at:
-                    raise HTTPException(429, "Наступна зміна доступна через 7 днів")
-            fields.append("username = %s")
-            params.append(username)
-            fields.append("username_change_count = COALESCE(username_change_count, 0) + 1")
-            fields.append("username_last_changed_at = %s")
-            params.append(datetime.now())
-    if req.bio is not None:
-        fields.append("bio = %s")
-        params.append(req.bio.strip() or None)
-    if req.active_frame is not None:
-        frame_id = (req.active_frame or "").strip() or "default"
-        if frame_id != "default":
-            with db() as conn:
-                user_row = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone())
-                achievements = conn.execute(
-                    "SELECT achievement_id FROM user_achievements WHERE user_id = %s",
-                    (user["id"],),
-                ).fetchall()
-            purchased = set(_purchased_frames(user_row))
-            earned_achievement_ids = {str(row["achievement_id"]) for row in achievements}
-            meta = FRAME_SHOP.get(frame_id)
-            unlocked = bool(meta) and (
-                frame_id in purchased
-                or (meta.get("achievement_id") in earned_achievement_ids if meta else False)
-            )
-            if not unlocked:
-                raise HTTPException(400, "Ця рамка ще не відкрита")
-        fields.append("active_frame = %s")
-        params.append(frame_id)
-    if req.theme_preference is not None:
-        theme = req.theme_preference.strip().lower()
-        if theme not in {"light", "dark", "system"}:
-            raise HTTPException(400, "Невірна тема")
-        fields.append("theme_preference = %s")
-        params.append(theme)
-    if req.font_size is not None:
-        font_size = max(14, min(20, int(req.font_size)))
-        fields.append("font_size = %s")
-        params.append(font_size)
-    if req.sound_enabled is not None:
-        fields.append("sound_enabled = %s")
-        params.append(bool(req.sound_enabled))
-    if req.push_enabled is not None:
-        fields.append("push_enabled = %s")
-        params.append(bool(req.push_enabled))
-    if req.email_visible is not None:
-        fields.append("email_visible = %s")
-        params.append(bool(req.email_visible))
-    if req.featured_achievements is not None:
-        normalized_featured: list[str] = []
-        seen_featured: set[str] = set()
-        for item in req.featured_achievements:
-            value = (item or "").strip()
-            if not value or value in seen_featured:
-                continue
-            seen_featured.add(value)
-            normalized_featured.append(value)
-            if len(normalized_featured) >= 4:
-                break
-        fields.append("featured_achievements = %s")
-        params.append(json.dumps(normalized_featured, ensure_ascii=False))
-    if not fields:
-        return _user_public(user)
-
-    params.append(user["id"])
-    with db() as conn:
-        conn.execute(f"UPDATE users SET {', '.join(fields)} WHERE id = %s", params)
-        conn.commit()
+    try:
+        return update_profile_use_case(req, user, present_user=_user_public)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 def ensure_theory_seed_data() -> None:
-    with db() as conn:
-        for item in THEORY_CATEGORY_FALLBACKS:
-            conn.execute(
-                """
-                INSERT INTO theory_categories (slug, title, description, sort_order)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (slug) DO UPDATE
-                SET title = EXCLUDED.title,
-                    description = EXCLUDED.description,
-                    sort_order = EXCLUDED.sort_order
-                """,
-                (
-                    item["slug"],
-                    item["title"],
-                    item.get("description"),
-                    int(item.get("sort_order", 0)),
-                ),
-            )
-        conn.commit()
+    ensure_theory_seed_data_use_case(category_fallbacks=THEORY_CATEGORY_FALLBACKS)
 
 
 def _canonical_theory_topic(topic_key: Any, category: Any, source_url: Any) -> str | None:
@@ -2099,198 +1309,27 @@ def _extract_handbook_embed_url(row: dict[str, Any]) -> str | None:
 
 
 def sync_theory_data() -> None:
-    with db() as conn:
-        category_map = {
-            row["slug"]: row["id"]
-            for row in conn.execute("SELECT id, slug FROM theory_categories").fetchall()
-        }
-
-        for item in THEORY_CATEGORY_FALLBACKS:
-            if item["slug"] in MULTI_TOPIC_CATEGORY_SLUGS:
-                continue
-            category_id = category_map.get(item["slug"])
-            if not category_id:
-                continue
-            conn.execute(
-                """
-                INSERT INTO theory_topics (category_id, slug, title, description, topic_type, sort_order, source_url)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (slug) DO UPDATE
-                SET category_id = EXCLUDED.category_id,
-                    title = EXCLUDED.title,
-                    description = EXCLUDED.description,
-                    topic_type = EXCLUDED.topic_type,
-                    sort_order = EXCLUDED.sort_order,
-                    source_url = EXCLUDED.source_url
-                """,
-                (
-                    category_id,
-                    item["slug"],
-                    item["title"],
-                    item.get("description"),
-                    "video" if item["slug"] == "video-lectures" else "topic",
-                    int(item.get("sort_order", 0)),
-                    THEORY_SOURCE_MAP.get(item["slug"]),
-                ),
-            )
-
-        topic_map = {
-            row["slug"]: row["id"]
-            for row in conn.execute("SELECT id, slug FROM theory_topics").fetchall()
-        }
-
-        handbook_rows = conn.execute(
-            """
-            SELECT id, topic_key, category, chapter_num, sort_order, section_title, source_url, source_slug, comment_html, content_html, content_text, video_url, embed_url, image_paths
-            FROM handbook_data
-            ORDER BY topic_key, sort_order, chapter_num, id
-            """
-        ).fetchall()
-
-        seen_section_slugs: set[str] = set()
-        seen_topic_ids: set[int] = set()
-        for handbook_row in handbook_rows:
-            row = dict(handbook_row)
-            topic_slug = _canonical_theory_topic(row.get("topic_key"), row.get("category"), row.get("source_url"))
-            if not topic_slug:
-                continue
-            topic_id = topic_map.get(topic_slug)
-            if not topic_id:
-                continue
-            seen_topic_ids.add(int(topic_id))
-
-            section_slug = (
-                _clean_text(row.get("source_slug"))
-                or f"{topic_slug}-{int(row.get('chapter_num') or row.get('sort_order') or row['id'])}"
-            )
-            seen_section_slugs.add(section_slug)
-            description = _extract_handbook_description(row)
-            comment_html = _extract_handbook_comment_html(row)
-            video_url = _extract_handbook_video_url(row)
-            embed_url = _extract_handbook_embed_url(row)
-            source_url = row.get("source_url")
-            conn.execute(
-                """
-                INSERT INTO theory_sections (
-                    topic_id, slug, title, description, comment_html, content_html, content_text,
-                    video_url, embed_url, chapter_num, sort_order, source_url
-                )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (slug) DO UPDATE
-                SET topic_id = EXCLUDED.topic_id,
-                    title = EXCLUDED.title,
-                    description = EXCLUDED.description,
-                    comment_html = EXCLUDED.comment_html,
-                    content_html = EXCLUDED.content_html,
-                    content_text = EXCLUDED.content_text,
-                    video_url = EXCLUDED.video_url,
-                    embed_url = EXCLUDED.embed_url,
-                    chapter_num = EXCLUDED.chapter_num,
-                    sort_order = EXCLUDED.sort_order,
-                    source_url = EXCLUDED.source_url
-                """,
-                (
-                    topic_id,
-                    section_slug,
-                    _sanitize_handbook_text(row.get("section_title")),
-                    description,
-                    comment_html,
-                    _sanitize_handbook_html(row.get("content_html"), str(row.get("section_title") or "")),
-                    _sanitize_handbook_text(row.get("content_text")),
-                    video_url,
-                    embed_url,
-                    row.get("chapter_num"),
-                    int(row.get("sort_order") or 0),
-                    source_url,
-                ),
-            )
-            section_id = conn.execute("SELECT id FROM theory_sections WHERE slug = %s", (section_slug,)).fetchone()["id"]
-            conn.execute("DELETE FROM theory_assets WHERE section_id = %s", (section_id,))
-
-            image_paths = _coerce_json_list(row.get("image_paths"))
-            for index, asset_url in enumerate(image_paths):
-                if not str(asset_url or "").strip():
-                    continue
-                conn.execute(
-                    """
-                    INSERT INTO theory_assets (section_id, asset_type, asset_url, alt_text, caption, sort_order)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    """,
-                    (
-                        section_id,
-                        "image",
-                        str(asset_url),
-                        _sanitize_handbook_text(row.get("section_title")),
-                        None,
-                        index,
-                    ),
-                )
-
-        if seen_section_slugs and seen_topic_ids:
-            conn.execute(
-                """
-                DELETE FROM theory_sections
-                WHERE topic_id = ANY(%s)
-                  AND slug IS NOT NULL
-                  AND slug <> ''
-                  AND slug <> ALL(%s)
-                """,
-                (list(seen_topic_ids), list(seen_section_slugs)),
-            )
-        conn.commit()
+    sync_theory_data_use_case(
+        category_fallbacks=THEORY_CATEGORY_FALLBACKS,
+        multi_topic_category_slugs=MULTI_TOPIC_CATEGORY_SLUGS,
+        theory_source_map=THEORY_SOURCE_MAP,
+        clean_text=_clean_text,
+        sanitize_text=_sanitize_handbook_text,
+        sanitize_html=_sanitize_handbook_html,
+        coerce_json_list=_coerce_json_list,
+        resolve_topic=_canonical_theory_topic,
+        extract_description=_extract_handbook_description,
+        extract_comment_html=_extract_handbook_comment_html,
+        extract_video_url=_extract_handbook_video_url,
+        extract_embed_url=_extract_handbook_embed_url,
+    )
 
 
 def ensure_question_metadata() -> None:
-    with db() as conn:
-        rules_sections = conn.execute(
-            """
-            SELECT s.id, s.slug, s.chapter_num
-            FROM theory_sections s
-            JOIN theory_topics t ON t.id = s.topic_id
-            WHERE t.slug = 'rules' AND chapter_num IS NOT NULL
-            """
-        ).fetchall()
-        section_map = {str(row["chapter_num"]): row for row in rules_sections if row.get("chapter_num") is not None}
-
-        question_rows = conn.execute(
-            """
-            SELECT id, section, explanation, explanation_html, ticket_number, question_number, theory_section_id, source_rule_slug, num_in_section, page
-            FROM questions
-            ORDER BY COALESCE(page, 999999), COALESCE(question_number, num_in_section, id), id
-            """
-        ).fetchall()
-
-        for index, question in enumerate(question_rows):
-            qid = question["id"]
-            updates: list[str] = []
-            params: list[Any] = []
-
-            if question.get("ticket_number") is None:
-                updates.append("ticket_number = %s")
-                params.append((index // 20) + 1)
-            if question.get("question_number") is None:
-                updates.append("question_number = %s")
-                params.append((index % 20) + 1)
-
-            section_key = _clean_text(question.get("section"))
-            section_ref = section_map.get(section_key)
-            if section_ref:
-                if question.get("theory_section_id") is None:
-                    updates.append("theory_section_id = %s")
-                    params.append(section_ref["id"])
-                if not _clean_text(question.get("source_rule_slug")):
-                    updates.append("source_rule_slug = %s")
-                    params.append(section_ref["slug"])
-
-            if not _clean_text(question.get("explanation_html")) and _clean_text(question.get("explanation")):
-                updates.append("explanation_html = %s")
-                params.append(_plain_to_html(str(question.get("explanation") or "")))
-
-            if updates:
-                params.append(qid)
-                conn.execute(f"UPDATE questions SET {', '.join(updates)} WHERE id = %s", params)
-
-        conn.commit()
+    ensure_question_metadata_use_case(
+        clean_text=_clean_text,
+        plain_to_html=_plain_to_html,
+    )
 
 
 @app.post("/users/me/avatar")
@@ -2312,77 +1351,33 @@ def upload_avatar(file: UploadFile = File(...), user=Depends(get_current_user)):
         shutil.copyfileobj(file.file, output)
 
     avatar_url = f"/uploads/avatars/{filename}"
-    with db() as conn:
-        conn.execute(
-            "UPDATE users SET avatar_url = %s, avatar_version = COALESCE(avatar_version, 0) + 1 WHERE id = %s",
-            (avatar_url, user["id"]),
-        )
-        conn.commit()
-        updated = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone())
-    return _user_public(updated)
+    return update_avatar_use_case(user, avatar_url, present_user=_user_public)
 
 
 @app.get("/users/{user_id}/profile")
 def get_user_profile(user_id: int, viewer=Depends(get_optional_user)):
-    with db() as conn:
-        user = conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
-        if not user:
-            raise HTTPException(404, "Користувача не знайдено")
-        passed_tests = _passed_tests_count(conn, user_id)
-        battle_stats = _battle_stats_for_email(conn, user.get("email"))
-        achievements = conn.execute(
-            "SELECT * FROM user_achievements WHERE user_id = %s ORDER BY earned_at DESC",
-            (user_id,),
-        ).fetchall()
-    user_dict = dict(user)
-    if _is_admin_email(user_dict.get("email")):
-        viewer_email = (viewer or {}).get("email")
-        if not _is_admin_email(viewer_email) and viewer_email != user_dict.get("email"):
-            raise HTTPException(404, "Користувача не знайдено")
-    payload = _user_public(user_dict)
-    viewer_email = (viewer or {}).get("email")
-    if not payload.get("email_visible") and viewer_email != user_dict.get("email"):
-        payload["email"] = None
-    return {
-        **payload,
-        "passed_tests": passed_tests,
-        **battle_stats,
-        "total_wrong": max(0, int(user_dict.get("total_answers", 0) or 0) - int(user_dict.get("total_correct", 0) or 0)),
-        "achievements": [dict(achievement) for achievement in achievements],
-    }
+    try:
+        return get_public_profile_by_id_use_case(
+            user_id,
+            viewer=viewer,
+            present_user=_user_public,
+            is_admin_email=_is_admin_email,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.get("/users/by-username/{username}/profile")
 def get_user_profile_by_username(username: str, viewer=Depends(get_optional_user)):
-    normalized = _normalize_username(username)
-    if not normalized:
-        raise HTTPException(404, "Користувача не знайдено")
-    with db() as conn:
-        user = conn.execute("SELECT * FROM users WHERE LOWER(username) = %s", (normalized,)).fetchone()
-        if not user:
-            raise HTTPException(404, "Користувача не знайдено")
-        passed_tests = _passed_tests_count(conn, user["id"])
-        battle_stats = _battle_stats_for_email(conn, user.get("email"))
-        achievements = conn.execute(
-            "SELECT * FROM user_achievements WHERE user_id = %s ORDER BY earned_at DESC",
-            (user["id"],),
-        ).fetchall()
-    user_dict = dict(user)
-    if _is_admin_email(user_dict.get("email")):
-        viewer_email = (viewer or {}).get("email")
-        if not _is_admin_email(viewer_email) and viewer_email != user_dict.get("email"):
-            raise HTTPException(404, "Користувача не знайдено")
-    payload = _user_public(user_dict)
-    viewer_email = (viewer or {}).get("email")
-    if not payload.get("email_visible") and viewer_email != user_dict.get("email"):
-        payload["email"] = None
-    return {
-        **payload,
-        "passed_tests": passed_tests,
-        **battle_stats,
-        "total_wrong": max(0, int(user_dict.get("total_answers", 0) or 0) - int(user_dict.get("total_correct", 0) or 0)),
-        "achievements": [dict(achievement) for achievement in achievements],
-    }
+    try:
+        return get_public_profile_by_username_use_case(
+            username,
+            viewer=viewer,
+            present_user=_user_public,
+            is_admin_email=_is_admin_email,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.get("/questions")
@@ -2395,29 +1390,15 @@ def get_questions(
     search: Optional[str] = None,
     ids: Optional[str] = None,
 ):
-    conds: list[str] = []
-    params: list[Any] = []
-    if section:
-        conds.append("section = %s")
-        params.append(section)
-    if topic:
-        conds.append("section_name = %s")
-        params.append(topic)
-    if search:
-        conds.append("question_text ILIKE %s")
-        params.append(f"%{search}%")
-    if ids:
-        parsed_ids = [int(value) for value in ids.split(",") if value.strip().isdigit()]
-        if parsed_ids:
-            conds.append("id = ANY(%s)")
-            params.append(parsed_ids)
-    _append_category_condition(conds, params, category)
-
-    where = f"WHERE {' AND '.join(conds)}" if conds else ""
-    with db() as conn:
-        rows = conn.execute(f"SELECT * FROM questions {where} ORDER BY id", params).fetchall()
-    prepared = _dedupe_and_filter_questions([dict(row) for row in rows])
-    return {"total": len(prepared), "items": prepared[offset : offset + limit]}
+    return list_questions_use_case(
+        section=section,
+        category=category,
+        topic=topic,
+        limit=limit,
+        offset=offset,
+        search=search,
+        ids=ids,
+    )
 
 
 @app.get("/questions/random")
@@ -2432,162 +1413,46 @@ def get_random_questions(
     seed: Optional[str] = None,
     user=Depends(get_optional_user),
 ):
-    conds: list[str] = []
-    params: list[Any] = []
-    if section:
-        conds.append("q.section = %s")
-        params.append(section)
-    if topic:
-        conds.append("q.section_name = %s")
-        params.append(topic)
-    if difficulty:
-        conds.append("LOWER(COALESCE(q.difficulty, 'medium')) = %s")
-        params.append(difficulty.strip().lower())
-    _append_category_condition(conds, params, category, prefix="q.")
-    if exclude_ids.strip():
-        parsed = [int(value) for value in exclude_ids.split(",") if value.strip().isdigit()]
-        if parsed:
-            conds.append("q.id <> ALL(%s)")
-            params.append(parsed)
-    if difficult_only:
-        if not user:
-            return []
-        conds.append(
-            """
-            q.id IN (
-                SELECT question_id
-                FROM user_answers
-                WHERE user_id = %s AND is_correct = false
-            )
-            """
-        )
-        params.append(user["id"])
-
-    where = f"WHERE {' AND '.join(conds)}" if conds else ""
-    order_sql = "ORDER BY md5(q.id::text || %s)" if seed else "ORDER BY RANDOM()"
-    query_params = params + ([seed] if seed else []) + [max(count * 30, 150)]
-    with db() as conn:
-        rows = conn.execute(
-            f"SELECT * FROM questions q {where} {order_sql} LIMIT %s",
-            query_params,
-        ).fetchall()
-    prepared = _dedupe_and_filter_questions([dict(row) for row in rows], count=count)
-    return prepared[:count]
+    return random_questions_use_case(
+        count=count,
+        section=section,
+        category=category,
+        topic=topic,
+        difficulty=difficulty,
+        exclude_ids=exclude_ids,
+        difficult_only=difficult_only,
+        seed=seed,
+        user=user,
+    )
 
 
-@app.get("/questions/mvs-exam")
+@app.get("/questions/mvs-exam", response_model=MvsExamResponse)
 def get_mvs_exam_questions(
     category: Optional[str] = "B",
     seed: Optional[str] = None,
 ):
-    normalized = _normalize_category(category) or "B"
-    with db() as conn:
-        questions = _build_mvs_exam_questions(conn, normalized, seed=seed)
-    return {
-        "category": normalized,
-        "questions_count": len(questions),
-        "blocks": [
-            {
-                "key": key,
-                "label": meta["label"],
-                "required_count": int(meta["count"]),
-                "actual_count": sum(1 for question in questions if question.get("exam_block") == key),
-            }
-            for key, meta in MVS_BLOCKS.items()
-        ],
-        "questions": questions,
-    }
+    return build_mvs_exam_session(category, seed=seed)
 
 
 @app.get("/questions/{question_id}")
 def get_question(question_id: int):
-    with db() as conn:
-        row = conn.execute("SELECT * FROM questions WHERE id = %s", (question_id,)).fetchone()
-    if not row:
-        raise HTTPException(404, "Питання не знайдено")
-    return _sanitize_question_row(dict(row))
+    try:
+        return get_question_use_case(question_id)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.get("/sections")
 def get_sections(category: Optional[str] = None):
-    conds: list[str] = []
-    params: list[Any] = []
-    _append_category_condition(conds, params, category)
-    where = f"WHERE {' AND '.join(conds)}" if conds else ""
-    section_order_sql = _section_number_sql("section")
-    with db() as conn:
-        rows = conn.execute(
-            f"""
-            SELECT section, section_name, COUNT(*) AS count, {section_order_sql} AS section_order
-            FROM questions
-            {where}
-            GROUP BY section, section_name
-            ORDER BY section_order NULLS LAST, section
-            """,
-            params,
-        ).fetchall()
-    return [
-        {
-            "section": row["section"],
-            "section_name": row["section_name"],
-            "count": row["count"],
-        }
-        for row in rows
-    ]
+    return list_sections_use_case(category=category)
 
 
 @app.post("/questions/import")
 def import_questions(payload: list[dict[str, Any]], user=Depends(get_optional_user)):
-    if not payload:
-        raise HTTPException(400, "Немає питань для імпорту")
-
-    prepared_rows = []
-    for item in payload:
-        prepared = _prepare_import_question(item)
-        if not prepared["question_text"] or len(prepared["options"]) < 2 or prepared["correct_ans"] < 1:
-            continue
-        prepared_rows.append(prepared)
-
-    if not prepared_rows:
-        raise HTTPException(400, "Усі записи невалідні")
-
-    with db() as conn:
-        with conn.cursor() as cursor:
-            cursor.executemany(
-                """
-                INSERT INTO questions (
-                    id, section, section_name, num_in_section, category, difficulty,
-                    explanation, question_text, options, correct_ans, images, page
-                )
-                VALUES (
-                    %(id)s, %(section)s, %(section_name)s, %(num_in_section)s, %(category)s, %(difficulty)s,
-                    %(explanation)s, %(question_text)s, %(options)s::jsonb, %(correct_ans)s, %(images)s::jsonb, %(page)s
-                )
-                ON CONFLICT (id) DO UPDATE SET
-                    section = EXCLUDED.section,
-                    section_name = EXCLUDED.section_name,
-                    num_in_section = EXCLUDED.num_in_section,
-                    category = EXCLUDED.category,
-                    difficulty = EXCLUDED.difficulty,
-                    explanation = EXCLUDED.explanation,
-                    question_text = EXCLUDED.question_text,
-                    options = EXCLUDED.options,
-                    correct_ans = EXCLUDED.correct_ans,
-                    images = EXCLUDED.images,
-                    page = EXCLUDED.page
-                """,
-                [
-                    {
-                        **row,
-                        "options": _serialize_json(row["options"]),
-                        "images": _serialize_json(row["images"]),
-                    }
-                    for row in prepared_rows
-                ],
-            )
-        conn.commit()
-    imported_by = user["email"] if user else "anonymous"
-    return {"imported": len(prepared_rows), "imported_by": imported_by}
+    try:
+        return import_questions_use_case(payload, user, prepare_question=_prepare_import_question)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.post("/questions/import-bundled")
@@ -2601,1522 +1466,331 @@ def import_bundled_questions(user=Depends(get_optional_user)):
     return import_questions(questions, user)
 
 
-@app.post("/progress/test-result")
+@app.post("/progress/test-result", response_model=TestResultResponse)
 def submit_test_result(data: TestResultSubmit, user=Depends(get_current_user)):
-    today = _server_today()
-    client_attempt_id = (data.client_attempt_id or "").strip()[:120] or None
-    with db() as conn:
-        if client_attempt_id:
-            inserted_result = conn.execute(
-                """
-                INSERT INTO test_results (user_id, section, mode, total, correct, time_seconds, client_attempt_id)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (user_id, client_attempt_id) WHERE client_attempt_id IS NOT NULL DO NOTHING
-                RETURNING id
-                """,
-                (user["id"], data.section, data.mode, data.total, data.correct, data.time_seconds, client_attempt_id),
-            ).fetchone()
-            if not inserted_result:
-                existing_result = conn.execute(
-                    "SELECT id FROM test_results WHERE user_id = %s AND client_attempt_id = %s",
-                    (user["id"], client_attempt_id),
-                ).fetchone()
-                current_user = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone())
-                current_streak = _streak_snapshot(current_user)
-                total_stars = _available_stars(conn, current_user)
-                return {
-                    "result_id": existing_result["id"] if existing_result else None,
-                    "duplicate": True,
-                    "streak": current_streak["days"],
-                    "streak_days": current_streak["days"],
-                    "streak_status": current_streak["status"],
-                    "streak_restored": False,
-                    "streak_restores_left": current_streak["restores_left"],
-                    "earned_star": False,
-                    "total_stars": int(total_stars or 0),
-                    "available_stars": int(total_stars or 0),
-                    "new_achievements": [],
-                }
-            result_id = inserted_result["id"]
-        else:
-            result_id = conn.execute(
-                """
-                INSERT INTO test_results (user_id, section, mode, total, correct, time_seconds)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                RETURNING id
-                """,
-                (user["id"], data.section, data.mode, data.total, data.correct, data.time_seconds),
-            ).fetchone()["id"]
-
-        if data.answers:
-            with conn.cursor() as cursor:
-                cursor.executemany(
-                    """
-                    INSERT INTO user_answers (user_id, question_id, selected_index, is_correct, time_ms)
-                    VALUES (%s, %s, %s, %s, %s)
-                    """,
-                    [
-                        (user["id"], answer.question_id, answer.selected_index, answer.is_correct, answer.time_ms)
-                        for answer in data.answers
-                    ],
-                )
-
-        current = conn.execute(
-            "SELECT last_activity, streak_days, streak_restores_left, streak_restores_month FROM users WHERE id = %s",
-            (user["id"],),
-        ).fetchone()
-        last_activity = current["last_activity"]
-        streak_days = int(current["streak_days"] or 0)
-        restores_left, month_key = _normalize_restore_state(dict(current), today)
-        streak_restored = False
-        if last_activity != today:
-            yesterday = today - timedelta(days=1)
-            if last_activity == yesterday:
-                streak_days = streak_days + 1
-            elif last_activity == today - timedelta(days=2) and restores_left > 0:
-                streak_days = streak_days + 1
-                restores_left -= 1
-                streak_restored = True
-            else:
-                streak_days = 1
-            conn.execute(
-                "UPDATE users SET last_activity = %s, streak_days = %s, streak_restores_left = %s, streak_restores_month = %s WHERE id = %s",
-                (today, streak_days, restores_left, month_key, user["id"]),
-            )
-
-        conn.execute(
-            """
-            UPDATE users
-            SET total_tests = total_tests + 1,
-                total_correct = total_correct + %s,
-                total_answers = total_answers + %s
-            WHERE id = %s
-            """,
-            (data.correct, data.total, user["id"]),
-        )
-        new_achievements = _check_achievements(conn, user["id"])
-        updated_user = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone())
-        total_stars = _available_stars(conn, updated_user)
-        conn.commit()
-
-    return {
-        "result_id": result_id,
-        "streak": streak_days,
-        "streak_days": streak_days,
-        "streak_status": "active",
-        "streak_restored": streak_restored,
-        "streak_restores_left": restores_left,
-        "earned_star": data.total > 0 and data.correct == data.total,
-        "total_stars": int(total_stars or 0),
-        "available_stars": int(total_stars or 0),
-        "new_achievements": new_achievements,
-    }
+    return submit_test_result_use_case(
+        data,
+        user,
+        check_achievements=_check_achievements,
+        available_stars=_available_stars,
+    )
 
 
 @app.post("/progress/marathon-score")
 def submit_marathon(data: MarathonScoreSubmit, user=Depends(get_current_user)):
-    with db() as conn:
-        current = conn.execute("SELECT marathon_best FROM users WHERE id = %s", (user["id"],)).fetchone()
-        old_best = int(current["marathon_best"] or 0)
-        new_best = max(old_best, data.score)
-        conn.execute("UPDATE users SET marathon_best = %s WHERE id = %s", (new_best, user["id"]))
-        new_achievements = _check_achievements(conn, user["id"])
-        conn.commit()
-    return {
-        "marathon_best": new_best,
-        "is_new_record": new_best > old_best,
-        "new_achievements": new_achievements,
-    }
+    return submit_marathon_score_use_case(data, user, check_achievements=_check_achievements)
 
 
 @app.post("/progress/streak-restore")
 def restore_streak(user=Depends(get_current_user)):
-    today = _server_today()
-    with db() as conn:
-        current = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone())
-        streak = _streak_snapshot(current, today)
-        if streak["status"] != "restorable":
-            raise HTTPException(400, "Немає сірого вогника для відновлення")
-        last_activity = current.get("last_activity")
-        if not last_activity or (today - last_activity).days != 2:
-            raise HTTPException(400, "Відновлення зараз недоступне")
-
-        restores_left = max(0, streak["restores_left"] - 1)
-        conn.execute(
-            """
-            UPDATE users
-            SET streak_restores_left = %s,
-                streak_restores_month = %s,
-                last_activity = %s
-            WHERE id = %s
-            """,
-            (restores_left, streak["month_key"], today - timedelta(days=1), user["id"]),
-        )
-        conn.commit()
-        updated = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone())
-
-    refreshed = _streak_snapshot(updated, today)
-    return {
-        "streak_days": refreshed["days"],
-        "streak_status": refreshed["status"],
-        "streak_restores_left": refreshed["restores_left"],
-    }
+    try:
+        return restore_streak_use_case(user)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
-@app.get("/progress/stats")
-def get_stats(user=Depends(get_current_user)):
-    with db() as conn:
-        user_row = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone())
-        streak = _streak_snapshot(user_row)
-        section_order_sql = _section_number_sql("q.section")
-        by_section = conn.execute(
-            """
-            SELECT q.section, q.section_name,
-                   SUM(CASE WHEN ua.is_correct THEN 1 ELSE 0 END)::int AS correct,
-                   COUNT(*)::int AS total,
-                   ROUND((SUM(CASE WHEN ua.is_correct THEN 1 ELSE 0 END)::numeric / NULLIF(COUNT(*), 0)) * 100)::int AS accuracy_percent
-            FROM user_answers ua
-            JOIN questions q ON q.id = ua.question_id
-            WHERE ua.user_id = %s
-            GROUP BY q.section, q.section_name
-            ORDER BY """
-            + section_order_sql
-            + """
-                     NULLS LAST, q.section
-            """,
-            (user["id"],),
-        ).fetchall()
-        weak_sections = conn.execute(
-            """
-            SELECT q.section,
-                   q.section_name,
-                   SUM(CASE WHEN ua.is_correct THEN 0 ELSE 1 END)::int AS wrong,
-                   SUM(CASE WHEN ua.is_correct THEN 1 ELSE 0 END)::int AS correct,
-                   COUNT(*)::int AS total,
-                   ROUND((SUM(CASE WHEN ua.is_correct THEN 1 ELSE 0 END)::numeric / NULLIF(COUNT(*), 0)) * 100)::int AS accuracy_percent
-            FROM user_answers ua
-            JOIN questions q ON q.id = ua.question_id
-            WHERE ua.user_id = %s
-            GROUP BY q.section, q.section_name
-            HAVING COUNT(*) FILTER (WHERE ua.is_correct = false) > 0
-            ORDER BY wrong DESC, total DESC, """
-            + section_order_sql
-            + """
-                     NULLS LAST, q.section
-            LIMIT 8
-            """,
-            (user["id"],),
-        ).fetchall()
-        recent_tests = conn.execute(
-            """
-            SELECT *
-            FROM test_results
-            WHERE user_id = %s
-            ORDER BY created_at DESC
-            LIMIT 20
-            """,
-            (user["id"],),
-        ).fetchall()
-        time_stats = dict(
-            conn.execute(
-                """
-                SELECT
-                    COALESCE(SUM(time_seconds), 0)::int AS total_test_time_seconds,
-                    COALESCE(SUM(time_seconds) FILTER (WHERE DATE(created_at) = CURRENT_DATE), 0)::int AS today_test_time_seconds,
-                    COALESCE(
-                        MIN(time_seconds) FILTER (
-                            WHERE mode IN ('mvs', 'ticket') AND total > 0 AND (correct::numeric / total) >= 0.8
-                        ),
-                        0
-                    )::int AS best_exam_time_seconds
-                FROM test_results
-                WHERE user_id = %s
-                """,
-                (user["id"],),
-            ).fetchone()
-        )
-        difficult = conn.execute(
-            """
-            SELECT question_id, COUNT(*) AS wrong_count
-            FROM user_answers
-            WHERE user_id = %s AND is_correct = false
-            GROUP BY question_id
-            ORDER BY wrong_count DESC
-            LIMIT 50
-            """,
-            (user["id"],),
-        ).fetchall()
-        achievements = conn.execute(
-            """
-            SELECT *
-            FROM user_achievements
-            WHERE user_id = %s
-            ORDER BY earned_at DESC
-            """,
-            (user["id"],),
-        ).fetchall()
-        passed_tests = _passed_tests_count(conn, user["id"])
-        total_stars = _total_stars(conn, user_row)
-        activity_days = conn.execute(
-            """
-            SELECT DISTINCT DATE(answered_at)::text AS day
-            FROM user_answers
-            WHERE user_id = %s
-              AND answered_at > NOW() - INTERVAL '90 days'
-            ORDER BY day
-            """,
-            (user["id"],),
-        ).fetchall()
-        daily_test_time = conn.execute(
-            """
-            SELECT DATE(created_at)::text AS day,
-                   COALESCE(SUM(time_seconds), 0)::int AS seconds,
-                   COUNT(*)::int AS tests
-            FROM test_results
-            WHERE user_id = %s
-              AND created_at > NOW() - INTERVAL '130 days'
-            GROUP BY DATE(created_at)
-            ORDER BY day
-            """,
-            (user["id"],),
-        ).fetchall()
-        earned_achievement_ids = [str(row["achievement_id"]) for row in achievements]
-        available_stars = _available_stars(conn, user_row)
-
-    return {
-        "user": _user_public(user_row),
-        "total_tests": user_row.get("total_tests", 0),
-        "total_correct": user_row.get("total_correct", 0),
-        "total_answers": user_row.get("total_answers", 0),
-        "total_wrong": max(0, int(user_row.get("total_answers", 0) or 0) - int(user_row.get("total_correct", 0) or 0)),
-        "total_test_time_seconds": time_stats.get("total_test_time_seconds", 0),
-        "today_test_time_seconds": time_stats.get("today_test_time_seconds", 0),
-        "best_exam_time_seconds": time_stats.get("best_exam_time_seconds", 0),
-        "passed_tests": passed_tests,
-        "streak_days": streak["days"],
-        "streak_status": streak["status"],
-        "streak_restores_left": streak["restores_left"],
-        "marathon_best": user_row.get("marathon_best", 0),
-        "total_stars": int(available_stars or 0),
-        "available_stars": available_stars,
-        "by_section": [dict(row) for row in by_section],
-        "weak_sections": [dict(row) for row in weak_sections],
-        "recent_tests": [dict(row) for row in recent_tests],
-        "difficult_question_ids": [row["question_id"] for row in difficult],
-        "achievements": [dict(row) for row in achievements],
-        "activity_days": sorted({str(row["day"]) for row in activity_days}),
-        "daily_test_time": [dict(row) for row in daily_test_time],
-        "frame_shop": _frame_shop_payload(user_row, earned_achievement_ids, available_stars),
-    }
-
-
-@app.get("/progress/results")
+@app.get("/progress/results", response_model=list[ProgressResultResponse])
 def get_progress_results(user=Depends(get_current_user)):
-    with db() as conn:
-        rows = conn.execute(
-            """
-            SELECT id, section, mode, total, correct, time_seconds, created_at
-            FROM test_results
-            WHERE user_id = %s
-            ORDER BY created_at DESC
-            LIMIT 365
-            """,
-            (user["id"],),
-        ).fetchall()
+    return list_progress_results_use_case(user)
 
-    results = []
-    for row in rows:
-        item = dict(row)
-        total = int(item.get("total") or 0)
-        correct = int(item.get("correct") or 0)
-        score_percent = round((correct / total) * 100) if total > 0 else 0
-        results.append(
-            {
-                **item,
-                "score_percent": score_percent,
-                "passed": score_percent >= 80,
-                "created_at": str(item.get("created_at") or ""),
-            }
-        )
-    return results
+
+@app.get("/progress/stats", response_model=ProgressStatsResponse)
+def get_progress_stats(user=Depends(get_current_user)):
+    return get_progress_stats_use_case(
+        user,
+        present_user=_user_public,
+        resolve_streak=_streak_snapshot,
+        available_stars=_available_stars,
+        build_frame_shop=_frame_shop_payload,
+        section_order_sql=_section_order_sql,
+    )
 
 
 @app.get("/achievements")
 def get_achievements(user=Depends(get_optional_user)):
-    earned: dict[str, Any] = {}
-    progress_context: dict[str, Any] = {
-        "user": {},
-        "perfect_tests": 0,
-        "exam_stats": {"passed_count": 0, "perfect_count": 0},
-        "battle_stats": {"battle_finished": 0, "battle_wins": 0},
-    }
-    if user:
-        with db() as conn:
-            _check_achievements(conn, user["id"])
-            conn.commit()
-            user_row = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone())
-            rows = conn.execute(
-                "SELECT achievement_id, earned_at FROM user_achievements WHERE user_id = %s",
-                (user["id"],),
-            ).fetchall()
-            earned = {row["achievement_id"]: row["earned_at"] for row in rows}
-            perfect_tests = conn.execute(
-                """
-                SELECT COUNT(*) AS count
-                FROM test_results
-                WHERE user_id = %s AND total > 0 AND correct = total
-                """,
-                (user["id"],),
-            ).fetchone()["count"]
-            exam_stats = conn.execute(
-                """
-                SELECT
-                    COUNT(*) FILTER (
-                        WHERE mode IN ('mvs', 'ticket') AND total > 0 AND (correct::numeric / total) >= 0.8
-                    ) AS passed_count,
-                    COUNT(*) FILTER (
-                        WHERE mode IN ('mvs', 'ticket') AND total > 0 AND correct = total
-                    ) AS perfect_count
-                FROM test_results
-                WHERE user_id = %s
-                """,
-                (user["id"],),
-            ).fetchone()
-            progress_context = {
-                "user": user_row,
-                "perfect_tests": int(perfect_tests or 0),
-                "exam_stats": dict(exam_stats or {}),
-                "battle_stats": _battle_stats_for_email(conn, user_row.get("email")),
-            }
-
-    result = []
-    for achievement_id, tier, name, description, category, threshold in ACHIEVEMENTS_DEF:
-        current = _achievement_progress_value(
-            achievement_id,
-            category,
-            int(threshold),
-            progress_context["user"],
-            progress_context["perfect_tests"],
-            progress_context["exam_stats"],
-            progress_context["battle_stats"],
-        )
-        progress_percent = min(100, round((current / max(1, int(threshold))) * 100))
-        result.append(
-            {
-                "id": achievement_id,
-                "tier": tier,
-                "name": name,
-                "description": description,
-                "category": category,
-                "threshold": threshold,
-                "target": threshold,
-                "current": min(current, int(threshold)),
-                "raw_current": current,
-                "progress_percent": progress_percent,
-                "progress_text": f"{min(current, int(threshold))}/{threshold}",
-                "earned": achievement_id in earned,
-                "earned_at": str(earned[achievement_id]) if achievement_id in earned else None,
-            }
-        )
-    return result
+    return list_achievement_progress_use_case(ACHIEVEMENTS_DEF, user)
 
 
 @app.get("/leaderboard")
 def leaderboard():
-    with db() as conn:
-        rows = conn.execute(
-            """
-            WITH battle_stats AS (
-              SELECT email,
-                     COUNT(*) FILTER (WHERE status = 'finished') AS battle_finished,
-                     COUNT(*) FILTER (WHERE status = 'finished' AND LOWER(COALESCE(winner_email, '')) = email) AS battle_wins
-              FROM (
-                SELECT LOWER(challenger_email) AS email, status, winner_email FROM battles
-                UNION ALL
-                SELECT LOWER(opponent_email) AS email, status, winner_email FROM battles
-              ) battle_rows
-              GROUP BY email
-            )
-            SELECT u.id, u.name, u.surname, u.username, u.email, u.avatar_url, u.avatar_version, u.active_frame,
-                   u.total_correct, u.total_tests, u.total_answers, u.marathon_best, u.streak_days,
-                   COALESCE((
-                     SELECT COUNT(*)
-                     FROM test_results tr
-                     WHERE tr.user_id = u.id
-                       AND tr.total > 0
-                       AND ROUND((tr.correct::numeric / tr.total::numeric) * 100) >= 80
-                   ), 0) AS passed_tests,
-                   COALESCE(bs.battle_wins, 0) AS battle_wins,
-                   COALESCE(bs.battle_finished, 0) AS battle_finished
-            FROM users u
-            LEFT JOIN battle_stats bs ON bs.email = LOWER(u.email)
-            WHERE u.email_verified = true
-              AND LOWER(u.email) <> ALL(%s)
-            ORDER BY u.total_correct DESC, u.total_tests DESC, u.created_at ASC
-            LIMIT 50
-            """
-            ,
-            (list(ADMIN_EMAILS),)
-        ).fetchall()
-        return [dict(row) for row in rows]
+    return list_leaderboard_use_case(excluded_emails=ADMIN_EMAILS)
 
 
 @app.get("/theory/categories")
 def get_theory_categories_endpoint():
-    with db() as conn:
-        rows = list_theory_categories(conn)
-    return rows or THEORY_CATEGORY_FALLBACKS
+    return list_theory_category_payloads_use_case()
 
 
 @app.get("/theory/topics")
 def get_theory_topics_endpoint(category: str = Query(..., min_length=1)):
-    with db() as conn:
-        rows = list_theory_topics(conn, category)
-    if rows:
-        return rows
-
-    fallback = next((item for item in THEORY_CATEGORY_FALLBACKS if item["slug"] == category), None)
-    if not fallback:
-        return []
-    if category in MULTI_TOPIC_CATEGORY_SLUGS:
-        return []
-    return [
-        {
-            "id": 0,
-            "slug": category,
-            "title": fallback["title"],
-            "description": fallback.get("description"),
-            "topic_type": "video" if category == "video-lectures" else "topic",
-            "sort_order": int(fallback.get("sort_order", 0)),
-            "source_url": THEORY_SOURCE_MAP.get(category),
-        }
-    ]
+    return list_theory_topic_payloads_use_case(category)
 
 
 @app.get("/theory/sections")
 def get_theory_sections_endpoint(topic: str = Query(..., min_length=1)):
-    with db() as conn:
-        rows = list_theory_sections(conn, topic)
-        if rows:
-            return rows
-        fallback_rows = _handbook_rows_for_topic(conn, topic)
-    return [
-        {
-            "id": row["id"],
-            "slug": row.get("source_slug") or f"{topic}-{row['id']}",
-            "title": _sanitize_handbook_text(row.get("section_title")),
-            "description": _extract_handbook_description(dict(row)) or None,
-            "sort_order": int(row.get("sort_order") or 0),
-            "source_url": row.get("source_url"),
-            "chapter_num": row.get("chapter_num"),
-        }
-        for row in fallback_rows
-    ]
+    return list_theory_section_payloads_use_case(
+        topic,
+        sanitize_text=_sanitize_handbook_text,
+        extract_description=_extract_handbook_description,
+    )
 
 
 @app.get("/theory/sections/{section_id}")
 def get_theory_section_endpoint(section_id: int):
-    with db() as conn:
-        section = get_theory_section(conn, section_id)
-        if section:
-            assets = conn.execute(
-                """
-                SELECT asset_type, asset_url, alt_text, caption, sort_order
-                FROM theory_assets
-                WHERE section_id = %s
-                ORDER BY sort_order, id
-                """,
-                (section_id,),
-            ).fetchall()
-            return {
-                **section,
-                "assets": [dict(asset) for asset in assets],
-            }
-
-        row = conn.execute(
-            """
-            SELECT id, topic_key, chapter_num, sort_order, section_title, source_url, source_slug, comment_html, content_html, content_text, video_url, embed_url, image_paths
-            FROM handbook_data
-            WHERE id = %s
-            """,
-            (section_id,),
-        ).fetchone()
-    if not row:
-        raise HTTPException(404, "Розділ довідника не знайдено")
-
-    return {
-        "id": row["id"],
-        "slug": row.get("source_slug") or f"legacy-{row['id']}",
-        "title": _sanitize_handbook_text(row.get("section_title")),
-        "description": _extract_handbook_description(dict(row)) or None,
-        "comment_html": _extract_handbook_comment_html(dict(row)) or None,
-        "content_html": _sanitize_handbook_html(row.get("content_html"), str(row.get("section_title") or "")),
-        "content_text": _sanitize_handbook_text(row.get("content_text")),
-        "chapter_num": row.get("chapter_num"),
-        "sort_order": int(row.get("sort_order") or 0),
-        "source_url": row.get("source_url"),
-        "topic_slug": _canonical_theory_topic(row.get("topic_key"), None, row.get("source_url")) or "rules",
-        "category_slug": _canonical_theory_topic(row.get("topic_key"), None, row.get("source_url")) or "rules",
-        "video_url": _extract_handbook_video_url(dict(row)),
-        "embed_url": _extract_handbook_embed_url(dict(row)),
-        "assets": [
-            {"asset_type": "image", "asset_url": item, "alt_text": None, "caption": None, "sort_order": index}
-            for index, item in enumerate(row.get("image_paths") or [], start=1)
-        ],
-    }
+    try:
+        return get_theory_section_payload_use_case(
+            section_id,
+            sanitize_text=_sanitize_handbook_text,
+            sanitize_html=_sanitize_handbook_html,
+            extract_description=_extract_handbook_description,
+            extract_comment_html=_extract_handbook_comment_html,
+            extract_video_url=_extract_handbook_video_url,
+            extract_embed_url=_extract_handbook_embed_url,
+            resolve_topic=_canonical_theory_topic,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.get("/tickets")
 def get_tickets(category: Optional[str] = None):
-    normalized = _normalize_category(category)
-    if normalized:
-        tickets = [
-            {
-                "ticket_number": number,
-                "questions_count": 20,
-                "category": normalized,
-                "source": "mvs_exam",
-            }
-            for number in range(1, MVS_TICKET_COUNT + 1)
-        ]
-        return {"tickets": tickets, "total": len(tickets), "category": normalized}
-    with db() as conn:
-        return list_tickets(conn)
+    return list_tickets_use_case(
+        category=category,
+        normalize_category=_normalize_category,
+        mvs_ticket_count=MVS_TICKET_COUNT,
+    )
 
 
 @app.get("/tickets/{ticket_number}")
 def get_ticket(ticket_number: int, category: Optional[str] = None):
-    normalized = _normalize_category(category)
-    if normalized:
-        if ticket_number < 1 or ticket_number > MVS_TICKET_COUNT:
-            raise HTTPException(404, "Білет не знайдено")
-        with db() as conn:
-            prepared = _build_mvs_exam_questions(conn, normalized, seed=f"ticket:{normalized}:{ticket_number}")
-        return {
-            "ticket_number": ticket_number,
-            "category": normalized,
-            "source": "mvs_exam",
-            "questions_count": len(prepared),
-            "questions": prepared,
-        }
-    with db() as conn:
-        rows = get_ticket_questions(conn, ticket_number)
-    if not rows:
-        raise HTTPException(404, "Білет не знайдено")
-    prepared = [_sanitize_question_row(row) for row in rows]
-    return {
-        "ticket_number": ticket_number,
-        "questions_count": len(prepared),
-        "questions": prepared,
-    }
+    try:
+        return get_ticket_use_case(
+            ticket_number=ticket_number,
+            category=category,
+            normalize_category=_normalize_category,
+            mvs_ticket_count=MVS_TICKET_COUNT,
+            build_mvs_questions=build_mvs_exam_questions_use_case,
+            sanitize_question=_sanitize_question_row,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.get("/handbook/topics")
 def get_handbook_topics():
-    with db() as conn:
-        counts = {
-            row["topic_key"]: int(row["count"] or 0)
-            for row in conn.execute(
-                """
-                SELECT
-                    CASE
-                        WHEN topic_key IS NOT NULL AND BTRIM(topic_key) <> '' THEN topic_key
-                        WHEN category = 'rules' OR source_url LIKE '%/theory/rules/%' THEN 'rules'
-                        WHEN category = 'signs' OR source_url LIKE '%/theory/road-signs%' THEN 'road-signs'
-                        WHEN category = 'markings' OR source_url LIKE '%/theory/road-markings%' THEN 'road-markings'
-                        WHEN category = 'regulator' OR source_url LIKE '%/theory/regulator%' THEN 'regulator'
-                        WHEN category = 'traffic-light' OR source_url LIKE '%/theory/traffic-light%' THEN 'traffic-light'
-                        ELSE topic_key
-                    END AS topic_key,
-                    COUNT(*) AS count
-                FROM handbook_data
-                GROUP BY 1
-                """
-            ).fetchall()
-        }
-
-    return [
-        {
-            "key": topic["key"],
-            "title": topic["title"],
-            "category": topic["category"],
-            "count": counts.get(topic["key"], 0),
-            "chapters": topic["chapters"],
-        }
-        for topic in HANDBOOK_TOPICS
-    ]
-
-
-def _handbook_rows_for_topic(conn: psycopg.Connection, topic: str):
-    fallback_category = HANDBOOK_TOPIC_CATEGORY_MAP.get(topic, topic)
-    return conn.execute(
-        """
-        SELECT id, topic_key, category, chapter_num, sort_order, section_title, source_url, source_slug, image_paths, created_at
-        FROM handbook_data
-        WHERE topic_key = %s
-           OR (COALESCE(topic_key, '') = '' AND category = %s)
-           OR (
-                %s = 'rules' AND source_url LIKE '%%/theory/rules/%%'
-              )
-           OR (
-                %s = 'road-signs' AND source_url LIKE '%%/theory/road-signs%%'
-              )
-           OR (
-                %s = 'road-markings' AND source_url LIKE '%%/theory/road-markings%%'
-              )
-           OR (
-                %s = 'regulator' AND source_url LIKE '%%/theory/regulator%%'
-              )
-           OR (
-                %s = 'traffic-light' AND source_url LIKE '%%/theory/traffic-light%%'
-              )
-        ORDER BY
-            COALESCE(chapter_num, 10_000),
-            sort_order,
-            id
-        """,
-        (topic, fallback_category, topic, topic, topic, topic, topic),
-    ).fetchall()
+    return list_handbook_topics_use_case(handbook_topics=HANDBOOK_TOPICS)
 
 
 @app.get("/handbook/entries")
 def get_handbook_entries(topic: str = Query(..., min_length=1)):
-    with db() as conn:
-        rows = _handbook_rows_for_topic(conn, topic)
-
-    return [
-        {
-            **dict(row),
-            "section_title": _sanitize_handbook_text(row.get("section_title")),
-            "image_paths": row.get("image_paths") or [],
-        }
-        for row in rows
-    ]
+    return list_handbook_entries_use_case(
+        topic=topic,
+        topic_category_map=HANDBOOK_TOPIC_CATEGORY_MAP,
+        sanitize_text=_sanitize_handbook_text,
+    )
 
 
 @app.get("/handbook/entries/{entry_id}")
 def get_handbook_entry(entry_id: int):
-    with db() as conn:
-        row = conn.execute(
-            """
-            SELECT id, topic_key, category, chapter_num, sort_order, section_title, source_url, source_slug,
-                   content_html, content_text, image_paths, created_at
-            FROM handbook_data
-            WHERE id = %s
-            """,
-            (entry_id,),
-        ).fetchone()
-    if not row:
-        raise HTTPException(404, "Розділ довідника не знайдено")
-
-    return {
-        **dict(row),
-        "section_title": _sanitize_handbook_text(row.get("section_title")),
-        "content_text": _sanitize_handbook_text(row.get("content_text")),
-        "content_html": _sanitize_handbook_html(row.get("content_html"), str(row.get("section_title") or "")),
-        "image_paths": row.get("image_paths") or [],
-    }
+    try:
+        return get_handbook_entry_use_case(
+            entry_id,
+            sanitize_text=_sanitize_handbook_text,
+            sanitize_html=_sanitize_handbook_html,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.get("/handbook/search")
 def search_handbook(q: str = Query(..., min_length=2), topic: Optional[str] = None):
-    conds = [
-        "search_vector @@ websearch_to_tsquery('simple', %s)",
-    ]
-    params: list[Any] = [q]
-    if topic:
-        fallback_category = HANDBOOK_TOPIC_CATEGORY_MAP.get(topic, topic)
-        conds.append(
-            """
-            (
-                topic_key = %s
-                OR (COALESCE(topic_key, '') = '' AND category = %s)
-                OR (%s = 'rules' AND source_url LIKE '%%/theory/rules/%%')
-                OR (%s = 'road-signs' AND source_url LIKE '%%/theory/road-signs%%')
-                OR (%s = 'road-markings' AND source_url LIKE '%%/theory/road-markings%%')
-                OR (%s = 'regulator' AND source_url LIKE '%%/theory/regulator%%')
-                OR (%s = 'traffic-light' AND source_url LIKE '%%/theory/traffic-light%%')
-            )
-            """
-        )
-        params.extend([topic, fallback_category, topic, topic, topic, topic, topic])
-
-    with db() as conn:
-        rows = conn.execute(
-            f"""
-            SELECT id, topic_key, category, chapter_num, sort_order, section_title, source_url, source_slug,
-                   ts_rank(search_vector, websearch_to_tsquery('simple', %s)) AS rank
-            FROM handbook_data
-            WHERE {' AND '.join(conds)}
-            ORDER BY rank DESC, COALESCE(chapter_num, 10_000), sort_order, id
-            LIMIT 30
-            """,
-            [q, *params],
-        ).fetchall()
-
-    return [
-        {
-            **dict(row),
-            "section_title": _sanitize_handbook_text(row.get("section_title")),
-        }
-        for row in rows
-    ]
+    return search_handbook_entries_use_case(
+        query=q,
+        topic=topic,
+        topic_category_map=HANDBOOK_TOPIC_CATEGORY_MAP,
+        sanitize_text=_sanitize_handbook_text,
+    )
 
 
 @app.get("/friends")
 def get_friends(user=Depends(get_current_user)):
-    with db() as conn:
-        conn.execute(
-            """
-            UPDATE friendships
-            SET addressee_seen_at = NOW()
-            WHERE addressee_id = %s
-              AND status = 'pending'
-              AND addressee_seen_at IS NULL
-            """,
-            (user["id"],),
-        )
-        friendships = conn.execute(
-            """
-            SELECT *
-            FROM friendships
-            WHERE requester_id = %s OR addressee_id = %s
-            ORDER BY created_at DESC
-            """,
-            (user["id"], user["id"]),
-        ).fetchall()
-
-        accepted: list[dict[str, Any]] = []
-        incoming: list[dict[str, Any]] = []
-        outgoing: list[dict[str, Any]] = []
-
-        for friendship in friendships:
-            row = dict(friendship)
-            counterpart_id, direction = _friend_counterpart(row, user["id"])
-            counterpart = conn.execute(
-                "SELECT id, name, surname, username, email, avatar_url, avatar_version, active_frame, streak_days, total_tests, total_correct, total_answers, marathon_best FROM users WHERE id = %s",
-                (counterpart_id,),
-            ).fetchone()
-            if not counterpart:
-                continue
-            unread = conn.execute(
-                """
-                SELECT COUNT(*) AS count
-                FROM messages
-                WHERE to_email = %s AND from_email = %s AND is_read = false
-                """,
-                (user["email"], counterpart["email"]),
-            ).fetchone()["count"]
-            last_message = conn.execute(
-                """
-                SELECT content, type, created_at
-                FROM messages
-                WHERE (to_email = %s AND from_email = %s)
-                   OR (to_email = %s AND from_email = %s)
-                ORDER BY created_at DESC
-                LIMIT 1
-                """,
-                (user["email"], counterpart["email"], counterpart["email"], user["email"]),
-            ).fetchone()
-            payload = {
-                "id": row["id"],
-                "status": row["status"],
-                "created_at": str(row["created_at"]),
-                "direction": direction,
-                "user": dict(counterpart),
-                "unread_count": unread,
-                "last_message": dict(last_message) if last_message else None,
-            }
-            if row["status"] == "accepted":
-                accepted.append(payload)
-            elif direction == "incoming":
-                incoming.append(payload)
-            else:
-                outgoing.append(payload)
-        conn.commit()
-
-    return {"friends": accepted, "incoming": incoming, "outgoing": outgoing}
+    return list_friends_use_case(user)
 
 
 @app.post("/friends/invite")
 async def invite_friend(req: FriendInviteRequest, user=Depends(get_current_user)):
-    handle = req.username.strip()
-    target_username = _normalize_username(handle)
-    if target_username == _normalize_username(user.get("username")):
-        raise HTTPException(400, "Не можна додати себе в друзі")
+    try:
+        result = invite_friend_use_case(req, user, resolve_social_user=_resolve_social_user_by_handle)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
-    with db() as conn:
-        target = _resolve_social_user_by_handle(conn, handle, user)
-        if not target:
-            raise HTTPException(404, "Користувача з таким email не знайдено")
-        if target.get("is_blocked"):
-            raise HTTPException(403, "Цей користувач тимчасово недоступний")
-
-        existing = conn.execute(
-            """
-            SELECT *
-            FROM friendships
-            WHERE LEAST(requester_id, addressee_id) = LEAST(%s, %s)
-              AND GREATEST(requester_id, addressee_id) = GREATEST(%s, %s)
-            """,
-            (user["id"], target["id"], user["id"], target["id"]),
-        ).fetchone()
-        if existing:
-            existing = dict(existing)
-            if existing["status"] == "accepted":
-                return {
-                    "message": "Ви вже в друзях",
-                    "friendship_id": existing["id"],
-                    "status": "accepted",
-                }
-            if existing["addressee_id"] == user["id"]:
-                requester = conn.execute("SELECT email FROM users WHERE id = %s", (existing["requester_id"],)).fetchone()
-                conn.execute(
-                    """
-                    UPDATE friendships
-                    SET status = 'accepted', responded_at = NOW()
-                    WHERE id = %s
-                    """,
-                    (existing["id"],),
-                )
-                conn.commit()
-                payload = {
-                    "message": "Запрошення було вхідним, тому друга одразу додано",
-                    "friendship_id": existing["id"],
-                    "status": "accepted",
-                }
-                if requester:
-                    await realtime_hub.emit(requester["email"], "friends_updated", {})
-                await realtime_hub.emit(user["email"], "friends_updated", {})
-                return payload
-            return {
-                "message": "Запрошення вже надіслано і ще очікує підтвердження",
-                "friendship_id": existing["id"],
-                "status": "pending",
-            }
-
-        friendship = conn.execute(
-            """
-            INSERT INTO friendships (requester_id, addressee_id, status)
-            VALUES (%s, %s, 'pending')
-            RETURNING *
-            """,
-            (user["id"], target["id"]),
-        ).fetchone()
-        conn.commit()
-    await realtime_hub.emit(target["email"], "friend_request", {"from_email": user["email"]})
-    return {"message": "Запрошення надіслано", "friendship_id": friendship["id"]}
+    event = result.get("event", "friends_updated")
+    event_payload = result.get("event_payload", {})
+    for email in result.get("emit", []):
+        await realtime_hub.emit(email, event, event_payload)
+    return result["payload"]
 
 
 @app.post("/friends/{friendship_id}/accept")
 async def accept_friend(friendship_id: int, user=Depends(get_current_user)):
-    with db() as conn:
-        friendship = conn.execute(
-            "SELECT * FROM friendships WHERE id = %s",
-            (friendship_id,),
-        ).fetchone()
-        if not friendship:
-            raise HTTPException(404, "Запрошення не знайдено")
-        if friendship["addressee_id"] != user["id"]:
-            raise HTTPException(403, "Немає доступу до цього запрошення")
-        conn.execute(
-            """
-            UPDATE friendships
-            SET status = 'accepted', responded_at = NOW()
-            WHERE id = %s
-            """,
-            (friendship_id,),
-        )
-        requester = conn.execute("SELECT email FROM users WHERE id = %s", (friendship["requester_id"],)).fetchone()
-        conn.commit()
-    if requester:
-        await realtime_hub.emit(requester["email"], "friends_updated", {})
-    await realtime_hub.emit(user["email"], "friends_updated", {})
-    return {"message": "Друга додано"}
+    try:
+        result = accept_friend_use_case(friendship_id, user)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
+    for email in result.get("emit", []):
+        await realtime_hub.emit(email, "friends_updated", {})
+    return result["payload"]
 
 
 @app.delete("/friends/{friendship_id}")
 def remove_friend(friendship_id: int, user=Depends(get_current_user)):
-    with db() as conn:
-        friendship = conn.execute("SELECT * FROM friendships WHERE id = %s", (friendship_id,)).fetchone()
-        if not friendship:
-            raise HTTPException(404, "Запис не знайдено")
-        if user["id"] not in {friendship["requester_id"], friendship["addressee_id"]}:
-            raise HTTPException(403, "Немає доступу")
-        conn.execute("DELETE FROM friendships WHERE id = %s", (friendship_id,))
-        conn.commit()
-    return {"message": "Запис видалено"}
+    try:
+        return remove_friend_use_case(friendship_id, user)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.get("/messages")
 def get_messages(partner_email: Optional[str] = None, user=Depends(get_current_user)):
-    with db() as conn:
-        if partner_email:
-            partner = _resolve_social_user_by_handle(conn, partner_email, user)
-            if not partner:
-                raise HTTPException(404, "Користувача не знайдено")
-            normalized = partner["email"].strip().lower()
-            rows = conn.execute(
-                """
-                SELECT *
-                FROM messages
-                WHERE (to_email = %s AND from_email = %s)
-                   OR (to_email = %s AND from_email = %s)
-                ORDER BY created_at ASC
-                """,
-                (user["email"], normalized, normalized, user["email"]),
-            ).fetchall()
-            conn.execute(
-                """
-                UPDATE messages
-                SET is_read = true
-                WHERE to_email = %s AND from_email = %s AND is_read = false
-                """,
-                (user["email"], normalized),
-            )
-            conn.commit()
-            return [
-                {
-                    **dict(row),
-                    "result_data": _coerce_json_dict(row.get("result_data")),
-                    "is_read": bool(row.get("is_read")),
-                }
-                for row in rows
-            ]
-
-        rows = conn.execute(
-            """
-            SELECT *
-            FROM messages
-            WHERE to_email = %s OR from_email = %s
-            ORDER BY created_at DESC
-            LIMIT 100
-            """,
-            (user["email"], user["email"]),
-        ).fetchall()
-    return [
-        {
-            **dict(row),
-            "result_data": _coerce_json_dict(row.get("result_data")),
-            "is_read": bool(row.get("is_read")),
-        }
-        for row in rows
-    ]
+    try:
+        return list_messages_use_case(
+            partner_email=partner_email,
+            user=user,
+            resolve_social_user=_resolve_social_user_by_handle,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.post("/messages")
 async def send_message(req: MessageCreateRequest, user=Depends(get_current_user)):
-    handle = req.to_user.strip()
-    if _normalize_username(handle) == _normalize_username(user.get("username")):
-        raise HTTPException(400, "Не можна писати самому собі")
-    if req.type not in {"text", "result_share"}:
-        raise HTTPException(400, "Невірний тип повідомлення")
-    if req.type == "text" and not req.content.strip():
-        raise HTTPException(400, "Повідомлення не може бути порожнім")
-
-    with db() as conn:
-        friend = _resolve_social_user_by_handle(conn, handle, user)
-        if not friend:
-            raise HTTPException(404, "Користувача не знайдено")
-        friendship = conn.execute(
-            """
-            SELECT *
-            FROM friendships
-            WHERE status = 'accepted'
-              AND LEAST(requester_id, addressee_id) = LEAST(%s, %s)
-              AND GREATEST(requester_id, addressee_id) = GREATEST(%s, %s)
-            """,
-            (user["id"], friend["id"], user["id"], friend["id"]),
-        ).fetchone()
-        if not friendship:
-            raise HTTPException(403, "Повідомлення можна надсилати тільки друзям")
-        message = conn.execute(
-            """
-            INSERT INTO messages (to_email, from_email, from_name, content, type, result_data)
-            VALUES (%s, %s, %s, %s, %s, %s::jsonb)
-            RETURNING *
-            """,
-            (
-                friend["email"],
-                user["email"],
-                user["name"],
-                req.content.strip() or "Запрошення до батлу",
-                req.type,
-                _serialize_json(req.result_data),
-            ),
-        ).fetchone()
-        conn.commit()
-    payload = {
-        **dict(message),
-        "result_data": _coerce_json_dict(message.get("result_data")),
-        "is_read": bool(message.get("is_read")),
-    }
-    await realtime_hub.emit(friend["email"], "friend_message", {"from_email": user["email"]})
+    try:
+        sent = send_message_use_case(
+            req,
+            user,
+            resolve_social_user=_resolve_social_user_by_handle,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
+    await realtime_hub.emit(sent.recipient_email, "friend_message", {"from_email": user["email"]})
     await realtime_hub.emit(user["email"], "friend_message", {"from_email": user["email"]})
-    return payload
+    return sent.payload
 
 
 @app.get("/support/messages")
 def get_support_messages(user=Depends(get_current_user)):
-    with db() as conn:
-        rows = conn.execute(
-            """
-            SELECT *
-            FROM messages
-            WHERE (to_email = %s AND from_email = %s)
-               OR (to_email = %s AND from_email = %s)
-            ORDER BY created_at ASC
-            """,
-            (user["email"], SUPPORT_EMAIL, SUPPORT_EMAIL, user["email"]),
-        ).fetchall()
-        conn.execute(
-            """
-            UPDATE messages
-            SET is_read = true
-            WHERE to_email = %s AND from_email = %s AND is_read = false
-            """,
-            (user["email"], SUPPORT_EMAIL),
-        )
-        conn.commit()
-    return [
-        {
-            **dict(row),
-            "result_data": _coerce_json_dict(row.get("result_data")),
-            "is_read": bool(row.get("is_read")),
-        }
-        for row in rows
-    ]
+    return list_user_support_messages_use_case(user)
 
 
 @app.post("/support/messages")
 async def send_support_message(req: SupportMessageCreateRequest, user=Depends(get_current_user)):
-    content = req.content.strip()
-    if not content:
-        raise HTTPException(400, "Повідомлення не може бути порожнім")
-    with db() as conn:
-        message = conn.execute(
-            """
-            INSERT INTO messages (to_email, from_email, from_name, content, type, result_data)
-            VALUES (%s, %s, %s, %s, 'text', '{}'::jsonb)
-            RETURNING *
-            """,
-            (SUPPORT_EMAIL, user["email"], user["name"], content),
-        ).fetchone()
-        conn.commit()
-    payload = {
-        **dict(message),
-        "result_data": _coerce_json_dict(message.get("result_data")),
-        "is_read": bool(message.get("is_read")),
-    }
+    try:
+        sent = send_user_support_message_use_case(req, user)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
     await realtime_hub.emit(SUPPORT_EMAIL, "support_message", {"from_email": user["email"]})
     await realtime_hub.emit(user["email"], "support_message", {"from_email": user["email"]})
-    return payload
+    return sent.payload
 
 
 @app.get("/notifications/summary")
 def get_notifications_summary(user=Depends(get_current_user)):
-    with db() as conn:
-        friend_requests = int(
-            conn.execute(
-                """
-                SELECT COUNT(*) AS count
-                FROM friendships
-                WHERE addressee_id = %s
-                  AND status = 'pending'
-                  AND addressee_seen_at IS NULL
-                """,
-                (user["id"],),
-            ).fetchone()["count"]
-        )
-        unread_friend_messages = int(
-            conn.execute(
-                """
-                SELECT COUNT(*) AS count
-                FROM messages
-                WHERE to_email = %s
-                  AND is_read = false
-                  AND from_email <> %s
-                  AND from_email <> %s
-                """,
-                (user["email"], SUPPORT_EMAIL, user["email"]),
-            ).fetchone()["count"]
-        )
-        battle_invites = int(
-            conn.execute(
-                """
-                SELECT COUNT(*) AS count
-                FROM battles
-                WHERE opponent_email = %s
-                  AND status = 'pending'
-                  AND opponent_seen_at IS NULL
-                """,
-                (user["email"],),
-            ).fetchone()["count"]
-        )
-        support_unread = int(
-            conn.execute(
-                """
-                SELECT COUNT(*) AS count
-                FROM messages
-                WHERE to_email = %s AND from_email = %s AND is_read = false
-                """,
-                (user["email"], SUPPORT_EMAIL),
-            ).fetchone()["count"]
-        )
-    return {
-        "friends": friend_requests + unread_friend_messages,
-        "battles": battle_invites,
-        "support": support_unread,
-    }
+    return get_notifications_summary_use_case(user)
 
 
 @app.get("/admin/support/conversations")
 def admin_support_conversations(admin=Depends(require_admin)):
-    with db() as conn:
-        rows = conn.execute(
-            """
-            SELECT
-                CASE
-                    WHEN from_email = %s THEN to_email
-                    ELSE from_email
-                END AS counterpart_email,
-                MAX(created_at) AS last_message_at
-            FROM messages
-            WHERE to_email = %s OR from_email = %s
-            GROUP BY counterpart_email
-            ORDER BY last_message_at DESC
-            """,
-            (SUPPORT_EMAIL, SUPPORT_EMAIL, SUPPORT_EMAIL),
-        ).fetchall()
-        conversations: list[dict[str, Any]] = []
-        for row in rows:
-            counterpart_email = row["counterpart_email"]
-            if not counterpart_email or counterpart_email == SUPPORT_EMAIL:
-                continue
-            counterpart = conn.execute(
-                """
-                SELECT id, name, surname, username, email, avatar_url, avatar_version,
-                       total_tests, total_correct, total_answers, is_blocked, created_at
-                FROM users
-                WHERE email = %s
-                """,
-                (counterpart_email,),
-            ).fetchone()
-            if not counterpart:
-                continue
-            preview = conn.execute(
-                """
-                SELECT content, created_at, from_email
-                FROM messages
-                WHERE (to_email = %s AND from_email = %s)
-                   OR (to_email = %s AND from_email = %s)
-                ORDER BY created_at DESC
-                LIMIT 1
-                """,
-                (SUPPORT_EMAIL, counterpart_email, counterpart_email, SUPPORT_EMAIL),
-            ).fetchone()
-            unread = conn.execute(
-                """
-                SELECT COUNT(*) AS count
-                FROM messages
-                WHERE to_email = %s
-                  AND from_email = %s
-                  AND is_read = false
-                """,
-                (SUPPORT_EMAIL, counterpart_email),
-            ).fetchone()["count"]
-            conversations.append(
-                {
-                    "user": _user_public(dict(counterpart)),
-                    "last_message": dict(preview) if preview else None,
-                    "unread_count": int(unread or 0),
-                    "last_message_at": str(row["last_message_at"] or ""),
-                }
-            )
-    return conversations
+    return list_admin_support_conversations_use_case(present_user=_user_public)
 
 
 @app.get("/admin/support/conversations/{user_id}")
 def admin_support_thread(user_id: int, admin=Depends(require_admin)):
-    with db() as conn:
-        target = conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
-        if not target:
-            raise HTTPException(404, "Користувача не знайдено")
-        rows = conn.execute(
-            """
-            SELECT *
-            FROM messages
-            WHERE (to_email = %s AND from_email = %s)
-               OR (to_email = %s AND from_email = %s)
-            ORDER BY created_at ASC
-            """,
-            (SUPPORT_EMAIL, target["email"], target["email"], SUPPORT_EMAIL),
-        ).fetchall()
-        conn.execute(
-            """
-            UPDATE messages
-            SET is_read = true
-            WHERE to_email = %s
-              AND from_email = %s
-              AND is_read = false
-            """,
-            (SUPPORT_EMAIL, target["email"]),
-        )
-        conn.commit()
-    return {
-        "user": _user_public(dict(target)),
-        "messages": [
-            {
-                **dict(row),
-                "result_data": _coerce_json_dict(row.get("result_data")),
-                "is_read": bool(row.get("is_read")),
-            }
-            for row in rows
-        ],
-    }
+    try:
+        return get_admin_support_thread_use_case(user_id, present_user=_user_public)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.post("/admin/support/conversations/{user_id}")
 async def admin_support_reply(user_id: int, req: AdminSupportReplyRequest, admin=Depends(require_admin)):
-    content = req.content.strip()
-    if not content:
-        raise HTTPException(400, "Повідомлення не може бути порожнім")
-    with db() as conn:
-        target = conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
-        if not target:
-            raise HTTPException(404, "Користувача не знайдено")
-        message = conn.execute(
-            """
-            INSERT INTO messages (to_email, from_email, from_name, content, type, result_data)
-            VALUES (%s, %s, %s, %s, 'text', %s::jsonb)
-            RETURNING *
-            """,
-            (
-                target["email"],
-                SUPPORT_EMAIL,
-                SUPPORT_NAME,
-                content,
-                json.dumps({"sender_role": "support"}, ensure_ascii=False),
-            ),
-        ).fetchone()
-        conn.commit()
-    await realtime_hub.emit(target["email"], "support_reply", {"from_email": SUPPORT_EMAIL})
-    await realtime_hub.emit(SUPPORT_EMAIL, "support_reply", {"to_email": target["email"]})
-    return {
-        **dict(message),
-        "result_data": _coerce_json_dict(message.get("result_data")),
-        "is_read": bool(message.get("is_read")),
-    }
+    try:
+        reply = send_admin_support_reply_use_case(user_id, req)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
+    await realtime_hub.emit(reply.target_email, "support_reply", {"from_email": SUPPORT_EMAIL})
+    await realtime_hub.emit(SUPPORT_EMAIL, "support_reply", {"to_email": reply.target_email})
+    return reply.payload
 
 
 @app.get("/admin/users")
 def admin_users(admin=Depends(require_admin)):
-    with db() as conn:
-        rows = conn.execute(
-            """
-            SELECT *
-            FROM users
-            ORDER BY created_at DESC
-            """
-        ).fetchall()
-        achievements_by_user = {
-            row["user_id"]: int(row["count"] or 0)
-            for row in conn.execute(
-                """
-                SELECT user_id, COUNT(*) AS count
-                FROM user_achievements
-                GROUP BY user_id
-                """
-            ).fetchall()
-        }
-        payload: list[dict[str, Any]] = []
-        for row in rows:
-            user_row = dict(row)
-            payload.append(
-                {
-                    **_user_public(user_row),
-                    "achievement_count": achievements_by_user.get(user_row["id"], 0),
-                    "manual_star_adjustment": int(user_row.get("manual_star_adjustment") or 0),
-                    "total_stars": _total_stars(conn, user_row),
-                    "available_stars": _available_stars(conn, user_row),
-                }
-            )
-    return payload
+    return list_admin_users_use_case(
+        present_user=_user_public,
+        total_stars=_total_stars,
+        available_stars=_available_stars,
+    )
 
 
 @app.get("/admin/users/{user_id}/audit")
 def admin_user_audit(user_id: int, admin=Depends(require_admin)):
-    with db() as conn:
-        target = conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
-        if not target:
-            raise HTTPException(404, "Користувача не знайдено")
-        user_row = dict(target)
-        achievements = conn.execute(
-            "SELECT * FROM user_achievements WHERE user_id = %s ORDER BY earned_at DESC",
-            (user_id,),
-        ).fetchall()
-        tests = conn.execute(
-            """
-            SELECT id, section, mode, total, correct, time_seconds, created_at
-            FROM test_results
-            WHERE user_id = %s
-            ORDER BY created_at DESC
-            LIMIT 30
-            """,
-            (user_id,),
-        ).fetchall()
-        battles = conn.execute(
-            """
-            SELECT *
-            FROM battles
-            WHERE challenger_email = %s OR opponent_email = %s
-            ORDER BY created_at DESC
-            LIMIT 30
-            """,
-            (user_row["email"], user_row["email"]),
-        ).fetchall()
-        messages = conn.execute(
-            """
-            SELECT id, to_email, from_email, from_name, content, type, is_read, created_at, result_data
-            FROM messages
-            WHERE to_email = %s OR from_email = %s
-            ORDER BY created_at DESC
-            LIMIT 50
-            """,
-            (user_row["email"], user_row["email"]),
-        ).fetchall()
-        total_stars = _total_stars(conn, user_row)
-        available_stars = _available_stars(conn, user_row)
-    return {
-        "user": {
-            **_user_public(user_row),
-            "manual_star_adjustment": int(user_row.get("manual_star_adjustment") or 0),
-            "total_stars": total_stars,
-            "available_stars": available_stars,
-        },
-        "achievements": [dict(row) for row in achievements],
-        "tests": [dict(row) for row in tests],
-        "battles": [
-            {
-                **dict(row),
-                "question_ids": _coerce_json_list(row.get("question_ids")),
-                "challenger_answers": _coerce_json_dict(row.get("challenger_answers")),
-                "opponent_answers": _coerce_json_dict(row.get("opponent_answers")),
-            }
-            for row in battles
-        ],
-        "messages": [
-            {
-                **dict(row),
-                "result_data": _coerce_json_dict(row.get("result_data")),
-            }
-            for row in messages
-        ],
-    }
+    try:
+        return get_admin_user_audit_use_case(
+            user_id,
+            present_user=_user_public,
+            total_stars=_total_stars,
+            available_stars=_available_stars,
+            coerce_json_list=_coerce_json_list,
+            coerce_json_dict=_coerce_json_dict,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.patch("/admin/users/{user_id}")
 def admin_update_user(user_id: int, req: AdminUserUpdateRequest, admin=Depends(require_admin)):
-    with db() as conn:
-        target = conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
-        if not target:
-            raise HTTPException(404, "Користувача не знайдено")
-        if _is_admin_email(target["email"]) and req.is_blocked:
-            raise HTTPException(400, "Адміна не можна заблокувати")
-        fields: list[str] = []
-        params: list[Any] = []
-        for key in ("total_tests", "total_correct", "total_answers", "marathon_best", "streak_days", "manual_star_adjustment"):
-            value = getattr(req, key)
-            if value is None:
-                continue
-            fields.append(f"{key} = %s")
-            params.append(max(0, int(value)))
-        if req.is_premium is not None:
-            fields.append("is_premium = %s")
-            params.append(bool(req.is_premium))
-        if req.is_blocked is not None:
-            fields.append("is_blocked = %s")
-            params.append(bool(req.is_blocked))
-        if not fields:
-            return _user_public(dict(target))
-        params.append(user_id)
-        conn.execute(f"UPDATE users SET {', '.join(fields)} WHERE id = %s", params)
-        conn.commit()
-        updated = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone())
-    return _user_public(updated)
+    try:
+        return update_admin_user_use_case(
+            user_id,
+            req,
+            present_user=_user_public,
+            is_admin_email=_is_admin_email,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.delete("/admin/users/{user_id}")
 def admin_delete_user(user_id: int, admin=Depends(require_admin)):
-    with db() as conn:
-        target = conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
-        if not target:
-            raise HTTPException(404, "Користувача не знайдено")
-        if _is_admin_email(target["email"]):
-            raise HTTPException(400, "Адміністратора не можна видалити")
-        conn.execute("DELETE FROM users WHERE id = %s", (user_id,))
-        conn.commit()
-    return {"message": "Користувача видалено"}
+    try:
+        return delete_admin_user_use_case(user_id, is_admin_email=_is_admin_email)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.post("/admin/users/{user_id}/reset-password")
 def admin_reset_user_password(user_id: int, admin=Depends(require_admin)):
-    with db() as conn:
-        target = conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
-        if not target:
-            raise HTTPException(404, "Користувача не знайдено")
-        code = gen_code()
-        conn.execute(
-            """
-            UPDATE users
-            SET reset_code = %s, reset_code_exp = %s
-            WHERE id = %s
-            """,
-            (code, datetime.utcnow() + timedelta(minutes=30), user_id),
-        )
-        conn.commit()
+    try:
+        reset = create_admin_password_reset_use_case(user_id, code_factory=gen_code)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
     sent = send_email(
-        target["email"],
+        reset["email"],
         "Скидання пароля PDRPrep",
-        f"<p>Адміністратор надіслав відновлення доступу. Ваш код: <b style='font-size:24px'>{code}</b></p>",
+        f"<p>Адміністратор надіслав відновлення доступу. Ваш код: <b style='font-size:24px'>{reset['code']}</b></p>",
     )
-    return email_delivery_response(sent, code, "Лист на відновлення пароля надіслано")
+    return email_delivery_response(sent, reset["code"], "Лист на відновлення пароля надіслано")
 
 
 @app.post("/admin/users/{user_id}/achievements")
 def admin_update_user_achievements(user_id: int, req: AdminAchievementUpdateRequest, admin=Depends(require_admin)):
-    achievement_id = req.achievement_id.strip()
-    if not achievement_id:
-        raise HTTPException(400, "Потрібен achievement_id")
-    meta = next((item for item in ACHIEVEMENTS_DEF if item[0] == achievement_id), None)
-    name = meta[2] if meta else achievement_id
-    description = meta[3] if meta else "Ручне досягнення від адміністратора"
-    tier = meta[1] if meta else 1
-    category = meta[4] if meta else "manual"
-    with db() as conn:
-        target = conn.execute("SELECT id FROM users WHERE id = %s", (user_id,)).fetchone()
-        if not target:
-            raise HTTPException(404, "Користувача не знайдено")
-        if req.remove:
-            conn.execute(
-                "DELETE FROM user_achievements WHERE user_id = %s AND achievement_id = %s",
-                (user_id, achievement_id),
-            )
-        else:
-            conn.execute(
-                """
-                INSERT INTO user_achievements (user_id, achievement_id, achievement_name, achievement_desc, tier, category)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                ON CONFLICT (user_id, achievement_id) DO NOTHING
-                """,
-                (user_id, achievement_id, name, description, tier, category),
-            )
-        conn.commit()
-        rows = conn.execute(
-            "SELECT * FROM user_achievements WHERE user_id = %s ORDER BY earned_at DESC",
-            (user_id,),
-        ).fetchall()
-    return [dict(row) for row in rows]
+    try:
+        return update_admin_user_achievement_use_case(
+            user_id,
+            req,
+            achievement_defs=ACHIEVEMENTS_DEF,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.get("/admin/questions")
@@ -4126,122 +1800,35 @@ def admin_search_questions(
     limit: int = Query(default=40, ge=1, le=100),
     admin=Depends(require_admin),
 ):
-    with db() as conn:
-        rows = conn.execute(
-            """
-            SELECT id, section, section_name, difficulty, question_text, explanation, options, images, correct_ans
-            FROM questions
-            WHERE (%s = '' OR section = %s OR section_name = %s)
-              AND (
-                   %s = ''
-               OR question_text ILIKE %s
-               OR section_name ILIKE %s
-               OR explanation ILIKE %s
-              )
-            ORDER BY id
-            LIMIT %s
-            """,
-            (
-                section.strip(),
-                section.strip(),
-                section.strip(),
-                search.strip(),
-                f"%{search.strip()}%",
-                f"%{search.strip()}%",
-                f"%{search.strip()}%",
-                limit,
-            ),
-        ).fetchall()
-    return [_sanitize_question_row(dict(row)) for row in rows]
+    return search_admin_questions_use_case(
+        search=search,
+        section=section,
+        limit=limit,
+        present_question=_sanitize_question_row,
+    )
 
 
 @app.get("/admin/questions/sections")
 def admin_question_sections(admin=Depends(require_admin)):
-    with db() as conn:
-        rows = conn.execute(
-            """
-            SELECT section, section_name, COUNT(*) AS count
-            FROM questions
-            GROUP BY section, section_name
-            ORDER BY NULLIF(SUBSTRING(TRIM(COALESCE(section::text, '')) FROM '^\d+'), '')::INT NULLS LAST, section
-            """
-        ).fetchall()
-    return [dict(row) for row in rows]
+    return list_admin_question_sections_use_case()
 
 
 @app.patch("/admin/questions/{question_id}")
 def admin_update_question(question_id: int, req: AdminQuestionUpdateRequest, admin=Depends(require_admin)):
-    fields: list[str] = []
-    params: list[Any] = []
-    if req.question_text is not None:
-        fields.append("question_text = %s")
-        params.append(req.question_text.strip())
-    if req.explanation is not None:
-        fields.append("explanation = %s")
-        params.append(req.explanation.strip())
-    if req.difficulty is not None:
-        fields.append("difficulty = %s")
-        params.append(req.difficulty.strip().lower() or "medium")
-    if req.section_name is not None:
-        fields.append("section_name = %s")
-        params.append(req.section_name.strip())
-    if req.options is not None:
-        options = [_clean_text(option) for option in req.options if _clean_text(option)]
-        if len(options) < 2:
-            raise HTTPException(400, "Потрібно щонайменше 2 варіанти відповіді")
-        fields.append("options = %s::jsonb")
-        params.append(json.dumps(options, ensure_ascii=False))
-    if req.images is not None:
-        fields.append("images = %s::jsonb")
-        params.append(json.dumps([str(item).strip() for item in req.images if str(item).strip()], ensure_ascii=False))
-    if req.correct_ans is not None:
-        fields.append("correct_ans = %s")
-        params.append(int(req.correct_ans))
-    if not fields:
-        raise HTTPException(400, "Немає полів для оновлення")
-    params.append(question_id)
-    with db() as conn:
-        updated = conn.execute("SELECT id FROM questions WHERE id = %s", (question_id,)).fetchone()
-        if not updated:
-            raise HTTPException(404, "Питання не знайдено")
-        conn.execute(f"UPDATE questions SET {', '.join(fields)} WHERE id = %s", params)
-        conn.commit()
-        row = conn.execute(
-            "SELECT id, section, section_name, difficulty, question_text, explanation, options, images, correct_ans FROM questions WHERE id = %s",
-            (question_id,),
-        ).fetchone()
-    return _sanitize_question_row(dict(row))
+    try:
+        return update_admin_question_use_case(
+            question_id,
+            req,
+            clean_text=_clean_text,
+            present_question=_sanitize_question_row,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.get("/admin/theory/summary")
 def admin_theory_summary(admin=Depends(require_admin)):
-    with db() as conn:
-        totals = {
-            "categories": conn.execute("SELECT COUNT(*) AS count FROM theory_categories").fetchone()["count"],
-            "topics": conn.execute("SELECT COUNT(*) AS count FROM theory_topics").fetchone()["count"],
-            "sections": conn.execute("SELECT COUNT(*) AS count FROM theory_sections").fetchone()["count"],
-            "assets": conn.execute("SELECT COUNT(*) AS count FROM theory_assets").fetchone()["count"],
-        }
-        by_category = conn.execute(
-            """
-            SELECT
-                c.slug,
-                c.title,
-                COUNT(DISTINCT t.id) AS topics_count,
-                COUNT(DISTINCT s.id) AS sections_count,
-                COUNT(DISTINCT a.id) AS assets_count
-            FROM theory_categories c
-            LEFT JOIN theory_topics t ON t.category_id = c.id
-            LEFT JOIN theory_sections s ON s.topic_id = t.id
-            LEFT JOIN theory_assets a ON a.section_id = s.id
-            GROUP BY c.id, c.slug, c.title, c.sort_order
-            ORDER BY c.sort_order, c.title
-            """
-        ).fetchall()
-    return {
-        **{key: int(value or 0) for key, value in totals.items()},
-        "by_category": [dict(row) for row in by_category],
-    }
+    return get_admin_theory_summary_use_case()
 
 
 _theory_parse_lock = threading.Lock()
@@ -4359,517 +1946,116 @@ def admin_theory_sections(
     limit: int = Query(default=80, ge=1, le=200),
     admin=Depends(require_admin),
 ):
-    search_term = search.strip()
-    topic_filter = topic.strip()
-    category_filter = category.strip()
-    with db() as conn:
-        rows = conn.execute(
-            """
-            SELECT
-                s.id,
-                s.slug,
-                s.title,
-                s.description,
-                s.comment_html,
-                s.content_html,
-                s.video_url,
-                s.embed_url,
-                s.chapter_num,
-                s.sort_order,
-                s.source_url,
-                t.slug AS topic_slug,
-                t.title AS topic_title,
-                c.slug AS category_slug,
-                c.title AS category_title,
-                COUNT(a.id) AS assets_count,
-                COALESCE(jsonb_agg(a.asset_url ORDER BY a.sort_order) FILTER (WHERE a.id IS NOT NULL), '[]'::jsonb) AS assets
-            FROM theory_sections s
-            JOIN theory_topics t ON t.id = s.topic_id
-            JOIN theory_categories c ON c.id = t.category_id
-            LEFT JOIN theory_assets a ON a.section_id = s.id
-            WHERE (%s = '' OR t.slug = %s)
-              AND (%s = '' OR c.slug = %s)
-              AND (
-                    %s = ''
-                 OR s.title ILIKE %s
-                 OR s.description ILIKE %s
-                 OR s.content_text ILIKE %s
-                 OR t.title ILIKE %s
-                 OR c.title ILIKE %s
-              )
-            GROUP BY s.id, t.slug, t.title, c.slug, c.title, c.sort_order, t.sort_order
-            ORDER BY c.sort_order, t.sort_order, COALESCE(s.chapter_num, s.sort_order), s.sort_order, s.title
-            LIMIT %s
-            """,
-            (
-                topic_filter,
-                topic_filter,
-                category_filter,
-                category_filter,
-                search_term,
-                f"%{search_term}%",
-                f"%{search_term}%",
-                f"%{search_term}%",
-                f"%{search_term}%",
-                f"%{search_term}%",
-                limit,
-            ),
-        ).fetchall()
-    return [dict(row) for row in rows]
+    return list_admin_theory_sections_use_case(
+        search=search,
+        topic=topic,
+        category=category,
+        limit=limit,
+    )
 
 
 @app.patch("/admin/theory/sections/{section_id}")
 def admin_update_theory_section(section_id: int, req: AdminTheorySectionUpdateRequest, admin=Depends(require_admin)):
-    fields: list[str] = []
-    params: list[Any] = []
-    for key in ("title", "description", "comment_html", "video_url", "embed_url"):
-        value = getattr(req, key)
-        if value is None:
-            continue
-        fields.append(f"{key} = %s")
-        params.append(str(value).strip())
-    if req.content_html is not None:
-        content_html = str(req.content_html).strip()
-        content_text = _sanitize_handbook_text(re.sub(r"<[^>]+>", " ", content_html))
-        fields.append("content_html = %s")
-        params.append(content_html)
-        fields.append("content_text = %s")
-        params.append(content_text)
-    if req.chapter_num is not None:
-        fields.append("chapter_num = %s")
-        params.append(int(req.chapter_num))
-    if req.sort_order is not None:
-        fields.append("sort_order = %s")
-        params.append(int(req.sort_order))
-    if not fields:
-        raise HTTPException(400, "Немає полів для оновлення")
-    params.append(section_id)
-    with db() as conn:
-        exists = conn.execute("SELECT id FROM theory_sections WHERE id = %s", (section_id,)).fetchone()
-        if not exists:
-            raise HTTPException(404, "Розділ теорії не знайдено")
-        conn.execute(f"UPDATE theory_sections SET {', '.join(fields)} WHERE id = %s", params)
-        conn.commit()
-        row = conn.execute(
-            """
-            SELECT
-                s.id,
-                s.slug,
-                s.title,
-                s.description,
-                s.comment_html,
-                s.content_html,
-                s.video_url,
-                s.embed_url,
-                s.chapter_num,
-                s.sort_order,
-                s.source_url,
-                t.slug AS topic_slug,
-                t.title AS topic_title,
-                c.slug AS category_slug,
-                c.title AS category_title,
-                COUNT(a.id) AS assets_count,
-                COALESCE(jsonb_agg(a.asset_url ORDER BY a.sort_order) FILTER (WHERE a.id IS NOT NULL), '[]'::jsonb) AS assets
-            FROM theory_sections s
-            JOIN theory_topics t ON t.id = s.topic_id
-            JOIN theory_categories c ON c.id = t.category_id
-            LEFT JOIN theory_assets a ON a.section_id = s.id
-            WHERE s.id = %s
-            GROUP BY s.id, t.slug, t.title, c.slug, c.title
-            """,
-            (section_id,),
-        ).fetchone()
-    return dict(row)
+    try:
+        return update_admin_theory_section_use_case(
+            section_id,
+            req,
+            sanitize_text=_sanitize_handbook_text,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.post("/frames/purchase")
 def purchase_frame(req: FramePurchaseRequest, user=Depends(get_current_user)):
-    frame_id = req.frame_id.strip()
-    meta = FRAME_SHOP.get(frame_id)
-    if not meta or frame_id == "default":
-        raise HTTPException(404, "Рамку не знайдено")
-    if meta.get("achievement_id"):
-        raise HTTPException(400, "Ця рамка відкривається тільки через досягнення")
-
-    with db() as conn:
-        user_row = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone())
-        purchased = _purchased_frames(user_row)
-        if frame_id in purchased:
-            return {
-                "message": "Рамка вже відкрита",
-                "purchased_frames": purchased,
-                "available_stars": _available_stars(conn, user_row),
-            }
-        price = int(meta.get("price") or 0)
-        stars = _available_stars(conn, user_row)
-        if stars < price:
-            raise HTTPException(400, "Недостатньо зірок для покупки цієї рамки")
-        purchased.append(frame_id)
-        conn.execute(
-            """
-            UPDATE users
-            SET purchased_frames = %s::jsonb,
-                spent_stars = COALESCE(spent_stars, 0) + %s
-            WHERE id = %s
-            """,
-            (json.dumps(purchased, ensure_ascii=False), price, user["id"]),
+    try:
+        return purchase_frame_use_case(
+            req,
+            user,
+            available_stars=_available_stars,
+            build_frame_shop=_frame_shop_payload,
         )
-        conn.commit()
-        updated = dict(conn.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone())
-        achievements = conn.execute(
-            "SELECT achievement_id FROM user_achievements WHERE user_id = %s",
-            (user["id"],),
-        ).fetchall()
-        available_stars = _available_stars(conn, updated)
-    return {
-        "message": "Рамку відкрито",
-        "purchased_frames": _purchased_frames(updated),
-        "available_stars": available_stars,
-        "frame_shop": _frame_shop_payload(updated, [str(row["achievement_id"]) for row in achievements], available_stars),
-    }
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.get("/battles")
 def get_battles(user=Depends(get_current_user)):
-    with db() as conn:
-        rows = conn.execute(
-            """
-            SELECT *
-            FROM battles
-            WHERE challenger_email = %s OR opponent_email = %s
-            ORDER BY created_at DESC
-            """,
-            (user["email"], user["email"]),
-        ).fetchall()
-        battles = []
-        for row in rows:
-            battle = _finalize_battle_state(conn, dict(row))
-            role = _battle_role(battle, user["email"])
-            if not role:
-                continue
-            if battle.get("status") == "pending":
-                battle = _mark_battle_seen(conn, battle, role)
-            opponent_email = battle["opponent_email"] if role == "challenger" else battle["challenger_email"]
-            opponent_name = battle["opponent_name"] if role == "challenger" else battle["challenger_name"]
-            opponent_user = conn.execute(
-                "SELECT id, username, surname, avatar_url, avatar_version, active_frame FROM users WHERE email = %s",
-                (opponent_email,),
-            ).fetchone()
-            my_submitted = bool(battle["challenger_answers"]) if role == "challenger" else bool(battle["opponent_answers"])
-            battles.append(
-                {
-                    **battle,
-                    "role": role,
-                    "opponent_email": opponent_email,
-                    "opponent_name": opponent_name,
-                    "opponent_id": opponent_user["id"] if opponent_user else None,
-                    "opponent_username": opponent_user["username"] if opponent_user else None,
-                    "opponent_avatar_url": opponent_user["avatar_url"] if opponent_user else None,
-                    "opponent_avatar_version": int(opponent_user["avatar_version"] or 0) if opponent_user else 0,
-                    "opponent_active_frame": opponent_user["active_frame"] if opponent_user else None,
-                    "my_submitted": my_submitted,
-                    "invite_seen": _battle_invite_seen(battle, role),
-                    "seconds_left": _battle_deadline_seconds(battle),
-                    "created_at": str(battle.get("created_at") or ""),
-                    "expires_at": str(battle.get("expires_at") or ""),
-                    "finished_at": str(battle.get("finished_at") or ""),
-                }
-            )
-        conn.commit()
-    return battles
+    return list_battles_use_case(user)
 
 
 @app.post("/battles")
 async def create_battle(req: BattleCreateRequest, user=Depends(get_current_user)):
-    handle = req.opponent_user.strip()
-    category = _normalize_category(req.category) or "B"
-    if _normalize_username(handle) == _normalize_username(user.get("username")):
-        raise HTTPException(400, "Не можна створити батл із собою")
-
-    with db() as conn:
-        opponent = _resolve_social_user_by_handle(conn, handle, user)
-        if not opponent:
-            raise HTTPException(404, "Опонента не знайдено")
-        existing = conn.execute(
-            """
-            SELECT id
-            FROM battles
-            WHERE LEAST(challenger_email, opponent_email) = LEAST(%s, %s)
-              AND GREATEST(challenger_email, opponent_email) = GREATEST(%s, %s)
-              AND status IN ('pending', 'active')
-            ORDER BY created_at DESC
-            LIMIT 1
-            """,
-            (user["email"], opponent["email"], user["email"], opponent["email"]),
-        ).fetchone()
-        if existing:
-            raise HTTPException(409, "У вас уже є активний або очікуючий батл із цим користувачем")
-        question_rows = get_random_questions(count=req.question_count, category=category)
-        question_ids = [row["id"] for row in question_rows]
-        if len(question_ids) < req.question_count:
-            raise HTTPException(400, "Недостатньо питань для цього батлу")
-        battle = conn.execute(
-            """
-            INSERT INTO battles (
-                challenger_email, challenger_name, opponent_email, opponent_name,
-                status, category, question_ids, expires_at
-            )
-            VALUES (%s, %s, %s, %s, 'pending', %s, %s::jsonb, %s)
-            RETURNING *
-            """,
-            (
-                user["email"],
-                user["name"],
-                opponent["email"],
-                opponent["name"],
-                category,
-                _serialize_question_ids(question_ids),
-                datetime.utcnow() + timedelta(days=7),
-            ),
-        ).fetchone()
-        friendship = conn.execute(
-            """
-            SELECT id
-            FROM friendships
-            WHERE status = 'accepted'
-              AND LEAST(requester_id, addressee_id) = LEAST(%s, %s)
-              AND GREATEST(requester_id, addressee_id) = GREATEST(%s, %s)
-            """,
-            (user["id"], opponent["id"], user["id"], opponent["id"]),
-        ).fetchone()
-        if friendship:
-            conn.execute(
-                """
-                INSERT INTO messages (to_email, from_email, from_name, content, type, result_data)
-                VALUES (%s, %s, %s, %s, 'result_share', %s::jsonb)
-                """,
-                (
-                    opponent["email"],
-                    user["email"],
-                    user["name"],
-                    "Запрошення на батл",
-                    _serialize_json({"kind": "battle_invite", "battle_id": battle["id"], "category": category}),
-                ),
-            )
-        conn.commit()
-    await realtime_hub.emit(opponent["email"], "battle_invite", {"battle_id": battle["id"]})
-    await realtime_hub.emit(user["email"], "battle_invite", {"battle_id": battle["id"]})
-    return dict(battle)
+    try:
+        result = create_battle_use_case(
+            req,
+            user,
+            resolve_social_user=_resolve_social_user_by_handle,
+            normalize_category=_normalize_category,
+            question_provider=random_questions_use_case,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
+    for email in result.emit:
+        await realtime_hub.emit(email, result.event, {"battle_id": result.payload["id"]})
+    return result.payload
 
 
 @app.post("/battles/{battle_id}/accept")
 async def accept_battle(battle_id: int, user=Depends(get_current_user)):
-    with db() as conn:
-        battle = conn.execute("SELECT * FROM battles WHERE id = %s", (battle_id,)).fetchone()
-        if not battle:
-            raise HTTPException(404, "Батл не знайдено")
-        if battle["opponent_email"].lower() != user["email"].lower():
-            raise HTTPException(403, "Тільки опонент може прийняти батл")
-        if battle["status"] != "pending":
-            return {"message": "Батл уже активний"}
-        expires_at = datetime.utcnow() + timedelta(minutes=10)
-        conn.execute("UPDATE battles SET status = 'active', expires_at = %s WHERE id = %s", (expires_at, battle_id))
-        conn.commit()
-    await realtime_hub.emit(battle["challenger_email"], "battle_active", {"battle_id": battle_id})
-    await realtime_hub.emit(battle["opponent_email"], "battle_active", {"battle_id": battle_id})
-    return {"message": "Батл активовано", "expires_at": expires_at.isoformat()}
+    try:
+        result = accept_battle_use_case(battle_id, user)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
+    for email in result.emit:
+        await realtime_hub.emit(email, result.event, {"battle_id": battle_id})
+    return result.payload
 
 
 @app.post("/battles/{battle_id}/decline")
 async def decline_battle(battle_id: int, user=Depends(get_current_user)):
-    with db() as conn:
-        battle = conn.execute("SELECT * FROM battles WHERE id = %s", (battle_id,)).fetchone()
-        if not battle:
-            raise HTTPException(404, "Батл не знайдено")
-        battle = _normalize_battle_record(dict(battle))
-        if battle["opponent_email"] != user["email"].lower():
-            raise HTTPException(403, "Тільки опонент може відхилити батл")
-        if battle["status"] != "pending":
-            if battle["status"] == "declined":
-                return {"message": "Батл уже відхилено"}
-            raise HTTPException(409, "Можна відхилити лише очікуючий батл")
-        _update_battle_declined(conn, battle_id, "opponent_seen_at")
-        conn.commit()
-    await realtime_hub.emit(battle["challenger_email"], "battle_declined", {"battle_id": battle_id})
-    await realtime_hub.emit(battle["opponent_email"], "battle_declined", {"battle_id": battle_id})
-    return {"message": "Батл відхилено"}
+    try:
+        result = decline_battle_use_case(battle_id, user)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
+    for email in result.emit:
+        await realtime_hub.emit(email, result.event, {"battle_id": battle_id})
+    return result.payload
 
 
 @app.post("/battles/{battle_id}/cancel")
 async def cancel_battle(battle_id: int, user=Depends(get_current_user)):
-    with db() as conn:
-        battle = conn.execute("SELECT * FROM battles WHERE id = %s", (battle_id,)).fetchone()
-        if not battle:
-            raise HTTPException(404, "Батл не знайдено")
-        battle = _normalize_battle_record(dict(battle))
-        if battle["challenger_email"] != user["email"].lower():
-            raise HTTPException(403, "Тільки ініціатор може скасувати виклик")
-        if battle["status"] != "pending":
-            if battle["status"] == "declined":
-                return {"message": "Виклик уже скасовано"}
-            raise HTTPException(409, "Скасувати можна лише очікуючий виклик")
-        _update_battle_declined(conn, battle_id, "challenger_seen_at")
-        conn.commit()
-    await realtime_hub.emit(battle["challenger_email"], "battle_cancelled", {"battle_id": battle_id})
-    await realtime_hub.emit(battle["opponent_email"], "battle_cancelled", {"battle_id": battle_id})
-    return {"message": "Виклик скасовано"}
+    try:
+        result = cancel_battle_use_case(battle_id, user)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
+    for email in result.emit:
+        await realtime_hub.emit(email, result.event, {"battle_id": battle_id})
+    return result.payload
 
 
 @app.get("/battles/{battle_id}")
 def get_battle(battle_id: int, user=Depends(get_current_user)):
-    with db() as conn:
-        battle = conn.execute("SELECT * FROM battles WHERE id = %s", (battle_id,)).fetchone()
-        if not battle:
-            raise HTTPException(404, "Батл не знайдено")
-        battle_dict = _finalize_battle_state(conn, dict(battle))
-        role = _battle_role(battle_dict, user["email"])
-        if not role:
-            raise HTTPException(403, "Немає доступу до батлу")
-        if battle_dict.get("status") == "pending":
-            battle_dict = _mark_battle_seen(conn, battle_dict, role)
-        question_ids = battle_dict.get("question_ids") or []
-        questions = []
-        if question_ids:
-            rows = conn.execute(
-                "SELECT * FROM questions WHERE id = ANY(%s) ORDER BY id",
-                (question_ids,),
-            ).fetchall()
-            by_id = {row["id"]: _sanitize_question_row(dict(row)) for row in rows}
-            questions = [by_id[qid] for qid in question_ids if qid in by_id]
-        opponent_email = battle_dict["opponent_email"] if role == "challenger" else battle_dict["challenger_email"]
-        opponent_user = conn.execute(
-            "SELECT id, username, avatar_url, avatar_version, active_frame FROM users WHERE email = %s",
-            (opponent_email,),
-        ).fetchone()
-        challenger_user = conn.execute(
-            "SELECT username FROM users WHERE email = %s",
-            (battle_dict["challenger_email"],),
-        ).fetchone()
-        opponent_identity = conn.execute(
-            "SELECT username FROM users WHERE email = %s",
-            (battle_dict["opponent_email"],),
-        ).fetchone()
-        conn.commit()
-
-    my_answers = battle_dict["challenger_answers"] if role == "challenger" else battle_dict["opponent_answers"]
-    return {
-        **battle_dict,
-        "role": role,
-        "questions": questions,
-        "opponent_username": opponent_user["username"] if opponent_user else None,
-        "opponent_id": opponent_user["id"] if opponent_user else None,
-        "opponent_avatar_url": opponent_user["avatar_url"] if opponent_user else None,
-        "opponent_avatar_version": int(opponent_user["avatar_version"] or 0) if opponent_user else 0,
-        "opponent_active_frame": opponent_user["active_frame"] if opponent_user else None,
-        "winner_username": challenger_user["username"] if battle_dict.get("winner_email") == battle_dict["challenger_email"] and challenger_user else (
-            opponent_identity["username"] if battle_dict.get("winner_email") == battle_dict["opponent_email"] and opponent_identity else None
-        ),
-        "my_submitted": bool(my_answers),
-        "invite_seen": _battle_invite_seen(battle_dict, role),
-        "seconds_left": _battle_deadline_seconds(battle_dict),
-        "created_at": str(battle_dict.get("created_at") or ""),
-        "expires_at": str(battle_dict.get("expires_at") or ""),
-        "finished_at": str(battle_dict.get("finished_at") or ""),
-    }
-
-
-@app.post("/battles/{battle_id}/submit")
-async def submit_battle_answers(battle_id: int, req: BattleSubmitRequest, user=Depends(get_current_user)):
-    with db() as conn:
-        battle = conn.execute("SELECT * FROM battles WHERE id = %s", (battle_id,)).fetchone()
-        if not battle:
-            raise HTTPException(404, "Батл не знайдено")
-        battle_dict = _finalize_battle_state(conn, dict(battle))
-        role = _battle_role(battle_dict, user["email"])
-        if not role:
-            raise HTTPException(403, "Немає доступу до батлу")
-        if battle_dict["status"] == "finished":
-            raise HTTPException(409, "Батл уже завершено")
-        if battle_dict.get("expires_at") and battle_dict["expires_at"] <= datetime.utcnow():
-            raise HTTPException(409, "Час на батл вже вийшов")
-
-        if role == "challenger" and battle_dict.get("challenger_answers"):
-            raise HTTPException(409, "Ви вже завершили цей батл")
-        if role == "opponent" and battle_dict.get("opponent_answers"):
-            raise HTTPException(409, "Ви вже завершили цей батл")
-
-        question_ids = battle_dict.get("question_ids") or []
-        rows = conn.execute("SELECT * FROM questions WHERE id = ANY(%s)", (question_ids,)).fetchall()
-        questions_by_id = {str(row["id"]): dict(row) for row in rows}
-
-        score = 0
-        normalized_answers: dict[str, str] = {}
-        for question_id in question_ids:
-            key = str(question_id)
-            answer = req.answers.get(key)
-            if answer is None:
-                continue
-            question = questions_by_id.get(key)
-            if not question:
-                continue
-            normalized_answers[key] = answer
-            if _answer_label_to_index(answer, question) == int(question.get("correct_ans") or 0):
-                score += 1
-
-        if role == "challenger":
-            battle_dict["challenger_answers"] = normalized_answers
-            battle_dict["challenger_score"] = score
-            battle_dict["challenger_time"] = req.time_seconds
-        else:
-            battle_dict["opponent_answers"] = normalized_answers
-            battle_dict["opponent_score"] = score
-            battle_dict["opponent_time"] = req.time_seconds
-
-        both_done = bool(battle_dict["challenger_answers"]) and bool(battle_dict["opponent_answers"])
-        battle_dict["status"] = "finished" if both_done else "active"
-        battle_dict["finished_at"] = datetime.utcnow() if both_done else battle_dict.get("finished_at")
-        if not both_done:
-            battle_dict["expires_at"] = min(
-                battle_dict["expires_at"] or (datetime.utcnow() + timedelta(minutes=10)),
-                datetime.utcnow() + timedelta(seconds=60),
-            )
-        battle_dict["winner_email"] = _pick_winner(battle_dict) if both_done else None
-
-        conn.execute(
-            """
-            UPDATE battles
-            SET status = %s,
-                challenger_answers = %s::jsonb,
-                opponent_answers = %s::jsonb,
-                challenger_score = %s,
-                opponent_score = %s,
-                challenger_time = %s,
-                opponent_time = %s,
-                winner_email = %s,
-                expires_at = %s,
-                finished_at = %s
-            WHERE id = %s
-            """,
-            (
-                battle_dict["status"],
-                _serialize_json(battle_dict["challenger_answers"]),
-                _serialize_json(battle_dict["opponent_answers"]),
-                battle_dict["challenger_score"],
-                battle_dict["opponent_score"],
-                battle_dict["challenger_time"],
-                battle_dict["opponent_time"],
-                battle_dict["winner_email"],
-                battle_dict["expires_at"],
-                battle_dict["finished_at"],
-                battle_id,
-            ),
+    try:
+        return get_battle_detail_use_case(
+            battle_id,
+            user,
+            sanitize_question=_sanitize_question_row,
         )
-        conn.commit()
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
-    await realtime_hub.emit(battle_dict["challenger_email"], "battle_update", {"battle_id": battle_id})
-    await realtime_hub.emit(battle_dict["opponent_email"], "battle_update", {"battle_id": battle_id})
-    return {
-        "status": battle_dict["status"],
-        "score": score,
-        "winner_email": battle_dict["winner_email"],
-        "seconds_left": _battle_deadline_seconds(battle_dict),
-    }
 
+@app.post("/battles/{battle_id}/submit", response_model=BattleSubmitResponse)
+async def submit_battle_answers(battle_id: int, req: BattleSubmitRequest, user=Depends(get_current_user)):
+    try:
+        result = submit_battle_answers_use_case(battle_id, req, user)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
+
+    await realtime_hub.emit(result.challenger_email, "battle_update", {"battle_id": battle_id})
+    await realtime_hub.emit(result.opponent_email, "battle_update", {"battle_id": battle_id})
+    return result.response
 
 API_ROUTE_PREFIXES = {
     "api",

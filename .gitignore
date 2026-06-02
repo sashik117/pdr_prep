@@ -37,12 +37,15 @@ Thumbs.db
 
 # Uploads / generated local data
 backend/uploads/*
+!backend/uploads/maps/
+!backend/uploads/maps/**
 !backend/uploads/handbook/
 backend/uploads/handbook/*
 !backend/uploads/handbook/vodiy/
 !backend/uploads/handbook/vodiy/**
 !backend/uploads/handbook/sign_*.svg
 !backend/uploads/handbook/marking_*.png
+!backend/uploads/handbook/rules_media_map.json
 !backend/uploads/handbook/placeholder.png
 backend/logs/*
 !backend/logs/.gitkeep

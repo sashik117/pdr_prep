@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, CheckCircle2, Crown, FileQuestion, Lock, PlayCircle } from 'lucide-react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { categoryGroups } from '@/lib/testCatalog';
+import { canPreviewFreeTicket, registerFreeTicketPreview } from '@/lib/accessLimits';
 
 function TicketQuestionPreview({ question, index }) {
   const options = question.options || [];
@@ -77,7 +78,7 @@ export default function TicketDetailPage() {
   const category = categoryGroups.some((item) => item.id === categoryFromUrl) ? categoryFromUrl : 'B';
   const categoryMeta = useMemo(() => categoryGroups.find((item) => item.id === category) || categoryGroups[1], [category]);
   const isPremium = Boolean(user?.is_premium);
-  const lockedPreview = !isPremium && numericTicket > 3;
+  const lockedPreview = !isPremium && (numericTicket > 1 || !canPreviewFreeTicket(user, numericTicket));
 
   const ticketQuery = useQuery({
     queryKey: ['ticket', numericTicket, category],
@@ -90,6 +91,12 @@ export default function TicketDetailPage() {
   const backHref = `/tickets?category=${encodeURIComponent(category)}`;
   const testHref = `/test?mode=ticket&ticket=${numericTicket}&category=${encodeURIComponent(category)}`;
 
+  useEffect(() => {
+    if (!lockedPreview && Number.isFinite(numericTicket) && numericTicket > 0) {
+      registerFreeTicketPreview(user, numericTicket);
+    }
+  }, [lockedPreview, numericTicket, user]);
+
   if (!Number.isFinite(numericTicket) || numericTicket <= 0 || lockedPreview) {
     return (
       <div className="mx-auto w-full max-w-2xl space-y-5 px-4 py-10 text-center sm:px-6">
@@ -99,7 +106,7 @@ export default function TicketDetailPage() {
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">Цей білет відкривається у Premium</h1>
           <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Без Premium можна переглянути перші 3 білети. Повна добірка та проходження білетів як тест доступні після оформлення доступу.
+            Без Premium доступний лише один білет для попереднього перегляду на день. Повна добірка та проходження білетів як тест доступні після оформлення доступу.
           </p>
         </div>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">

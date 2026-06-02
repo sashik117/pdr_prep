@@ -38,7 +38,7 @@ const MODE_CONFIG = {
 };
 
 const answerToIndex = (answer) => ['A', 'B', 'C', 'D', 'E', 'F'].indexOf(answer || '') + 1;
-const guestTestKey = `guest_test_limit:${new Date().toISOString().slice(0, 10)}`;
+const LIMITED_FREE_TEST_MODES = ['quick', 'full', 'difficult', 'section', 'top'];
 
 export default function TakeTest() {
   const navigate = useNavigate();
@@ -57,7 +57,7 @@ export default function TakeTest() {
   const config = MODE_CONFIG[/** @type {keyof typeof MODE_CONFIG} */ (mode)] || MODE_CONFIG.quick;
   const requiresAuth = mode === 'difficult';
   const premiumOnly = mode === 'mvs' || mode === 'ticket';
-  const guestLocked = !user && localStorage.getItem(guestTestKey) === '1';
+  const guestLocked = !user && !canStartFreeTest(null, mode);
   const effectiveQuestionCount = requestedCount || requestedIds.length || config.count;
   const effectiveTime = Math.max(config.time, effectiveQuestionCount * 60);
 
@@ -83,6 +83,7 @@ export default function TakeTest() {
   const answeredAllAtRef = useRef(null);
   const finishInProgressRef = useRef(false);
   const finishedAtRef = useRef(null);
+  const limitRegisteredRef = useRef(false);
   const autoAdvanceRef = useRef(/** @type {number | null} */ (null));
   const allowNavigationRef = useRef(false);
   const { toast } = useToast();
@@ -140,7 +141,11 @@ export default function TakeTest() {
     answeredAllAtRef.current = null;
     finishInProgressRef.current = false;
     finishedAtRef.current = null;
-  }, [rawQuestions, effectiveTime]);
+    if (!user?.is_premium && LIMITED_FREE_TEST_MODES.includes(mode) && !limitRegisteredRef.current) {
+      registerFreeTestCompletion(user || null, mode);
+      limitRegisteredRef.current = true;
+    }
+  }, [rawQuestions, effectiveTime, mode, user]);
 
   useEffect(() => () => {
     if (autoAdvanceRef.current) {
@@ -154,7 +159,7 @@ export default function TakeTest() {
       setLimitBlocked(true);
       return;
     }
-    if (['quick', 'full', 'difficult', 'section', 'top'].includes(mode) && !canStartFreeTest(user, mode)) {
+    if (LIMITED_FREE_TEST_MODES.includes(mode) && !canStartFreeTest(user, mode)) {
       setLimitBlocked(true);
     }
   }, [mode, premiumOnly, user]);
@@ -275,9 +280,6 @@ export default function TakeTest() {
       try {
         response = await api.submitTestResult(resultPayload);
         resultSyncStatus = 'synced';
-        if (!user?.is_premium && ['quick', 'full', 'difficult', 'section', 'top'].includes(mode)) {
-          registerFreeTestCompletion(user, mode);
-        }
         await Promise.allSettled([
           queryClient.invalidateQueries({ queryKey: ['cabinet-stats'] }),
           queryClient.invalidateQueries({ queryKey: ['analytics-stats'] }),
@@ -296,35 +298,33 @@ export default function TakeTest() {
         });
       } catch {
         resultSyncStatus = 'queued_offline';
-        if (!user?.is_premium && ['quick', 'full', 'difficult', 'section', 'top'].includes(mode)) {
-          registerFreeTestCompletion(user, mode);
-        }
         await queuePendingTestResult(resultPayload);
         toast({
           title: 'Результат збережено офлайн',
           description: 'Ми автоматично надішлемо його на сервер, щойно з’явиться інтернет.',
         });
       }
-    } else {
-      localStorage.setItem(guestTestKey, '1');
     }
 
-    const streakValue =
-      typeof response?.streak_days === 'number'
+    const streakValue = !user
+      ? null
+      : typeof response?.streak_days === 'number'
         ? response.streak_days
         : typeof response?.streak === 'number'
           ? response.streak
           : streakFallback(correct, questions.length);
-    const totalStars =
-      typeof response?.available_stars === 'number'
+    const totalStars = !user
+      ? null
+      : typeof response?.available_stars === 'number'
         ? response.available_stars
         : typeof response?.total_stars === 'number'
           ? response.total_stars
           : null;
-    const earnedStar =
+    const earnedStar = user && (
       typeof response?.earned_star === 'boolean'
         ? response.earned_star
-        : questions.length > 0 && correct === questions.length;
+        : questions.length > 0 && correct === questions.length
+    );
     const rewardDataMissing = Boolean(user && resultSyncStatus === 'synced' && (!response || totalStars === null));
 
     setResultMeta({
@@ -333,7 +333,7 @@ export default function TakeTest() {
       percent: questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0,
       perfect: questions.length > 0 && correct === questions.length,
       streak: streakValue,
-      streakActivated: (response?.streak_status ?? 'active') === 'active' && (user?.streak_status || 'inactive') !== 'active',
+      streakActivated: Boolean(user && (response?.streak_status ?? 'active') === 'active' && (user?.streak_status || 'inactive') !== 'active'),
       streakRestored: !!response?.streak_restored,
       restoresLeft: response?.streak_restores_left ?? null,
       totalStars,
@@ -456,7 +456,7 @@ export default function TakeTest() {
         <Ghost className="mx-auto h-12 w-12 text-slate-400" />
         <h2 className="text-xl font-medium text-slate-900 dark:text-white">Для гостей сьогодні тест уже використано</h2>
         <p className="text-sm text-slate-500 dark:text-slate-300">
-          Гість може пройти лише один тест на день. Увійдіть у профіль, щоб тренуватися без ліміту, зберігати прогрес і відкривати батли.
+          Гість може пройти лише один тест на день. Увійдіть у профіль, щоб зберігати прогрес, питання, зірочки та серію навчання.
         </p>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Button onClick={() => navigate('/auth')}>Увійти або зареєструватися</Button>
@@ -474,7 +474,7 @@ export default function TakeTest() {
         <p className="text-sm text-slate-500 dark:text-slate-300">
           {premiumOnly
             ? 'Цей режим відкривається у Premium, щоб Ви могли тренуватися без обмежень і з повним набором питань.'
-            : 'Для безкоштовного доступу є лише 3 спроби на день у кожному режимі. Продовжити без лімітів можна з Premium.'}
+            : 'Для безкоштовного доступу є лише одна спроба на день. Продовжити без лімітів можна з Premium.'}
         </p>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Button onClick={() => navigate('/pricing')}>Перейти до Premium</Button>
@@ -582,9 +582,9 @@ export default function TakeTest() {
             selectedAnswer={answers[String(currentQuestion.id)]}
             onSelectAnswer={handleSelectAnswer}
             revealAnswer={showResults || answers[String(currentQuestion.id)] !== undefined}
-            isFavorite={isQuestionSaved(currentQuestion.id)}
-            onToggleFavorite={() => {
-              const saved = toggleSavedQuestion(currentQuestion.id);
+            isFavorite={user ? isQuestionSaved(currentQuestion.id) : false}
+            onToggleFavorite={user ? () => {
+              const saved = toggleSavedQuestion(currentQuestion.id, user);
               setSavedIds(getSavedQuestionIds());
               toast({
                 title: saved ? 'Питання збережено' : 'Питання прибрано зі збережених',
@@ -592,7 +592,7 @@ export default function TakeTest() {
                   ? 'Ви зможете повернутися до нього в розділі “Збережені запитання”.'
                   : 'Список повторення оновлено.',
               });
-            }}
+            } : undefined}
             isAuthenticated={!!user}
             onAnalyzeSituation={currentQuestion.image_url ? setAnalyzingQuestion : null}
           />
@@ -689,7 +689,13 @@ export default function TakeTest() {
                 </p>
               ) : null}
 
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              {!user ? (
+                <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-left text-sm leading-6 text-blue-900 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-100">
+                  Це гостьова спроба. Ми показали результат, але зірочки, серія, збережені питання й аналітика відкриваються після входу в профіль.
+                </div>
+              ) : null}
+
+              {user ? <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <motion.div
                   initial={false}
                   animate={resultMeta?.earnedStar ? { scale: [0.72, 1.22, 1], rotate: [0, -8, 8, 0] } : { opacity: [0.72, 1] }}
@@ -762,7 +768,7 @@ export default function TakeTest() {
                       </div>
                     </div>
                   </motion.div>
-              </div>
+              </div> : null}
 
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <Button variant="outline" onClick={() => navigate('/tests')}>

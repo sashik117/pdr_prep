@@ -1,37 +1,63 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
+from core.database import db
+from repositories.ticket_repository import TicketRepository
+from services.errors import ServiceError
 
-def list_tickets(conn) -> dict[str, Any]:
-    rows = conn.execute(
-        """
-        SELECT ticket_number, COUNT(*) AS questions_count
-        FROM questions
-        WHERE ticket_number IS NOT NULL
-        GROUP BY ticket_number
-        ORDER BY ticket_number
-        """
-    ).fetchall()
-    tickets = [
-        {
-            "ticket_number": int(row["ticket_number"]),
-            "questions_count": int(row["questions_count"]),
+
+QuestionSanitizer = Callable[[dict[str, Any]], dict[str, Any]]
+CategoryNormalizer = Callable[[str | None], str | None]
+
+
+def list_tickets(*, category: str | None, normalize_category: CategoryNormalizer, mvs_ticket_count: int) -> dict[str, Any]:
+    normalized = normalize_category(category)
+    if normalized:
+        tickets = [
+            {
+                "ticket_number": number,
+                "questions_count": 20,
+                "category": normalized,
+                "source": "mvs_exam",
+            }
+            for number in range(1, mvs_ticket_count + 1)
+        ]
+        return {"tickets": tickets, "total": len(tickets), "category": normalized}
+    with db() as conn:
+        return TicketRepository(conn).list_legacy_tickets()
+
+
+def get_ticket(
+    *,
+    ticket_number: int,
+    category: str | None,
+    normalize_category: CategoryNormalizer,
+    mvs_ticket_count: int,
+    build_mvs_questions: Callable[[str, str], list[dict[str, Any]]],
+    sanitize_question: QuestionSanitizer,
+) -> dict[str, Any]:
+    normalized = normalize_category(category)
+    if normalized:
+        if ticket_number < 1 or ticket_number > mvs_ticket_count:
+            raise ServiceError(404, "Білет не знайдено")
+        prepared = build_mvs_questions(normalized, f"ticket:{normalized}:{ticket_number}")
+        return {
+            "ticket_number": ticket_number,
+            "category": normalized,
+            "source": "mvs_exam",
+            "questions_count": len(prepared),
+            "questions": prepared,
         }
-        for row in rows
-    ]
-    return {"tickets": tickets, "total": len(tickets)}
 
-
-def get_ticket_questions(conn, ticket_number: int) -> list[dict[str, Any]]:
-    rows = conn.execute(
-        """
-        SELECT *
-        FROM questions
-        WHERE ticket_number = %s
-        ORDER BY COALESCE(question_number, num_in_section, id), id
-        """,
-        (ticket_number,),
-    ).fetchall()
-    return [dict(row) for row in rows]
-
+    with db() as conn:
+        rows = TicketRepository(conn).get_legacy_ticket_questions(ticket_number)
+    if not rows:
+        raise ServiceError(404, "Білет не знайдено")
+    prepared = [sanitize_question(row) for row in rows]
+    return {
+        "ticket_number": ticket_number,
+        "questions_count": len(prepared),
+        "questions": prepared,
+    }

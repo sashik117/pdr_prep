@@ -9,7 +9,12 @@
     "build": "npm --prefix frontend run build",
     "lint": "npm --prefix frontend run lint",
     "typecheck": "npm --prefix frontend run typecheck",
-    "test": "npm --prefix frontend run test"
+    "test": "npm --prefix frontend run test",
+    "backend:test": "node scripts/run-backend-python.cjs -m pytest backend/tests",
+    "backend:audit-media": "node scripts/run-backend-python.cjs backend/scripts/audit_media.py",
+    "backend:smoke": "node scripts/run-backend-python.cjs backend/scripts/smoke_api.py",
+    "clean:workspace": "node scripts/clean-workspace.cjs",
+    "verify": "npm run lint && npm run build && npm run backend:test && npm run backend:audit-media && npm run backend:smoke"
   },
   "dependencies": {
     "docker": "^1.0.0"

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { categoryGroups } from '@/lib/testCatalog';
+import { canPreviewFreeTicket } from '@/lib/accessLimits';
 
 export default function TicketsPage() {
   const { user } = useAuth();
@@ -118,8 +119,8 @@ export default function TicketsPage() {
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           {tickets.map((ticketItem, index) => {
-            const locked = !isPremium && index >= 3;
-            const href = locked ? '/pricing' : `/tickets/${ticketItem.ticket_number}?category=${selectedCategory}`;
+            const locked = !isPremium && (index >= 1 || !canPreviewFreeTicket(user, ticketItem.ticket_number));
+            const href = locked ? (user ? '/pricing' : '/auth?tab=login') : `/tickets/${ticketItem.ticket_number}?category=${selectedCategory}`;
             return (
               <motion.div key={ticketItem.ticket_number} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.015 }}>
                 <Link to={href} className="block h-full">
@@ -162,7 +163,7 @@ export default function TicketsPage() {
       <Card className="border-slate-200 bg-card shadow-md dark:border-slate-800">
         <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-medium text-slate-950 dark:text-white">Без Premium доступні 3 білети для попереднього перегляду.</p>
+            <p className="text-sm font-medium text-slate-950 dark:text-white">Без Premium доступний один білет для попереднього перегляду.</p>
             <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
               Premium відкриває всі білети, проходження в режимі тесту та іспит МВС без денних обмежень.
             </p>

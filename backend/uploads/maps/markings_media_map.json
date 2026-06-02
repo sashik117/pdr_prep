@@ -1,0 +1,44 @@
+{
+  "1_1": {
+    "asset_url": "/uploads/handbook/marking_1_1.png",
+    "title": "15. Зупинка і стоянка",
+    "caption": "1.1 «Позначення смуг руху, розділення транспортних потоків»",
+    "section_slug": "rules-15",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-15"
+  },
+  "1_12": {
+    "asset_url": "/uploads/handbook/marking_1_12.png",
+    "title": "Знаки пріоритету",
+    "caption": "Дорожня розмітка 1.12 (стоп-лінія)",
+    "section_slug": "rules-35",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-35"
+  },
+  "1_13": {
+    "asset_url": "/uploads/handbook/marking_1_13.png",
+    "title": "16. Проїзд перехресть",
+    "caption": "1.13 « Позначення місця, де водій зобов’язаний поступитися дорогою ДТЗ, які наближаються до нього у разі перехрещення напрямків їх руху»",
+    "section_slug": "rules-16",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-16"
+  },
+  "1_18": {
+    "asset_url": "/uploads/handbook/marking_1_18.png",
+    "title": "11. Розташування транспортних засобів на дорозі",
+    "caption": "1.18 «Позначення напрямків руху по смугах»",
+    "section_slug": "rules-11",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-11"
+  },
+  "1_2": {
+    "asset_url": "/uploads/handbook/marking_1_2.png",
+    "title": "1. Загальні положення",
+    "caption": "1.2 «Позначення краю проїзної частини (крайова лінія) на автомагістралях та дорогах I категорії»",
+    "section_slug": "rules-01",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-1"
+  },
+  "1_9": {
+    "asset_url": "/uploads/handbook/marking_1_9.png",
+    "title": "8. Регулювання дорожнього руху",
+    "caption": "1.9- позначає межі смуг руху, на яких здійснюється реверсивне регулювання; поділяє транспортні потоки протилежних напрямків (при вимкнених реверсивних світлофорах) на дорогах, де здійснюється реверсивне регулювання;",
+    "section_slug": "rules-08",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-8"
+  }
+}

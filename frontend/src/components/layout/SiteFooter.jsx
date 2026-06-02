@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Mail, MessageCircle } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 
 const footerGroups = [
   {
@@ -14,16 +15,16 @@ const footerGroups = [
   {
     title: 'Практика',
     links: [
-      { to: '/saved-questions', label: 'Збережені питання' },
-      { to: '/analytics', label: 'Аналітика' },
-      { to: '/achievements', label: 'Досягнення' },
+      { to: '/saved-questions', label: 'Збережені питання', auth: true },
+      { to: '/analytics', label: 'Аналітика', auth: true },
+      { to: '/achievements', label: 'Досягнення', auth: true },
       { to: '/pricing', label: 'Premium' },
     ],
   },
   {
     title: 'Сервіс',
     links: [
-      { to: '/support', label: 'Підтримка' },
+      { to: '/support', label: 'Підтримка', auth: true },
       { to: '/settings', label: 'Налаштування' },
       { to: '/privacy', label: 'Конфіденційність' },
       { to: '/terms', label: 'Угода підписника' },
@@ -32,6 +33,8 @@ const footerGroups = [
 ];
 
 export default function SiteFooter() {
+  const { isAuthenticated } = useAuth();
+
   const handleFooterLinkClick = () => {
     window.scrollTo({ top: 0, behavior: 'auto' });
   };
@@ -46,28 +49,34 @@ export default function SiteFooter() {
               <span className="text-xl font-bold text-white">DrivePrep</span>
             </Link>
             <p className="mt-6 max-w-sm text-sm leading-7 text-gray-400">
-              Спокійна підготовка до теоретичного іспиту: актуальні питання, структурована теорія, білети, прогрес і повторення важливого матеріалу.
+              Спокійна підготовка до теоретичного іспиту: актуальні питання, структурована теорія,
+              білети, прогрес і повторення важливого матеріалу.
             </p>
           </div>
 
-          {footerGroups.map((group) => (
-            <div key={group.title}>
-              <h2 className="mb-6 text-lg font-bold text-gray-200">{group.title}</h2>
-              <ul className="space-y-4">
-                {group.links.map((link) => (
-                  <li key={link.to}>
-                    <Link
-                      to={link.to}
-                      onClick={handleFooterLinkClick}
-                      className="text-gray-400 transition-colors hover:text-white"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {footerGroups.map((group) => {
+            const visibleLinks = group.links.filter((link) => !link.auth || isAuthenticated);
+            if (!visibleLinks.length) return null;
+
+            return (
+              <div key={group.title}>
+                <h2 className="mb-6 text-lg font-bold text-gray-200">{group.title}</h2>
+                <ul className="space-y-4">
+                  {visibleLinks.map((link) => (
+                    <li key={link.to}>
+                      <Link
+                        to={link.to}
+                        onClick={handleFooterLinkClick}
+                        className="text-gray-400 transition-colors hover:text-white"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
 
         <div className="grid gap-4 border-t border-gray-800 pt-8 text-sm text-gray-500 md:grid-cols-[1fr_auto] md:items-center">
@@ -77,10 +86,12 @@ export default function SiteFooter() {
               <Mail className="h-4 w-4" />
               pdr.preparation@gmail.com
             </a>
-            <Link to="/support" onClick={handleFooterLinkClick} className="flex items-center gap-2 transition-colors hover:text-white">
-              <MessageCircle className="h-4 w-4" />
-              Підтримка
-            </Link>
+            {isAuthenticated ? (
+              <Link to="/support" onClick={handleFooterLinkClick} className="flex items-center gap-2 transition-colors hover:text-white">
+                <MessageCircle className="h-4 w-4" />
+                Підтримка
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>

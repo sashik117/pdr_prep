@@ -103,7 +103,9 @@ export default function TestSelection() {
       return false;
     }
     if (!canStartFreeTest(user, modeId)) {
-      openLimit('Сьогодні безкоштовні спроби для цього режиму вже використані. Premium відкриває тренування без лімітів.');
+      openLimit(user
+        ? 'Сьогодні безкоштовна спроба вже використана. Premium відкриває тренування без денних обмежень.'
+        : 'Гість може пройти лише один тест на день. Увійдіть, щоб зберігати прогрес, або оформіть Premium для навчання без лімітів.');
       return false;
     }
     return true;
@@ -268,7 +270,7 @@ export default function TestSelection() {
             </p>
             {!user?.is_premium && !currentMode.premium ? (
               <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-600 dark:text-amber-300">
-                Free: ще {getRemainingFreeTests(user, selectedMode)} із 3 спроб сьогодні
+                Free: ще {getRemainingFreeTests(user, selectedMode)} із 1 спроби сьогодні
               </p>
             ) : null}
           </div>

@@ -131,7 +131,7 @@ export default function Battle() {
     if (!user?.is_premium && !canStartFreeBattle(user)) {
       toast({
         title: 'Денний trial для батлів вичерпано',
-        description: 'Безкоштовно доступні лише 3 батли на день. Для більшої кількості відкрийте Premium.',
+        description: 'Безкоштовно доступний лише один батл на день. Для більшої кількості відкрийте Premium.',
         variant: 'destructive',
       });
       navigate('/pricing');

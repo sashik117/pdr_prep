@@ -130,7 +130,7 @@ export default function SectionTests() {
             </p>
             {!user?.is_premium ? (
               <Badge variant="outline" className="mt-3 rounded-xl border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200">
-                Free: ще {getRemainingFreeTests(user, 'section')} із 3 спроб сьогодні
+                Free: ще {getRemainingFreeTests(user, 'section')} із 1 спроби сьогодні
               </Badge>
             ) : null}
           </div>
@@ -209,7 +209,7 @@ export default function SectionTests() {
         <DialogContent className="rounded-xl border-slate-200 bg-card text-slate-950 dark:border-slate-800 dark:text-white">
           <DialogTitle>Денний ліміт використано</DialogTitle>
           <DialogDescription>
-            Безкоштовно доступно 3 тести по розділах на день. Premium відкриває тренування без обмежень.
+            Безкоштовно доступна лише одна спроба на день. Premium відкриває тренування без денних обмежень.
           </DialogDescription>
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             <Button className="rounded-lg px-6" onClick={() => navigate('/pricing')}>Перейти до Premium</Button>

@@ -1,0 +1,2648 @@
+{
+  "1": {
+    "asset_url": "/uploads/handbook/sign_1.svg",
+    "title": "30. Номерні, розпізнавальні знаки, написи і позначення",
+    "caption": "Розпізнавальний знак «Довгомірний транспортний засіб»",
+    "section_slug": "rules-30",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-30"
+  },
+  "18_9": {
+    "asset_url": "/uploads/handbook/sign_18_9.svg",
+    "title": "18. Проїзд пішохідних переходів і зупинок транспортних засобів",
+    "caption": "Розпізнавальний знак «Діти»",
+    "section_slug": "rules-18",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-18"
+  },
+  "1_1": {
+    "asset_url": "/uploads/handbook/sign_1_1.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.1 «Небезпечний поворот праворуч»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_10": {
+    "asset_url": "/uploads/handbook/sign_1_10.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.10 «Нерівна дорога»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_11": {
+    "asset_url": "/uploads/handbook/sign_1_11.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.11 «Пагорб»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_12": {
+    "asset_url": "/uploads/handbook/sign_1_12.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.12 «Вибоїна»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_13": {
+    "asset_url": "/uploads/handbook/sign_1_13.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.13 «Слизька дорога»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_14": {
+    "asset_url": "/uploads/handbook/sign_1_14.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.14 «Викидання кам’яних матеріалів»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_15": {
+    "asset_url": "/uploads/handbook/sign_1_15.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.15 «Небезпечне узбіччя»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_16": {
+    "asset_url": "/uploads/handbook/sign_1_16.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.16 «Падіння каміння»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_17": {
+    "asset_url": "/uploads/handbook/sign_1_17.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.17 «Боковий вітер»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_18": {
+    "asset_url": "/uploads/handbook/sign_1_18.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.18 «Низьколітаючі літаки»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_19": {
+    "asset_url": "/uploads/handbook/sign_1_19.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.19 «Перехрещення з рухом по колу»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_2": {
+    "asset_url": "/uploads/handbook/sign_1_2.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.2 «Небезпечний поворот ліворуч»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_20": {
+    "asset_url": "/uploads/handbook/sign_1_20.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.20 «Перехрещення з трамвайною колією»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_21": {
+    "asset_url": "/uploads/handbook/sign_1_21.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.21 «Перехрещення рівнозначних доріг»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_22": {
+    "asset_url": "/uploads/handbook/sign_1_22.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.22 «Перехрещення з другорядною дорогою»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_23_1": {
+    "asset_url": "/uploads/handbook/sign_1_23_1.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.23.1 «Прилягання другорядної дороги»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_23_2": {
+    "asset_url": "/uploads/handbook/sign_1_23_2.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.23.2 «Прилягання другорядної дороги»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_23_3": {
+    "asset_url": "/uploads/handbook/sign_1_23_3.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.23.3 «Прилягання другорядної дороги»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_23_4": {
+    "asset_url": "/uploads/handbook/sign_1_23_4.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.23.4 «Прилягання другорядної дороги»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_24": {
+    "asset_url": "/uploads/handbook/sign_1_24.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.24 «Світлофорне регулювання»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_25": {
+    "asset_url": "/uploads/handbook/sign_1_25.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.25 «Розвідний міст»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_26": {
+    "asset_url": "/uploads/handbook/sign_1_26.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.26 «Двосторонній рух»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_27": {
+    "asset_url": "/uploads/handbook/sign_1_27.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.27 «Залізничний переїзд із шлагбаумом»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_28": {
+    "asset_url": "/uploads/handbook/sign_1_28.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.28 «Залізничний переїзд без шлагбаума»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_29": {
+    "asset_url": "/uploads/handbook/sign_1_29.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.29 «Одноколійна залізниця»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_30": {
+    "asset_url": "/uploads/handbook/sign_1_30.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.30 «Багатоколійна залізниця»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_31_1": {
+    "asset_url": "/uploads/handbook/sign_1_31_1.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.31.1 «Наближення до залізничного переїзду»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_31_2": {
+    "asset_url": "/uploads/handbook/sign_1_31_2.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.31.2 «Наближення до залізничного переїзду»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_31_3": {
+    "asset_url": "/uploads/handbook/sign_1_31_3.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.31.3 «Наближення до залізничного переїзду»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_31_4": {
+    "asset_url": "/uploads/handbook/sign_1_31_4.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.31.4 «Наближення до залізничного переїзду»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_31_5": {
+    "asset_url": "/uploads/handbook/sign_1_31_5.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.31.5 «Наближення до залізничного переїзду»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_31_6": {
+    "asset_url": "/uploads/handbook/sign_1_31_6.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.31.6 «Наближення до залізничного переїзду»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_32": {
+    "asset_url": "/uploads/handbook/sign_1_32.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.32 «Пішохідний перехід»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_33": {
+    "asset_url": "/uploads/handbook/sign_1_33.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.33 «Діти»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_34": {
+    "asset_url": "/uploads/handbook/sign_1_34.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.34 «Виїзд велосипедистів»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_35": {
+    "asset_url": "/uploads/handbook/sign_1_35.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.35 «Перегін худоби»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_36": {
+    "asset_url": "/uploads/handbook/sign_1_36.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.36 «Дикі тварини»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_37": {
+    "asset_url": "/uploads/handbook/sign_1_37.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.37 «Дорожні роботи»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_38": {
+    "asset_url": "/uploads/handbook/sign_1_38.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.38 «Затори в дорожньому русі»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_39": {
+    "asset_url": "/uploads/handbook/sign_1_39.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.39 «Інша небезпека (аварійно небезпечна ділянка)»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_3_1": {
+    "asset_url": "/uploads/handbook/sign_1_3_1.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.3.1 «Декілька поворотів»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_3_2": {
+    "asset_url": "/uploads/handbook/sign_1_3_2.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.3.2 «Декілька поворотів»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_40": {
+    "asset_url": "/uploads/handbook/sign_1_40.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.40 «Зміна покриття»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_41": {
+    "asset_url": "/uploads/handbook/sign_1_41.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.41 «Місце (ділянка) концентрації дорожньо-транспортної пригоди»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_4_1": {
+    "asset_url": "/uploads/handbook/sign_1_4_1.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.4.1 «Напрямок повороту»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_4_2": {
+    "asset_url": "/uploads/handbook/sign_1_4_2.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.4.2 «Напрямок повороту»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_4_3": {
+    "asset_url": "/uploads/handbook/sign_1_4_3.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.4.3 «Напрямок повороту»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_4_4": {
+    "asset_url": "/uploads/handbook/sign_1_4_4.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.4.4 «Напрямок повороту»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_4_5": {
+    "asset_url": "/uploads/handbook/sign_1_4_5.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.4.5 «Напрямок повороту»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_4_6": {
+    "asset_url": "/uploads/handbook/sign_1_4_6.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.4.6 «Напрямок повороту»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_4_7": {
+    "asset_url": "/uploads/handbook/sign_1_4_7.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.4.7 «Напрямок повороту»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_5_1": {
+    "asset_url": "/uploads/handbook/sign_1_5_1.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.5.1 «Звуження дороги»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_5_2": {
+    "asset_url": "/uploads/handbook/sign_1_5_2.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.5.2 «Звуження дороги»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_5_3": {
+    "asset_url": "/uploads/handbook/sign_1_5_3.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.5.3 «Звуження дороги»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_6": {
+    "asset_url": "/uploads/handbook/sign_1_6.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.6 «Крутий підйом»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_7": {
+    "asset_url": "/uploads/handbook/sign_1_7.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.7 «Крутий спуск»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_8": {
+    "asset_url": "/uploads/handbook/sign_1_8.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.8 «Виїзд на набережну або берег»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "1_9": {
+    "asset_url": "/uploads/handbook/sign_1_9.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "1.9 «Тунель»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "2": {
+    "asset_url": "/uploads/handbook/sign_2.svg",
+    "title": "30. Номерні, розпізнавальні знаки, написи і позначення",
+    "caption": "Розпізнавальний знак «Довгомірний транспортний засіб»",
+    "section_slug": "rules-30",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-30"
+  },
+  "21_3": {
+    "asset_url": "/uploads/handbook/sign_21_3.svg",
+    "title": "21. Перевезення пасажирів",
+    "caption": "Розпізнавальний знак «Діти»",
+    "section_slug": "rules-21",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-21"
+  },
+  "25_1": {
+    "asset_url": "/uploads/handbook/sign_25_1.svg",
+    "title": "25. Рух транспортних засобів у колонах",
+    "caption": "Розпізнавальний знак «Колона»",
+    "section_slug": "rules-25",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-25"
+  },
+  "2_1": {
+    "asset_url": "/uploads/handbook/sign_2_1.svg",
+    "title": "Знаки пріоритету",
+    "caption": "2.1 «Дати дорогу»",
+    "section_slug": "rules-35",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-35"
+  },
+  "2_2": {
+    "asset_url": "/uploads/handbook/sign_2_2.svg",
+    "title": "Знаки пріоритету",
+    "caption": "2.2 «Проїзд без зупинки заборонено»",
+    "section_slug": "rules-35",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-35"
+  },
+  "2_3": {
+    "asset_url": "/uploads/handbook/sign_2_3.svg",
+    "title": "Знаки пріоритету",
+    "caption": "2.3 «Головна дорога»",
+    "section_slug": "rules-35",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-35"
+  },
+  "2_4": {
+    "asset_url": "/uploads/handbook/sign_2_4.svg",
+    "title": "Знаки пріоритету",
+    "caption": "2.4 «Кінець головної дороги»",
+    "section_slug": "rules-35",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-35"
+  },
+  "2_5": {
+    "asset_url": "/uploads/handbook/sign_2_5.svg",
+    "title": "Знаки пріоритету",
+    "caption": "2.5 «Перевага зустрічного руху»",
+    "section_slug": "rules-35",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-35"
+  },
+  "2_6": {
+    "asset_url": "/uploads/handbook/sign_2_6.svg",
+    "title": "Знаки пріоритету",
+    "caption": "2.6 «Перевага перед зустрічним рухом»",
+    "section_slug": "rules-35",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-35"
+  },
+  "3": {
+    "asset_url": "/uploads/handbook/sign_3.svg",
+    "title": "30. Номерні, розпізнавальні знаки, написи і позначення",
+    "caption": "Розпізнавальний знак «Шипи»",
+    "section_slug": "rules-30",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-30"
+  },
+  "30_5": {
+    "asset_url": "/uploads/handbook/sign_30_5.svg",
+    "title": "30. Номерні, розпізнавальні знаки, написи і позначення",
+    "caption": "Щитки розміром 200 х 200 мм",
+    "section_slug": "rules-30",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-30"
+  },
+  "30_6": {
+    "asset_url": "/uploads/handbook/sign_30_6.svg",
+    "title": "30. Номерні, розпізнавальні знаки, написи і позначення",
+    "caption": "«Знак аварійної зупинки»",
+    "section_slug": "rules-30",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-30"
+  },
+  "3_1": {
+    "asset_url": "/uploads/handbook/sign_3_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.1 «Рух заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_10": {
+    "asset_url": "/uploads/handbook/sign_3_10.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.10 «Рух з ручними візками заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_11": {
+    "asset_url": "/uploads/handbook/sign_3_11.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.11 «Рух гужових возів (саней) заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_12": {
+    "asset_url": "/uploads/handbook/sign_3_12.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.12 «Рух транспортних засобів, що перевозять небезпечні вантажі, заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_13": {
+    "asset_url": "/uploads/handbook/sign_3_13.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.13 «Рух транспортних засобів, що перевозять вибухові та легкозаймисті вантажі, заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_14": {
+    "asset_url": "/uploads/handbook/sign_3_14.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.14 «Рух транспортних засобів, що перевозять речовини, які забруднюють воду, заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_15": {
+    "asset_url": "/uploads/handbook/sign_3_15.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.15 «Рух транспортних засобів, маса яких перевищує ... т, заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_16": {
+    "asset_url": "/uploads/handbook/sign_3_16.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.16 «Рух транспортних засобів, навантаження на вісь яких перевищує ... т, заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_17": {
+    "asset_url": "/uploads/handbook/sign_3_17.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.17 «Рух транспортних засобів, ширина яких перевищує ... м, заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_18": {
+    "asset_url": "/uploads/handbook/sign_3_18.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.18 «Рух транспортних засобів, висота яких перевищує ... м, заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_19": {
+    "asset_url": "/uploads/handbook/sign_3_19.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.19 «Рух транспортних засобів, довжина яких перевищує ... м, заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_2": {
+    "asset_url": "/uploads/handbook/sign_3_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.2 «Рух механічних транс­портних засобів заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_20": {
+    "asset_url": "/uploads/handbook/sign_3_20.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.20 «Рух транспортних засобів без дотримання дистанції ... м заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_21": {
+    "asset_url": "/uploads/handbook/sign_3_21.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.21 «В’їзд заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_22": {
+    "asset_url": "/uploads/handbook/sign_3_22.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.22 «Поворот праворуч заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_23": {
+    "asset_url": "/uploads/handbook/sign_3_23.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.23«Поворот ліворуч заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_24": {
+    "asset_url": "/uploads/handbook/sign_3_24.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.24 «Розворот заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_25": {
+    "asset_url": "/uploads/handbook/sign_3_25.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.25 «Обгін заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_26": {
+    "asset_url": "/uploads/handbook/sign_3_26.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.26 «Кінець заборони обгону»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_27": {
+    "asset_url": "/uploads/handbook/sign_3_27.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.27 «Обгін вантажним автомобілям заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_28": {
+    "asset_url": "/uploads/handbook/sign_3_28.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.28 «Кінець заборони обгону вантажним автомобілям»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_29": {
+    "asset_url": "/uploads/handbook/sign_3_29.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.29 «Обмеження максимальної швидкості»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_3": {
+    "asset_url": "/uploads/handbook/sign_3_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.3 «Рух вантажних автомобілів заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_30": {
+    "asset_url": "/uploads/handbook/sign_3_30.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.30 «Кінець обмеження максимальної швидкості»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_31": {
+    "asset_url": "/uploads/handbook/sign_3_31.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.31 «Зона обмеження максимальної швидкості»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_32": {
+    "asset_url": "/uploads/handbook/sign_3_32.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.32 «Кінець зони обмеження максимальної швидкості»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_33": {
+    "asset_url": "/uploads/handbook/sign_3_33.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.33 «Подачу звукового сигналу заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_34": {
+    "asset_url": "/uploads/handbook/sign_3_34.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.34 «Зупинку заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_35": {
+    "asset_url": "/uploads/handbook/sign_3_35.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.35 «Стоянку заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_36": {
+    "asset_url": "/uploads/handbook/sign_3_36.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.36 «Стоянку заборонено в непарні числа місяця»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_37": {
+    "asset_url": "/uploads/handbook/sign_3_37.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.37 «Стоянку заборонено в парні числа місяця»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_38": {
+    "asset_url": "/uploads/handbook/sign_3_38.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.38 «Зона обмеженої стоянки»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_39": {
+    "asset_url": "/uploads/handbook/sign_3_39.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.39 «Кінець зони обмеженої стоянки»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_4": {
+    "asset_url": "/uploads/handbook/sign_3_4.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.4 «Рух з причепом заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_40": {
+    "asset_url": "/uploads/handbook/sign_3_40.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.40 «Митниця»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_41": {
+    "asset_url": "/uploads/handbook/sign_3_41.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.41 «Контроль»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_42": {
+    "asset_url": "/uploads/handbook/sign_3_42.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.42 «Кінець усіх заборон і обмежень»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_43": {
+    "asset_url": "/uploads/handbook/sign_3_43.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.43 «Небезпека»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_44": {
+    "asset_url": "/uploads/handbook/sign_3_44.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.44 «Рух зазначених транспортних засобів заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_45": {
+    "asset_url": "/uploads/handbook/sign_3_45.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.45 «Рух зазначених транспортних засобів заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_5": {
+    "asset_url": "/uploads/handbook/sign_3_5.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.5 «Рух тракторів заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_6": {
+    "asset_url": "/uploads/handbook/sign_3_6.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.6 «Рух мотоциклів заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_7": {
+    "asset_url": "/uploads/handbook/sign_3_7.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.7 «Рух на мопедах заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_8": {
+    "asset_url": "/uploads/handbook/sign_3_8.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.8 «Рух на велосипедах заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "3_9": {
+    "asset_url": "/uploads/handbook/sign_3_9.svg",
+    "title": "Дорожні знаки",
+    "caption": "3.9 «Рух пішоходів заборонено»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_1": {
+    "asset_url": "/uploads/handbook/sign_4_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.1 «Рух прямо»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_10": {
+    "asset_url": "/uploads/handbook/sign_4_10.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.10 «Круговий рух»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_11": {
+    "asset_url": "/uploads/handbook/sign_4_11.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.11 «Рух легкових автомобілів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_12": {
+    "asset_url": "/uploads/handbook/sign_4_12.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.12 «Обмеження мінімальної швидкості»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_13": {
+    "asset_url": "/uploads/handbook/sign_4_13.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.13 «Кінець обмеження мінімальної швидкості»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_14": {
+    "asset_url": "/uploads/handbook/sign_4_14.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.14 «Доріжка для велосипедистів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_15": {
+    "asset_url": "/uploads/handbook/sign_4_15.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.15 «Кінець доріжки для велосипедистів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_16": {
+    "asset_url": "/uploads/handbook/sign_4_16.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.16 «Доріжка для пішоходів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_17": {
+    "asset_url": "/uploads/handbook/sign_4_17.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.17 «Доріжка для пішоходів і велосипедистів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_18": {
+    "asset_url": "/uploads/handbook/sign_4_18.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.18 «Суміжні пішохідна та велосипедна доріжки».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_19": {
+    "asset_url": "/uploads/handbook/sign_4_19.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.19 «Доріжка для вершників»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_2": {
+    "asset_url": "/uploads/handbook/sign_4_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.2 «Рух праворуч»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_20_1": {
+    "asset_url": "/uploads/handbook/sign_4_20_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.20.1 «Напрямок руху транспортних засобів з небезпечними вантажами»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_20_2": {
+    "asset_url": "/uploads/handbook/sign_4_20_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.20.2 «Напрямок руху транспортних засобів з небезпечними вантажами»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_20_3": {
+    "asset_url": "/uploads/handbook/sign_4_20_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.20.3 «Напрямок руху транспортних засобів з небезпечними вантажами»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_21": {
+    "asset_url": "/uploads/handbook/sign_4_21.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.21 «Рух із застосуванням ланцюгів проти ковзання»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_22": {
+    "asset_url": "/uploads/handbook/sign_4_22.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.22 «Кінець ділянки руху із застосуванням ланцюгів проти ковзання».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_23": {
+    "asset_url": "/uploads/handbook/sign_4_23.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.23 «Дорога для суміщеного руху легкових автомобілів та велосипедистів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_24": {
+    "asset_url": "/uploads/handbook/sign_4_24.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.24 «Кінець дороги для суміщеного руху легкових автомобілів та велосипедистів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_3": {
+    "asset_url": "/uploads/handbook/sign_4_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.3 «Рух ліворуч»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_4": {
+    "asset_url": "/uploads/handbook/sign_4_4.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.4 «Рух прямо або праворуч»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_5": {
+    "asset_url": "/uploads/handbook/sign_4_5.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.5 «Рух прямо або ліворуч»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_6": {
+    "asset_url": "/uploads/handbook/sign_4_6.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.6 «Рух праворуч або ліворуч»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_7": {
+    "asset_url": "/uploads/handbook/sign_4_7.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.7 «Об’їзд перешкоди з правого боку»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_8": {
+    "asset_url": "/uploads/handbook/sign_4_8.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.8 «Об’їзд перешкоди з лівого боку»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "4_9": {
+    "asset_url": "/uploads/handbook/sign_4_9.svg",
+    "title": "Дорожні знаки",
+    "caption": "4.9 «Об’їзд перешкоди з правого або лівого боку»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_1": {
+    "asset_url": "/uploads/handbook/sign_5_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.1 «Автомагістраль»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_10_1": {
+    "asset_url": "/uploads/handbook/sign_5_10_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.10.1 «Виїзд на дорогу із смугою для руху маршрутних транспортних засобів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_10_2": {
+    "asset_url": "/uploads/handbook/sign_5_10_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.10.2 «Виїзд на дорогу із смугою для руху маршрутних транспортних засобів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_10_3": {
+    "asset_url": "/uploads/handbook/sign_5_10_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.10.3 «Виїзд на дорогу із смугою для руху маршрутних транспортних засобів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_10_4": {
+    "asset_url": "/uploads/handbook/sign_5_10_4.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.10.4 «Виїзд на дорогу із смугою для руху маршрутних транспортних засобів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_11": {
+    "asset_url": "/uploads/handbook/sign_5_11.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.11 «Смуга для руху маршрутних транспортних засобів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_12": {
+    "asset_url": "/uploads/handbook/sign_5_12.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.12 «Кінець смуги для руху маршрутних транспортних засобів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_13": {
+    "asset_url": "/uploads/handbook/sign_5_13.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.13 «Дорога з реверсивним рухом»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_14": {
+    "asset_url": "/uploads/handbook/sign_5_14.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.14 «Кінець дороги з реверсивним рухом»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_15": {
+    "asset_url": "/uploads/handbook/sign_5_15.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.15 «Виїзд на дорогу з реверсивним рухом»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_16": {
+    "asset_url": "/uploads/handbook/sign_5_16.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.16 «Напрямки руху по смугах»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_17_1": {
+    "asset_url": "/uploads/handbook/sign_5_17_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.17.1 «Напрямок руху по смугах»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_17_2": {
+    "asset_url": "/uploads/handbook/sign_5_17_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.17.2 «Напрямок руху по смугах»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_18": {
+    "asset_url": "/uploads/handbook/sign_5_18.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.18 «Напрямок руху по смугах»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_19_1": {
+    "asset_url": "/uploads/handbook/sign_5_19_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.19.1 «Використання смуги руху»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_19_2": {
+    "asset_url": "/uploads/handbook/sign_5_19_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.19.2 «Використання смуги руху».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_19_3": {
+    "asset_url": "/uploads/handbook/sign_5_19_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.19.3 «Використання смуги руху».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_2": {
+    "asset_url": "/uploads/handbook/sign_5_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.2 «Кінець автомагістралі»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_20_1": {
+    "asset_url": "/uploads/handbook/sign_5_20_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.20.1 «Початок додаткової смуги руху»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_20_2": {
+    "asset_url": "/uploads/handbook/sign_5_20_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.20.2 «Початок додаткової смуги руху».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_21_1": {
+    "asset_url": "/uploads/handbook/sign_5_21_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.21.1 «Кінець додаткової смуги руху»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_21_2": {
+    "asset_url": "/uploads/handbook/sign_5_21_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.21.2 «Кінець додаткової смуги руху»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_22": {
+    "asset_url": "/uploads/handbook/sign_5_22.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.22 «Прилягання смуги для розгону транспортних засобів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_23": {
+    "asset_url": "/uploads/handbook/sign_5_23.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.23 «Прилягання додаткової смуги руху з правого боку»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_24": {
+    "asset_url": "/uploads/handbook/sign_5_24.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.24 «Мінімальна швидкість на різних смугах руху».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_25": {
+    "asset_url": "/uploads/handbook/sign_5_25.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.25 «Мінімальна швидкість на смузі руху».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_26": {
+    "asset_url": "/uploads/handbook/sign_5_26.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.26 «Обмеження максимальної швидкості на різних смугах руху».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_27_1": {
+    "asset_url": "/uploads/handbook/sign_5_27_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.27.1 «Зміна напрямку руху на дорозі з розділювальною смугою»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_27_2": {
+    "asset_url": "/uploads/handbook/sign_5_27_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.27.2 «Зміна напрямку руху на дорозі з розділювальною смугою»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_28": {
+    "asset_url": "/uploads/handbook/sign_5_28.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.28 «Смуга руху для аварійної зупинки»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_29": {
+    "asset_url": "/uploads/handbook/sign_5_29.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.29 «Місце для розвороту».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_3": {
+    "asset_url": "/uploads/handbook/sign_5_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.3 «Дорога для автомобілів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_30": {
+    "asset_url": "/uploads/handbook/sign_5_30.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.30 «Зона для розвороту».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_31_1": {
+    "asset_url": "/uploads/handbook/sign_5_31_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.31.1 «Напрямок руху для вантажних автомобілів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_31_2": {
+    "asset_url": "/uploads/handbook/sign_5_31_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.31.2 «Напрямок руху для вантажних автомобілів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_31_3": {
+    "asset_url": "/uploads/handbook/sign_5_31_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.31.3 «Напрямок руху для вантажних автомобілів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_32_1": {
+    "asset_url": "/uploads/handbook/sign_5_32_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.32.1 «Тупик»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_32_2": {
+    "asset_url": "/uploads/handbook/sign_5_32_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.32.2 «Тупик»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_32_3": {
+    "asset_url": "/uploads/handbook/sign_5_32_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.32.3 «Тупик»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_33": {
+    "asset_url": "/uploads/handbook/sign_5_33.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.33 «Рекомендована швидкість»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_34": {
+    "asset_url": "/uploads/handbook/sign_5_34.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.34 «Житлова зона»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_35": {
+    "asset_url": "/uploads/handbook/sign_5_35.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.35 «Кінець житлової зони»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_36": {
+    "asset_url": "/uploads/handbook/sign_5_36.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.36 «Пішохідна зона»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_37": {
+    "asset_url": "/uploads/handbook/sign_5_37.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.37 «Кінець пішохідної зони»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_38_1": {
+    "asset_url": "/uploads/handbook/sign_5_38_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.38.1 «Пішохідний перехід»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_38_2": {
+    "asset_url": "/uploads/handbook/sign_5_38_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.38.2 «Пішохідний перехід»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_39": {
+    "asset_url": "/uploads/handbook/sign_5_39.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.39 «Діагональний пішохідний перехід»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_4": {
+    "asset_url": "/uploads/handbook/sign_5_4.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.4 «Кінець дороги для автомобілів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_40_1": {
+    "asset_url": "/uploads/handbook/sign_5_40_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.40.1 «Підземний пішохідний перехід»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_40_2": {
+    "asset_url": "/uploads/handbook/sign_5_40_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.40.2 «Підземний пішохідний перехід»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_41_1": {
+    "asset_url": "/uploads/handbook/sign_5_41_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.41.1 «Надземний пішохідний перехід»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_41_2": {
+    "asset_url": "/uploads/handbook/sign_5_41_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.41.2 «Надземний пішохідний перехід»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_42_1": {
+    "asset_url": "/uploads/handbook/sign_5_42_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.42.1 «Місце для стоянки».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_42_2": {
+    "asset_url": "/uploads/handbook/sign_5_42_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.42.2 «Місце для стоянки».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_42_3": {
+    "asset_url": "/uploads/handbook/sign_5_42_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.42.3 «Місце для стоянки».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_43": {
+    "asset_url": "/uploads/handbook/sign_5_43.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.43 «Зона стоянки»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_44": {
+    "asset_url": "/uploads/handbook/sign_5_44.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.44 «Кінець зони стоянки».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_45_1": {
+    "asset_url": "/uploads/handbook/sign_5_45_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.45.1 «Пункт зупинки автобуса»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_45_2": {
+    "asset_url": "/uploads/handbook/sign_5_45_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.45.2 «Кінець пункту зупинки автобуса»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_46_1": {
+    "asset_url": "/uploads/handbook/sign_5_46_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.46.1 «Пункт зупинки трамвая»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_46_2": {
+    "asset_url": "/uploads/handbook/sign_5_46_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.46.2 «Кінець пункту зупинки трамвая»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_47_1": {
+    "asset_url": "/uploads/handbook/sign_5_47_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.47.1 «Пункт зупинки тролейбуса»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_47_2": {
+    "asset_url": "/uploads/handbook/sign_5_47_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.47.2 «Кінець пункту зупинки тролейбуса»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_48": {
+    "asset_url": "/uploads/handbook/sign_5_48.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.48 «Місце зупинки таксі».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_49": {
+    "asset_url": "/uploads/handbook/sign_5_49.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.49 «Початок населеного пункту»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_5": {
+    "asset_url": "/uploads/handbook/sign_5_5.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.5 «Дорога з одностороннім рухом»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_50": {
+    "asset_url": "/uploads/handbook/sign_5_50.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.50 «Кiнець населеного пункту»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_51": {
+    "asset_url": "/uploads/handbook/sign_5_51.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.51 «Початок населеного пункту»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_52": {
+    "asset_url": "/uploads/handbook/sign_5_52.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.52 «Кінець населеного пункту»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_53": {
+    "asset_url": "/uploads/handbook/sign_5_53.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.53 «Початок щільної забудови»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_54": {
+    "asset_url": "/uploads/handbook/sign_5_54.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.54 «Кінець забудови населеного пункту».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_55": {
+    "asset_url": "/uploads/handbook/sign_5_55.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.55 «Загальні обмеження швидкості та строк застосування денних ходових вогнів (ближнього світла фар)».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_56": {
+    "asset_url": "/uploads/handbook/sign_5_56.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.56 «Можливість використання дороги»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_57": {
+    "asset_url": "/uploads/handbook/sign_5_57.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.57 «Попередній покажчик напрямків».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_58": {
+    "asset_url": "/uploads/handbook/sign_5_58.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.58 «Попередній покажчик напрямку».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_59": {
+    "asset_url": "/uploads/handbook/sign_5_59.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.59 «Покажчик напрямку».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_6": {
+    "asset_url": "/uploads/handbook/sign_5_6.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.6 «Кінець дороги з одностороннім рухом»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_60": {
+    "asset_url": "/uploads/handbook/sign_5_60.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.60 «Покажчик напрямку».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_61": {
+    "asset_url": "/uploads/handbook/sign_5_61.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.61 «Покажчик напрямків»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_62": {
+    "asset_url": "/uploads/handbook/sign_5_62.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.62 «Схема руху»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_63": {
+    "asset_url": "/uploads/handbook/sign_5_63.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.63 «Схема об’їзду»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_64_1": {
+    "asset_url": "/uploads/handbook/sign_5_64_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.64.1 «Напрямок об’їзду»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_64_2": {
+    "asset_url": "/uploads/handbook/sign_5_64_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.64.2 «Напрямок об’їзду»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_64_3": {
+    "asset_url": "/uploads/handbook/sign_5_64_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.64.3 «Напрямок об’їзду»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_65_1": {
+    "asset_url": "/uploads/handbook/sign_5_65_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.65.1 «Назва об’єкта»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_65_2": {
+    "asset_url": "/uploads/handbook/sign_5_65_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.65.2 «Назва об’єкта»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_66": {
+    "asset_url": "/uploads/handbook/sign_5_66.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.66 «Номер маршруту (дороги)»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_67_1": {
+    "asset_url": "/uploads/handbook/sign_5_67_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.67.1 «Номер і напрямок маршруту (дороги)».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_67_2": {
+    "asset_url": "/uploads/handbook/sign_5_67_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.67.2 «Номер і напрямок маршруту (дороги)».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_67_3": {
+    "asset_url": "/uploads/handbook/sign_5_67_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.67.3 «Номер і напрямок маршруту (дороги)».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_68": {
+    "asset_url": "/uploads/handbook/sign_5_68.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.68 «Кілометровий знак»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_69": {
+    "asset_url": "/uploads/handbook/sign_5_69.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.69 «Місце зупинки»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_70": {
+    "asset_url": "/uploads/handbook/sign_5_70.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.70 «Зміна схеми руху»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_71": {
+    "asset_url": "/uploads/handbook/sign_5_71.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.71 «Аеропорт»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_72": {
+    "asset_url": "/uploads/handbook/sign_5_72.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.72 «Залізничний вокзал чи пункт зупинки поїздів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_73": {
+    "asset_url": "/uploads/handbook/sign_5_73.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.73 «Автовокзал чи автостанція»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_74": {
+    "asset_url": "/uploads/handbook/sign_5_74.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.74 «Тунель».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_75": {
+    "asset_url": "/uploads/handbook/sign_5_75.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.75 «Закінчення тунелю».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_76": {
+    "asset_url": "/uploads/handbook/sign_5_76.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.76 «Автоматична відеофіксація порушень Правил дорожнього руху»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_77": {
+    "asset_url": "/uploads/handbook/sign_5_77.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.77 «Морський (річковий) порт чи вокзал».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_78": {
+    "asset_url": "/uploads/handbook/sign_5_78.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.78 «Радіостанції, що передають інформацію про дорожній рух».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_79_1": {
+    "asset_url": "/uploads/handbook/sign_5_79_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.79.1 «Аварійний вихід».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_79_2": {
+    "asset_url": "/uploads/handbook/sign_5_79_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.79.2 «Аварійний вихід».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_7_1": {
+    "asset_url": "/uploads/handbook/sign_5_7_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.7.1 «Виїзд на дорогу з одностороннім рухом»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_7_2": {
+    "asset_url": "/uploads/handbook/sign_5_7_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.7.2 «Виїзд на дорогу з одностороннім рухом»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_8": {
+    "asset_url": "/uploads/handbook/sign_5_8.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.8 «Дорога із смугою для руху маршрутних транспортних засобів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_80_1": {
+    "asset_url": "/uploads/handbook/sign_5_80_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.80.1 «Покажчик напрямку і відстані до аварійного виходу».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_80_2": {
+    "asset_url": "/uploads/handbook/sign_5_80_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.80.2 «Покажчик напрямку і відстані до аварійного виходу».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_81": {
+    "asset_url": "/uploads/handbook/sign_5_81.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.81 «Покажчик напрямків і відстані до аварійних виходів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_82_1": {
+    "asset_url": "/uploads/handbook/sign_5_82_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.82.1 «Платна дорога»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_82_2": {
+    "asset_url": "/uploads/handbook/sign_5_82_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.82.2 «Кінець платної дороги».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_83_1": {
+    "asset_url": "/uploads/handbook/sign_5_83_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.83.1 «Платна дорога»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_83_2": {
+    "asset_url": "/uploads/handbook/sign_5_83_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.83.2 «Конец платной дороги».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_84": {
+    "asset_url": "/uploads/handbook/sign_5_84.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.84 «Початок прикордонноїсмуги»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_85": {
+    "asset_url": "/uploads/handbook/sign_5_85.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.85 «Кінець прикордонної смуги»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_86": {
+    "asset_url": "/uploads/handbook/sign_5_86.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.86 «Початок контрольованого прикордонного району»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_87": {
+    "asset_url": "/uploads/handbook/sign_5_87.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.87 «Кінець контрольованого прикордонного району»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_88": {
+    "asset_url": "/uploads/handbook/sign_5_88.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.88. «Велосипедна смуга».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_89": {
+    "asset_url": "/uploads/handbook/sign_5_89.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.89 «Кінець велосипедної смуги».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_9": {
+    "asset_url": "/uploads/handbook/sign_5_9.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.9 «Кінець дороги із смугою для руху маршрутних транспортних засобів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_90": {
+    "asset_url": "/uploads/handbook/sign_5_90.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.90 «Зона для пішоходів і велосипедистів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_91": {
+    "asset_url": "/uploads/handbook/sign_5_91.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.91 «Кінець зони для пішоходів і велосипедистів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_92_1": {
+    "asset_url": "/uploads/handbook/sign_5_92_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.92.1 «Велосипедний переїзд».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_92_2": {
+    "asset_url": "/uploads/handbook/sign_5_92_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.92.2 «Велосипедний переїзд».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_93_1": {
+    "asset_url": "/uploads/handbook/sign_5_93_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.93.1 «Суміжні пішохідний перехід та велосипедний переїзд».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_93_2": {
+    "asset_url": "/uploads/handbook/sign_5_93_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.93.2 «Суміжні пішохідний перехід та велосипедний переїзд».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_94_1": {
+    "asset_url": "/uploads/handbook/sign_5_94_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.94.1 «Дорога із зустрічною велосипедною смугою».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_94_2": {
+    "asset_url": "/uploads/handbook/sign_5_94_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.94.2 «Кінець дороги із зустрічною велосипедною смугою»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_95_1": {
+    "asset_url": "/uploads/handbook/sign_5_95_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.95.1 «Виїзд на дорогу з одностороннім рухом і зустрічною велосипедною смугою».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_95_2": {
+    "asset_url": "/uploads/handbook/sign_5_95_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.95.2 «Виїзд на дорогу з одностороннім рухом і зустрічною велосипедною смугою».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_96_1": {
+    "asset_url": "/uploads/handbook/sign_5_96_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.96.1 «Зона габаритно-вагового контролю»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "5_96_2": {
+    "asset_url": "/uploads/handbook/sign_5_96_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "5.96.2 «Кінець зони габаритно-вагового контролю».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_1": {
+    "asset_url": "/uploads/handbook/sign_6_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.1 «Пункт першої медичної допомоги»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_10": {
+    "asset_url": "/uploads/handbook/sign_6_10.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.10 «Дорожня станція патрульної поліції».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_11": {
+    "asset_url": "/uploads/handbook/sign_6_11.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.11 «Туалет»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_12": {
+    "asset_url": "/uploads/handbook/sign_6_12.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.12 «Питна вода»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_13": {
+    "asset_url": "/uploads/handbook/sign_6_13.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.13 «Ресторан або їдальня».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_14": {
+    "asset_url": "/uploads/handbook/sign_6_14.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.14 «Кафе»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_15": {
+    "asset_url": "/uploads/handbook/sign_6_15.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.15 «Місце відпочинку»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_16": {
+    "asset_url": "/uploads/handbook/sign_6_16.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.16 «Готель або мотель»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_17": {
+    "asset_url": "/uploads/handbook/sign_6_17.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.17 «Туристическая база»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_18": {
+    "asset_url": "/uploads/handbook/sign_6_18.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.18 «Кемпінг»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_19": {
+    "asset_url": "/uploads/handbook/sign_6_19.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.19 «Місце стоянки причепів у кемпінгу»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_2": {
+    "asset_url": "/uploads/handbook/sign_6_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.2 «Лікарня»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_20": {
+    "asset_url": "/uploads/handbook/sign_6_20.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.20 «Ділянка для табору автотуристів і місце стоянки причепів у кемпінгу»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_21": {
+    "asset_url": "/uploads/handbook/sign_6_21.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.21 «Пляж або басейн»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_22": {
+    "asset_url": "/uploads/handbook/sign_6_22.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.22 «Визначні місця»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_23": {
+    "asset_url": "/uploads/handbook/sign_6_23.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.23 «Шиномонтаж».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_3": {
+    "asset_url": "/uploads/handbook/sign_6_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.3 «Телефон для виклику аварійної служби»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_4": {
+    "asset_url": "/uploads/handbook/sign_6_4.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.4 «Вогнегасник»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_5": {
+    "asset_url": "/uploads/handbook/sign_6_5.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.5 «Пункт технічного обслуговування»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_6": {
+    "asset_url": "/uploads/handbook/sign_6_6.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.6 «Пункт миття автомобілів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_7_1": {
+    "asset_url": "/uploads/handbook/sign_6_7_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.7.1 «Автозаправні станції»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_7_2": {
+    "asset_url": "/uploads/handbook/sign_6_7_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.7.2 «Автозаправні станції»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_7_3": {
+    "asset_url": "/uploads/handbook/sign_6_7_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.7.3 «Електрозарядні станції».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_7_4": {
+    "asset_url": "/uploads/handbook/sign_6_7_4.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.7.4 «Автозаправні станції»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_7_5": {
+    "asset_url": "/uploads/handbook/sign_6_7_5.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.7.5 «Автозаправні та електрозарядні станції».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_7_6": {
+    "asset_url": "/uploads/handbook/sign_6_7_6.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.7.6 «Автозаправні та електрозарядні станції».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_7_7": {
+    "asset_url": "/uploads/handbook/sign_6_7_7.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.7.7 «Автозаправні та електрозарядні станції».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_8": {
+    "asset_url": "/uploads/handbook/sign_6_8.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.8 «Телефон»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "6_9": {
+    "asset_url": "/uploads/handbook/sign_6_9.svg",
+    "title": "Дорожні знаки",
+    "caption": "6.9 «Пункт довідкової служби»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_10": {
+    "asset_url": "/uploads/handbook/sign_7_10.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.10 «Кількість поворотів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_11": {
+    "asset_url": "/uploads/handbook/sign_7_11.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "7.11 «Поромна переправа»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "7_12": {
+    "asset_url": "/uploads/handbook/sign_7_12.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.12 «Ожеледиця»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_13": {
+    "asset_url": "/uploads/handbook/sign_7_13.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.13 «Вологе покриття»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_14": {
+    "asset_url": "/uploads/handbook/sign_7_14.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.14 «Платні послуги»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_15": {
+    "asset_url": "/uploads/handbook/sign_7_15.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.15 «Місце для огляду автомобілів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_16": {
+    "asset_url": "/uploads/handbook/sign_7_16.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.16 «Пішоходи з порушенням зору».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_17": {
+    "asset_url": "/uploads/handbook/sign_7_17.svg",
+    "title": "Дорожні знаки",
+    "caption": "ПДР: Інваліди",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_18": {
+    "asset_url": "/uploads/handbook/sign_7_18.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.18 «Крім інвалідів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_19": {
+    "asset_url": "/uploads/handbook/sign_7_19.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.19 «Обмеження тривалості стоянки»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_1_1": {
+    "asset_url": "/uploads/handbook/sign_7_1_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.1.1 «Відстань до об’єкта»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_1_2": {
+    "asset_url": "/uploads/handbook/sign_7_1_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.1.2 «Відстань до об’єкта»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_1_3": {
+    "asset_url": "/uploads/handbook/sign_7_1_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.1.3 «Відстань до об’єкта»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_1_4": {
+    "asset_url": "/uploads/handbook/sign_7_1_4.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.1.4 «Відстань до об’єкта»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_20": {
+    "asset_url": "/uploads/handbook/sign_7_20.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.20 «Обмеження по температурі».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_21_1": {
+    "asset_url": "/uploads/handbook/sign_7_21_1.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "7.21.1 «Вид небезпеки»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "7_21_2": {
+    "asset_url": "/uploads/handbook/sign_7_21_2.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "7.21.2 «Вид небезпеки»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "7_21_3": {
+    "asset_url": "/uploads/handbook/sign_7_21_3.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "7.21.3 «Вид небезпеки»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "7_21_4": {
+    "asset_url": "/uploads/handbook/sign_7_21_4.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "7.21.4 «Вид небезпеки»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "7_21_5": {
+    "asset_url": "/uploads/handbook/sign_7_21_5.svg",
+    "title": "Попереджувальні знаки",
+    "caption": "7.21.5 «Вид небезпеки»",
+    "section_slug": "rules-34",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-34"
+  },
+  "7_22": {
+    "asset_url": "/uploads/handbook/sign_7_22.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.22 «Лижники»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_23": {
+    "asset_url": "/uploads/handbook/sign_7_23.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.23 «Місце для зарядки електромобілів»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_24": {
+    "asset_url": "/uploads/handbook/sign_7_24.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.24 «Евакуатор».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_25": {
+    "asset_url": "/uploads/handbook/sign_7_25.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.25 «Острівець безпеки».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_26": {
+    "asset_url": "/uploads/handbook/sign_7_26.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.26 «Строк застосування денних ходових вогнів (ближнього світла фар)».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_27": {
+    "asset_url": "/uploads/handbook/sign_7_27.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.27 «Нанесення розмітки».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_28_1": {
+    "asset_url": "/uploads/handbook/sign_7_28_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.28.1 «Вид громадського транспорту»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_28_2": {
+    "asset_url": "/uploads/handbook/sign_7_28_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.28.2 «Вид громадського транспорту»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_28_3": {
+    "asset_url": "/uploads/handbook/sign_7_28_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.28.3 «Вид громадського транспорту»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_28_4": {
+    "asset_url": "/uploads/handbook/sign_7_28_4.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.28.4 «Вид громадського транспорту»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_29_1": {
+    "asset_url": "/uploads/handbook/sign_7_29_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.29.1 «Напрямок руху велосипедистів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_29_2": {
+    "asset_url": "/uploads/handbook/sign_7_29_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.29.2 «Напрямок руху велосипедистів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_29_3": {
+    "asset_url": "/uploads/handbook/sign_7_29_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.29.3 «Напрямок руху велосипедистів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_29_4": {
+    "asset_url": "/uploads/handbook/sign_7_29_4.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.29.4 «Напрямок руху велосипедистів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_29_5": {
+    "asset_url": "/uploads/handbook/sign_7_29_5.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.29.5 «Напрямок руху велосипедистів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_29_6": {
+    "asset_url": "/uploads/handbook/sign_7_29_6.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.29.6 «Напрямок руху велосипедистів».",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_2_1": {
+    "asset_url": "/uploads/handbook/sign_7_2_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.2.1 «Зона дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_2_2": {
+    "asset_url": "/uploads/handbook/sign_7_2_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.2.2 «Зона дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_2_3": {
+    "asset_url": "/uploads/handbook/sign_7_2_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.2.3 «Зона дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_2_4": {
+    "asset_url": "/uploads/handbook/sign_7_2_4.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.2.4 «Зона дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_2_5": {
+    "asset_url": "/uploads/handbook/sign_7_2_5.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.2.5 «Зона дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_2_6": {
+    "asset_url": "/uploads/handbook/sign_7_2_6.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.2.6 «Зона дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_2_7": {
+    "asset_url": "/uploads/handbook/sign_7_2_7.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.2.7 «Зона дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_3_1": {
+    "asset_url": "/uploads/handbook/sign_7_3_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.3.1 «Напрямок дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_3_2": {
+    "asset_url": "/uploads/handbook/sign_7_3_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.3.2 «Напрямок дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_3_3": {
+    "asset_url": "/uploads/handbook/sign_7_3_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.3.3 «Напрямок дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_4_1": {
+    "asset_url": "/uploads/handbook/sign_7_4_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.4.1 «Час дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_4_2": {
+    "asset_url": "/uploads/handbook/sign_7_4_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.4.2 «Час дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_4_3": {
+    "asset_url": "/uploads/handbook/sign_7_4_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.4.3 «Час дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_4_4": {
+    "asset_url": "/uploads/handbook/sign_7_4_4.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.4.4 «Час дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_4_5": {
+    "asset_url": "/uploads/handbook/sign_7_4_5.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.4.5 «Час дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_4_6": {
+    "asset_url": "/uploads/handbook/sign_7_4_6.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.4.6 «Час дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_4_7": {
+    "asset_url": "/uploads/handbook/sign_7_4_7.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.4.7 «Час дії»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_5_1": {
+    "asset_url": "/uploads/handbook/sign_7_5_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.5.1 «Вид транспортного засобу»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_5_2": {
+    "asset_url": "/uploads/handbook/sign_7_5_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.5.2 «Вид транспортного засобу»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_5_3": {
+    "asset_url": "/uploads/handbook/sign_7_5_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.5.3 «Вид транспортного засобу»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_5_4": {
+    "asset_url": "/uploads/handbook/sign_7_5_4.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.5.4 «Вид транспортного засобу»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_5_5": {
+    "asset_url": "/uploads/handbook/sign_7_5_5.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.5.5 «Вид транспортного засобу»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_5_6": {
+    "asset_url": "/uploads/handbook/sign_7_5_6.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.5.6 «Вид транспортного засобу»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_5_7": {
+    "asset_url": "/uploads/handbook/sign_7_5_7.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.5.7 «Вид транспортного засобу»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_5_8": {
+    "asset_url": "/uploads/handbook/sign_7_5_8.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.5.8 «Вид транспортного засобу»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_5_9": {
+    "asset_url": "/uploads/handbook/sign_7_5_9.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.5.9 «Вид транспортного засобу»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_6_1": {
+    "asset_url": "/uploads/handbook/sign_7_6_1.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.6.1 «Спосіб поставлення транспортного засобу на стоянку»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_6_2": {
+    "asset_url": "/uploads/handbook/sign_7_6_2.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.6.2 «Спосіб поставлення транспортного засобу на стоянку»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_6_3": {
+    "asset_url": "/uploads/handbook/sign_7_6_3.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.6.3 «Спосіб поставлення транспортного засобу на стоянку»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_6_4": {
+    "asset_url": "/uploads/handbook/sign_7_6_4.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.6.4 «Спосіб поставлення транспортного засобу на стоянку»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_6_5": {
+    "asset_url": "/uploads/handbook/sign_7_6_5.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.6.5 «Спосіб поставлення транспортного засобу на стоянку»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_6_6": {
+    "asset_url": "/uploads/handbook/sign_7_6_6.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.6.6 «Спосіб поставлення транспортного засобу на стоянку»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_6_7": {
+    "asset_url": "/uploads/handbook/sign_7_6_7.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.6.7 «Спосіб поставлення транспортного засобу на стоянку»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_7": {
+    "asset_url": "/uploads/handbook/sign_7_7.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.7 «Стоянка з непрацюючим двигуном»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "7_8": {
+    "asset_url": "/uploads/handbook/sign_7_8.svg",
+    "title": "Знаки пріоритету",
+    "caption": "7.8 «Напрямок головної дороги»",
+    "section_slug": "rules-35",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-35"
+  },
+  "7_9": {
+    "asset_url": "/uploads/handbook/sign_7_9.svg",
+    "title": "Дорожні знаки",
+    "caption": "7.9 «Смуга руху»",
+    "section_slug": "rules-33",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-33"
+  },
+  "8_4": {
+    "asset_url": "/uploads/handbook/sign_8_4.svg",
+    "title": "8. Регулювання дорожнього руху",
+    "caption": "ПДР: таблички до дорожніх знаків",
+    "section_slug": "rules-08",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-8"
+  },
+  "8_4_2": {
+    "asset_url": "/uploads/handbook/sign_8_4_2.svg",
+    "title": "8. Регулювання дорожнього руху",
+    "caption": "ПДР: інформаційно-вказівні знаки",
+    "section_slug": "rules-08",
+    "source_url": "https://green-way.com.ua/uk/dovidniki/pdr/rozdil-8"
+  }
+}

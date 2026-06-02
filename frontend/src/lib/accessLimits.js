@@ -1,6 +1,10 @@
 const DAY_KEY = new Date().toISOString().slice(0, 10);
 const TEST_LIMIT_PREFIX = 'pdr_free_test_limits';
 const BATTLE_LIMIT_PREFIX = 'pdr_free_battle_limits';
+const TICKET_PREVIEW_PREFIX = 'pdr_free_ticket_preview_limits';
+const FREE_DAILY_TEST_LIMIT = 1;
+const FREE_DAILY_BATTLE_LIMIT = 1;
+const FREE_DAILY_TICKET_PREVIEW_LIMIT = 1;
 
 function readJson(key) {
   try {
@@ -30,22 +34,24 @@ function getScopedKey(prefix, user) {
 
 export function getFreeTestUsage(user, mode) {
   const usage = readJson(getScopedKey(TEST_LIMIT_PREFIX, user));
-  return Number(usage[mode] || 0);
+  if (!user) return Number(usage.__all || usage[mode] || 0);
+  return Number(usage.__all || usage[mode] || 0);
 }
 
 export function canStartFreeTest(user, mode) {
   if (isPremiumUser(user)) return true;
-  return getFreeTestUsage(user, mode) < 3;
+  return getFreeTestUsage(user, mode) < FREE_DAILY_TEST_LIMIT;
 }
 
 export function registerFreeTestCompletion(user, mode) {
   const usage = readJson(getScopedKey(TEST_LIMIT_PREFIX, user));
   usage[mode] = Number(usage[mode] || 0) + 1;
+  usage.__all = Number(usage.__all || 0) + 1;
   writeJson(getScopedKey(TEST_LIMIT_PREFIX, user), usage);
 }
 
 export function getRemainingFreeTests(user, mode) {
-  return Math.max(0, 3 - getFreeTestUsage(user, mode));
+  return Math.max(0, FREE_DAILY_TEST_LIMIT - getFreeTestUsage(user, mode));
 }
 
 export function getFreeBattleUsage(user) {
@@ -55,7 +61,7 @@ export function getFreeBattleUsage(user) {
 
 export function canStartFreeBattle(user) {
   if (isPremiumUser(user)) return true;
-  return getFreeBattleUsage(user) < 3;
+  return getFreeBattleUsage(user) < FREE_DAILY_BATTLE_LIMIT;
 }
 
 export function registerFreeBattleStart(user) {
@@ -65,5 +71,30 @@ export function registerFreeBattleStart(user) {
 }
 
 export function getRemainingFreeBattles(user) {
-  return Math.max(0, 3 - getFreeBattleUsage(user));
+  return Math.max(0, FREE_DAILY_BATTLE_LIMIT - getFreeBattleUsage(user));
+}
+
+export function getFreeTicketPreviewUsage(user) {
+  const usage = readJson(getScopedKey(TICKET_PREVIEW_PREFIX, user));
+  return Number(usage.count || 0);
+}
+
+export function canPreviewFreeTicket(user, ticketNumber = null) {
+  if (isPremiumUser(user)) return true;
+  const usage = readJson(getScopedKey(TICKET_PREVIEW_PREFIX, user));
+  if (ticketNumber && String(usage.ticketNumber || '') === String(ticketNumber)) return true;
+  return Number(usage.count || 0) < FREE_DAILY_TICKET_PREVIEW_LIMIT;
+}
+
+export function registerFreeTicketPreview(user, ticketNumber) {
+  if (isPremiumUser(user)) return;
+  const usage = readJson(getScopedKey(TICKET_PREVIEW_PREFIX, user));
+  if (ticketNumber && String(usage.ticketNumber || '') === String(ticketNumber)) return;
+  usage.count = Number(usage.count || 0) + 1;
+  usage.ticketNumber = ticketNumber ? String(ticketNumber) : '';
+  writeJson(getScopedKey(TICKET_PREVIEW_PREFIX, user), usage);
+}
+
+export function getRemainingFreeTicketPreviews(user) {
+  return Math.max(0, FREE_DAILY_TICKET_PREVIEW_LIMIT - getFreeTicketPreviewUsage(user));
 }
