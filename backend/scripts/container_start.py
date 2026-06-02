@@ -2,11 +2,8 @@
 from __future__ import annotations
 
 import os
-import sys
 import traceback
 from urllib.parse import urlparse
-
-import render_migrate
 
 
 def _database_host(database_url: str) -> str:
@@ -24,10 +21,12 @@ def main() -> None:
         raise SystemExit(1)
 
     print(f"[container-start] DATABASE_URL configured for host: {_database_host(database_url)}", flush=True)
-    run_bootstrap = os.getenv("RUN_CONTAINER_BOOTSTRAP", "true").strip().lower() not in {"0", "false", "no"}
+    run_bootstrap = os.getenv("RUN_CONTAINER_BOOTSTRAP", "false").strip().lower() in {"1", "true", "yes"}
     if run_bootstrap:
         print("[container-start] Running database bootstrap...", flush=True)
         try:
+            import render_migrate
+
             render_migrate.main()
         except Exception:
             print("[container-start] Database bootstrap failed:", flush=True)
