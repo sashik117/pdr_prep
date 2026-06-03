@@ -55,7 +55,8 @@ def configure_schema(conn: psycopg.Connection) -> None:
     if not DATABASE_SCHEMA.replace("_", "").isalnum() or DATABASE_SCHEMA[0].isdigit():
         raise RuntimeError("DATABASE_SCHEMA must contain only letters, numbers, and underscores, and cannot start with a number")
 
-    conn.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(sql.Identifier(DATABASE_SCHEMA)))
+    if DATABASE_SCHEMA.lower() != "public":
+        conn.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(sql.Identifier(DATABASE_SCHEMA)))
     conn.execute(sql.SQL("SET search_path TO {}, public").format(sql.Identifier(DATABASE_SCHEMA)))
 
 
