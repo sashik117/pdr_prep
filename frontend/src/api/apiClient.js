@@ -1,4 +1,6 @@
 // @ts-nocheck
+import { getGuestId } from '@/lib/accessLimits';
+
 const DEFAULT_API_URL =
   import.meta.env.PROD && typeof window !== 'undefined'
     ? window.location.origin
@@ -203,6 +205,9 @@ async function request(path, options = {}) {
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
+  if (!headers.has('X-DrivePrep-Guest-Id')) {
+    headers.set('X-DrivePrep-Guest-Id', getGuestId());
+  }
 
   let response;
   try {
@@ -333,6 +338,16 @@ export const api = {
   },
   getTheorySection: (sectionId) => request(`/theory/sections/${sectionId}`),
   getPromoStatus: () => request('/promo/status'),
+  checkAccessLimit: (action) =>
+    request('/access/limits/check', {
+      method: 'POST',
+      body: JSON.stringify({ action }),
+    }),
+  consumeAccessLimit: (action) =>
+    request('/access/limits/consume', {
+      method: 'POST',
+      body: JSON.stringify({ action }),
+    }),
   getPremiumFeatures: () => request('/premium/features'),
   updatePromoConfig: (payload, adminKey) =>
     request('/admin/promo/config', {

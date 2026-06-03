@@ -44,6 +44,10 @@ class ResendVerificationRequest(BaseModel):
     email: str
 
 
+class AccessLimitRequest(BaseModel):
+    action: str
+
+
 class UpdateProfileRequest(BaseModel):
     name: Optional[str] = None
     surname: Optional[str] = None

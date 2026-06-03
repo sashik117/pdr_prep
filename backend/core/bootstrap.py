@@ -139,6 +139,23 @@ def ensure_runtime_migrations() -> None:
         "ALTER TABLE test_results ADD COLUMN IF NOT EXISTS client_attempt_id TEXT",
         "CREATE UNIQUE INDEX IF NOT EXISTS uq_test_results_user_attempt ON test_results(user_id, client_attempt_id) WHERE client_attempt_id IS NOT NULL",
         """
+        CREATE TABLE IF NOT EXISTS access_usage (
+            id BIGSERIAL PRIMARY KEY,
+            usage_date DATE NOT NULL,
+            action TEXT NOT NULL,
+            scope_hash TEXT NOT NULL,
+            user_id INT REFERENCES users(id) ON DELETE CASCADE,
+            guest_id TEXT,
+            ip_hash TEXT,
+            count INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            UNIQUE (usage_date, action, scope_hash)
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS idx_access_usage_user ON access_usage(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_access_usage_guest ON access_usage(guest_id)",
+        """
         DO $$
         BEGIN
             IF EXISTS (

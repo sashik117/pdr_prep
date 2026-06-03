@@ -98,10 +98,22 @@ export default function SectionTests() {
     setSearchParams({ category: categoryId });
   };
 
-  const startSection = (sectionId) => {
+  const startSection = async (sectionId) => {
     if (!canStartFreeTest(user, 'section')) {
       setLimitOpen(true);
       return;
+    }
+    if (!user?.is_premium) {
+      try {
+        const access = await api.checkAccessLimit('section_test');
+        if (!access?.allowed) {
+          setLimitOpen(true);
+          return;
+        }
+      } catch {
+        setLimitOpen(true);
+        return;
+      }
     }
     const query = new URLSearchParams({ mode: 'section', category: selectedCategory, section: sectionId });
     navigate(`/test?${query.toString()}`);

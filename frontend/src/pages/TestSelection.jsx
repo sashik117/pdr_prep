@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
+import api from '@/api/apiClient';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { canStartFreeTest, getRemainingFreeTests } from '@/lib/accessLimits';
@@ -112,8 +113,22 @@ export default function TestSelection() {
     return true;
   };
 
-  const handleStart = (modeId = selectedMode) => {
+  const accessActionForMode = (modeId) => (modeId === 'section' ? 'section_test' : 'test');
+
+  const handleStart = async (modeId = selectedMode) => {
     if (!canStartMode(modeId)) return;
+    if (!user?.is_premium) {
+      try {
+        const access = await api.checkAccessLimit(accessActionForMode(modeId));
+        if (!access?.allowed) {
+          openLimit('Безкоштовний доступ дозволяє пройти одну спробу на день. Premium відкриває тести без денних обмежень.');
+          return;
+        }
+      } catch {
+        openLimit('Не вдалося перевірити денний ліміт. Перевірте підключення і спробуйте ще раз.');
+        return;
+      }
+    }
     const query = new URLSearchParams({ mode: modeId });
     if (selectedCategory) query.set('category', selectedCategory);
     navigate(`/test?${query.toString()}`);

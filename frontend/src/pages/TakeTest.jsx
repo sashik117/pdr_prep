@@ -85,7 +85,7 @@ export default function TakeTest() {
   const config = MODE_CONFIG[/** @type {keyof typeof MODE_CONFIG} */ (mode)] || MODE_CONFIG.quick;
   const requiresAuth = mode === 'difficult';
   const premiumOnly = mode === 'mvs' || mode === 'ticket';
-  const guestLocked = !user && !canStartFreeTest(null, mode);
+  const guestLocked = false;
   const effectiveQuestionCount = requestedCount || requestedIds.length || config.count;
   const effectiveTime = Math.max(config.time, effectiveQuestionCount * 60);
   const draftKey = useMemo(
@@ -121,6 +121,7 @@ export default function TakeTest() {
   });
   const [ghostBestTime, setGhostBestTime] = useState(0);
   const [limitBlocked, setLimitBlocked] = useState(false);
+  const [serverAccessReady, setServerAccessReady] = useState(false);
   const [, setSavedIds] = useState(() => getSavedQuestionIds());
   const startTimeRef = useRef(Number(initialDraft?.startTime || Date.now()));
   const attemptIdRef = useRef(String(initialDraft?.attemptId || ''));
@@ -140,7 +141,7 @@ export default function TakeTest() {
 
   const { data: rawQuestions = [], isLoading } = useQuery({
     queryKey: ['take-test', mode, category, topic, section, ticket, idsParam, requestedCount, user?.id],
-    enabled: !isLoadingAuth && (!requiresAuth || !!user) && !guestLocked && !hasRestorableDraft,
+    enabled: !isLoadingAuth && serverAccessReady && (!requiresAuth || !!user) && !guestLocked && !hasRestorableDraft,
     queryFn: async () => {
       const seed = mode === 'top' ? `top100:${category || 'all'}` : undefined;
       if (requestedIds.length > 0) {
@@ -168,6 +169,44 @@ export default function TakeTest() {
       return response.map(normalizeQuestion).filter(Boolean);
     },
   });
+
+  useEffect(() => {
+    let canceled = false;
+    async function prepareAccess() {
+      if (isLoadingAuth) return;
+      if (hasRestorableDraft || showResults || user?.is_premium) {
+        if (!canceled) setServerAccessReady(true);
+        return;
+      }
+      if (premiumOnly) {
+        if (!canceled) {
+          setLimitBlocked(true);
+          setServerAccessReady(true);
+        }
+        return;
+      }
+      if (!LIMITED_FREE_TEST_MODES.includes(mode)) {
+        if (!canceled) setServerAccessReady(true);
+        return;
+      }
+      const action = mode === 'section' ? 'section_test' : 'test';
+      try {
+        const access = await api.consumeAccessLimit(action);
+        if (canceled) return;
+        if (!access?.allowed) {
+          setLimitBlocked(true);
+        }
+      } catch {
+        if (!canceled) setLimitBlocked(true);
+      } finally {
+        if (!canceled) setServerAccessReady(true);
+      }
+    }
+    void prepareAccess();
+    return () => {
+      canceled = true;
+    };
+  }, [hasRestorableDraft, isLoadingAuth, mode, premiumOnly, showResults, user?.is_premium]);
 
   useEffect(() => {
     if (hasRestorableDraft) return;
@@ -520,6 +559,10 @@ export default function TakeTest() {
 
   if (isLoadingAuth) {
     return <Spinner />;
+  }
+
+  if (!serverAccessReady && !showResults) {
+    return <Spinner text="Перевіряємо доступ..." />;
   }
 
   if (!user && requiresAuth) {

@@ -81,6 +81,7 @@ from repositories.auth_repository import AuthRepository
 from repositories.stars_repository import StarsRepository
 from schemas.requests import (
     AdminAchievementUpdateRequest,
+    AccessLimitRequest,
     AdminLoginRequest,
     AdminQuestionUpdateRequest,
     AdminSupportReplyRequest,
@@ -185,6 +186,10 @@ from services.admin_theory_service import (
     get_admin_theory_summary as get_admin_theory_summary_use_case,
     list_admin_theory_sections as list_admin_theory_sections_use_case,
     update_admin_theory_section as update_admin_theory_section_use_case,
+)
+from services.access_limit_service import (
+    check_access_limit as check_access_limit_use_case,
+    consume_access_limit as consume_access_limit_use_case,
 )
 from services.admin_question_service import (
     list_admin_question_sections as list_admin_question_sections_use_case,
@@ -866,6 +871,16 @@ def get_current_user(authorization: Optional[str] = Header(default=None)) -> dic
 def get_optional_user(authorization: Optional[str] = Header(default=None)) -> Optional[dict[str, Any]]:
     if not authorization:
         return None
+
+
+def get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    real_ip = request.headers.get("x-real-ip", "")
+    if real_ip:
+        return real_ip.strip()
+    return request.client.host if request.client else "unknown"
     try:
         return get_current_user(authorization)
     except HTTPException:
@@ -1075,6 +1090,38 @@ def reset_password(req: ResetPasswordRequest):
 @app.get("/auth/me")
 def auth_me(user=Depends(get_current_user)):
     return _user_public(user)
+
+
+@app.post("/access/limits/check")
+@app.post("/api/access/limits/check", include_in_schema=False)
+def check_access_limit(
+    req: AccessLimitRequest,
+    request: Request,
+    guest_id: Optional[str] = Header(default=None, alias="X-DrivePrep-Guest-Id"),
+    user=Depends(get_optional_user),
+):
+    return check_access_limit_use_case(
+        action=req.action,
+        user=user,
+        guest_id=guest_id,
+        ip_address=get_client_ip(request),
+    )
+
+
+@app.post("/access/limits/consume")
+@app.post("/api/access/limits/consume", include_in_schema=False)
+def consume_access_limit(
+    req: AccessLimitRequest,
+    request: Request,
+    guest_id: Optional[str] = Header(default=None, alias="X-DrivePrep-Guest-Id"),
+    user=Depends(get_optional_user),
+):
+    return consume_access_limit_use_case(
+        action=req.action,
+        user=user,
+        guest_id=guest_id,
+        ip_address=get_client_ip(request),
+    )
 
 
 @app.post("/admin/auth/login")
