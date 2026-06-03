@@ -1,10 +1,47 @@
 const DAY_KEY = new Date().toISOString().slice(0, 10);
-const TEST_LIMIT_PREFIX = 'pdr_free_test_limits';
-const BATTLE_LIMIT_PREFIX = 'pdr_free_battle_limits';
-const TICKET_PREVIEW_PREFIX = 'pdr_free_ticket_preview_limits';
+const TEST_LIMIT_PREFIX = 'pdr_free_test_limits:v2';
+const BATTLE_LIMIT_PREFIX = 'pdr_free_battle_limits:v2';
+const TICKET_PREVIEW_PREFIX = 'pdr_free_ticket_preview_limits:v2';
+const GUEST_ID_KEY = 'driveprep_guest_id:v1';
+const GUEST_ID_COOKIE = 'driveprep_guest_id';
 const FREE_DAILY_TEST_LIMIT = 1;
 const FREE_DAILY_BATTLE_LIMIT = 1;
 const FREE_DAILY_TICKET_PREVIEW_LIMIT = 1;
+
+function getCookie(name) {
+  if (typeof document === 'undefined') return '';
+  const escaped = String(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
+function setCookie(name, value) {
+  if (typeof document === 'undefined') return;
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+}
+
+function createGuestId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  const random = Math.random().toString(16).slice(2);
+  return `${Date.now()}-${random}`;
+}
+
+export function getGuestId() {
+  if (typeof window === 'undefined') return 'server-guest';
+  const existing = localStorage.getItem(GUEST_ID_KEY) || getCookie(GUEST_ID_COOKIE);
+  if (existing) {
+    localStorage.setItem(GUEST_ID_KEY, existing);
+    setCookie(GUEST_ID_COOKIE, existing);
+    return existing;
+  }
+  const next = createGuestId();
+  localStorage.setItem(GUEST_ID_KEY, next);
+  setCookie(GUEST_ID_COOKIE, next);
+  return next;
+}
 
 function readJson(key) {
   try {
@@ -23,7 +60,7 @@ export function isPremiumUser(user) {
 }
 
 function getUserScope(user) {
-  if (!user) return 'guest';
+  if (!user) return `guest:${getGuestId()}`;
   const identity = user?.id || user?.email || user?.username || 'guest';
   return String(identity).trim().toLowerCase();
 }

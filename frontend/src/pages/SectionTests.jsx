@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Check, ChevronDown, Flame, ListChecks, Star, Tar
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
 import api from '@/api/apiClient';
 import { useAuth } from '@/lib/AuthContext';
 import { canStartFreeTest, getRemainingFreeTests } from '@/lib/accessLimits';
@@ -205,7 +206,13 @@ export default function SectionTests() {
         onStart={startSection}
       />
 
-      <Dialog open={limitOpen} onOpenChange={setLimitOpen}>
+      <PremiumLimitDialog
+        open={limitOpen}
+        onOpenChange={setLimitOpen}
+        title="Ви вичерпали ліміт практики"
+        description="Безкоштовний доступ дозволяє пройти одну спробу на день. Premium відкриває тренування по темах без денних обмежень."
+      />
+      <Dialog open={false && limitOpen} onOpenChange={setLimitOpen}>
         <DialogContent className="rounded-xl border-slate-200 bg-card text-slate-950 dark:border-slate-800 dark:text-white">
           <DialogTitle>Денний ліміт використано</DialogTitle>
           <DialogDescription>

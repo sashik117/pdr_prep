@@ -2,7 +2,7 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { UNSAFE_NavigationContext, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Brain, CheckCircle, ChevronLeft, ChevronRight, Clock, Ghost, Flame, Star } from 'lucide-react';
+import { AlertTriangle, Brain, CheckCircle, ChevronLeft, ChevronRight, Clock, Ghost, Flame } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import QuestionNavigator from '@/components/test/QuestionNavigator';
 import SituationAnalysisModal from '@/components/test/SituationAnalysisModal';
 import GhostBar from '@/components/test/GhostBar';
 import LoginPrompt from '@/components/auth/LoginPrompt';
+import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
 import { canStartFreeTest, registerFreeTestCompletion } from '@/lib/accessLimits';
 import { getSavedQuestionIds, isQuestionSaved, toggleSavedQuestion } from '@/lib/savedQuestions';
 import { playTone } from '@/lib/soundEffects';
@@ -532,35 +533,26 @@ export default function TakeTest() {
 
   if (guestLocked && !showResults) {
     return (
-      <div className="mx-auto max-w-xl space-y-4 px-4 py-16 text-center sm:px-6">
-        <Ghost className="mx-auto h-12 w-12 text-slate-400" />
-        <h2 className="text-xl font-medium text-slate-900 dark:text-white">Для гостей сьогодні тест уже використано</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-300">
-          Гість може пройти лише один тест на день. Увійдіть у профіль, щоб зберігати прогрес, питання, зірочки та серію навчання.
-        </p>
-        <div className="flex flex-col justify-center gap-3 sm:flex-row">
-          <Button onClick={() => navigate('/auth')}>Увійти або зареєструватися</Button>
-          <Button variant="outline" onClick={() => navigate('/')}>На головну</Button>
-        </div>
-      </div>
+      <PremiumLimitDialog
+        open
+        onOpenChange={() => navigate('/')}
+        title="Ви вичерпали ліміт тестів"
+        description="Гість може пройти одну спробу на день. Увійдіть у профіль або оформіть Premium, щоб навчатися без обмежень і зберігати прогрес."
+      />
     );
   }
 
   if (limitBlocked) {
     return (
-      <div className="mx-auto max-w-xl space-y-4 px-4 py-16 text-center sm:px-6">
-        <Star className="mx-auto h-12 w-12 text-amber-500" />
-        <h2 className="text-xl font-medium text-slate-900 dark:text-white">Денний trial для цього режиму вичерпано</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-300">
-          {premiumOnly
-            ? 'Цей режим відкривається у Premium, щоб Ви могли тренуватися без обмежень і з повним набором питань.'
-            : 'Для безкоштовного доступу є лише одна спроба на день. Продовжити без лімітів можна з Premium.'}
-        </p>
-        <div className="flex flex-col justify-center gap-3 sm:flex-row">
-          <Button onClick={() => navigate('/pricing')}>Перейти до Premium</Button>
-          <Button variant="outline" onClick={() => navigate('/tests')}>До вибору режиму</Button>
-        </div>
-      </div>
+      <PremiumLimitDialog
+        open
+        onOpenChange={() => navigate('/tests')}
+        title={premiumOnly ? 'Цей режим доступний у Premium' : 'Ви вичерпали денний ліміт'}
+        description={premiumOnly
+          ? 'Premium відкриває іспит МВС, білети як тест, усі режими практики та навчання без денних обмежень.'
+          : 'Безкоштовний доступ дозволяє пройти одну спробу на день. Premium відкриває тестування без денних обмежень.'}
+        homeLabel="До вибору режиму"
+      />
     );
   }
 

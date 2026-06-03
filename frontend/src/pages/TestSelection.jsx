@@ -17,6 +17,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { canStartFreeTest, getRemainingFreeTests } from '@/lib/accessLimits';
@@ -300,7 +301,13 @@ export default function TestSelection() {
         </button>
       </section>
 
-      <Dialog open={limitOpen} onOpenChange={setLimitOpen}>
+      <PremiumLimitDialog
+        open={limitOpen}
+        onOpenChange={setLimitOpen}
+        title="Ви вичерпали ліміт тестів"
+        description={limitText || 'Безкоштовний доступ дозволяє пройти одну спробу на день. Premium відкриває всі режими тестування без денних обмежень.'}
+      />
+      <Dialog open={false && limitOpen} onOpenChange={setLimitOpen}>
         <DialogContent className="rounded-xl border-slate-200 bg-card text-slate-950 dark:border-slate-800 dark:text-white">
           <DialogTitle>Потрібен доступ</DialogTitle>
           <DialogDescription>{limitText}</DialogDescription>
