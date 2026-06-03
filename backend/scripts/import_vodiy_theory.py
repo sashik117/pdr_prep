@@ -581,9 +581,11 @@ def parse_marking_category(session: requests.Session, category_id: int, title: s
 
 def database_url() -> str:
     load_dotenv(BASE_DIR / ".env")
-    raw = os.environ.get("DATABASE_URL", "")
+    raw = (os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URI") or "").strip()
+    if raw:
+        os.environ.setdefault("DATABASE_URL", raw)
     if not raw:
-        raise RuntimeError("DATABASE_URL не знайдено. Додайте його в backend/.env або змінні середовища.")
+        raise RuntimeError("DATABASE_URL або POSTGRES_URI не знайдено. Додайте змінну середовища.")
     if os.getenv("DATABASE_SSL", "").strip().lower() in {"1", "true", "yes", "require"} and "sslmode=" not in raw:
         return f"{raw}{'&' if '?' in raw else '?'}sslmode=require"
     return raw

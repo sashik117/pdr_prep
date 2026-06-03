@@ -15,12 +15,13 @@ def _database_host(database_url: str) -> str:
 
 
 def main() -> None:
-    database_url = os.getenv("DATABASE_URL", "").strip()
+    database_url = (os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URI") or "").strip()
     if not database_url:
-        print("[container-start] DATABASE_URL is missing. Add it as a platform secret.", flush=True)
+        print("[container-start] DATABASE_URL or POSTGRES_URI is missing. Add it as a platform secret.", flush=True)
         raise SystemExit(1)
 
-    print(f"[container-start] DATABASE_URL configured for host: {_database_host(database_url)}", flush=True)
+    os.environ.setdefault("DATABASE_URL", database_url)
+    print(f"[container-start] database URL configured for host: {_database_host(database_url)}", flush=True)
     run_bootstrap = os.getenv("RUN_CONTAINER_BOOTSTRAP", "false").strip().lower() in {"1", "true", "yes"}
     if run_bootstrap:
         print("[container-start] Running database bootstrap...", flush=True)

@@ -14,7 +14,9 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 IS_PRODUCTION = os.getenv("NODE_ENV", "").strip().lower() == "production"
 RUN_STARTUP_MAINTENANCE = os.getenv("RUN_STARTUP_MAINTENANCE", "true").strip().lower() not in {"0", "false", "no"}
 
-RAW_DB_URL = os.environ["DATABASE_URL"]
+RAW_DB_URL = (os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URI") or "").strip()
+if not RAW_DB_URL:
+    raise RuntimeError("DATABASE_URL or POSTGRES_URI is required")
 DB_URL = (
     f"{RAW_DB_URL}{'&' if '?' in RAW_DB_URL else '?'}sslmode=require"
     if os.getenv("DATABASE_SSL", "").strip().lower() in {"1", "true", "yes", "require"} and "sslmode=" not in RAW_DB_URL

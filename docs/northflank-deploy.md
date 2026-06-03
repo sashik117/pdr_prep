@@ -24,6 +24,8 @@ In Northflank:
 
 Northflank can expose the connection as `DATABASE_URL` via a secrets group.
 If the generated variable is named differently, create an alias named `DATABASE_URL`.
+The backend also accepts Northflank's default `POSTGRES_URI`, but `DATABASE_URL`
+is still preferred because local scripts and older tooling expect that name.
 
 ## 3. Create Combined Service
 
@@ -66,6 +68,7 @@ The service needs these variables:
 NODE_ENV=production
 PORT=8000
 DATABASE_URL=<from Northflank PostgreSQL addon>
+POSTGRES_URI=<optional: same value if Northflank creates it automatically>
 DATABASE_SCHEMA=public
 DATABASE_SSL=true
 JWT_SECRET=<long random secret>
