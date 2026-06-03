@@ -110,6 +110,13 @@ def update_avatar(user: dict[str, Any], avatar_url: str, *, present_user: UserPr
     return present_user(updated)
 
 
+def clear_avatar(user: dict[str, Any], *, present_user: UserPresenter) -> dict[str, Any]:
+    with db() as conn:
+        updated = UserRepository(conn).clear_avatar(user_id=int(user["id"]))
+        conn.commit()
+    return present_user(updated)
+
+
 def _public_profile_payload(
     user: dict[str, Any],
     *,

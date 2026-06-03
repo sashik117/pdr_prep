@@ -39,6 +39,33 @@ const MODE_CONFIG = {
 
 const answerToIndex = (answer) => ['A', 'B', 'C', 'D', 'E', 'F'].indexOf(answer || '') + 1;
 const LIMITED_FREE_TEST_MODES = ['quick', 'full', 'difficult', 'section', 'top'];
+const TEST_DRAFT_PREFIX = 'driveprep:test-draft:v2';
+
+function readTestDraft(key) {
+  try {
+    const draft = JSON.parse(localStorage.getItem(key) || 'null');
+    if (!draft || !Array.isArray(draft.questions) || draft.questions.length === 0) return null;
+    return draft;
+  } catch {
+    return null;
+  }
+}
+
+function writeTestDraft(key, draft) {
+  try {
+    localStorage.setItem(key, JSON.stringify(draft));
+  } catch {
+    // Storage can be full or unavailable; the test should still continue.
+  }
+}
+
+function removeTestDraft(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Ignore storage failures.
+  }
+}
 
 export default function TakeTest() {
   const navigate = useNavigate();
@@ -60,13 +87,29 @@ export default function TakeTest() {
   const guestLocked = !user && !canStartFreeTest(null, mode);
   const effectiveQuestionCount = requestedCount || requestedIds.length || config.count;
   const effectiveTime = Math.max(config.time, effectiveQuestionCount * 60);
+  const draftKey = useMemo(
+    () => [
+      TEST_DRAFT_PREFIX,
+      user?.id || 'guest',
+      mode,
+      category || 'all',
+      topic || 'all',
+      section || 'all',
+      ticket || 'none',
+      idsParam || 'random',
+      requestedCount || effectiveQuestionCount,
+    ].join(':'),
+    [category, effectiveQuestionCount, idsParam, mode, requestedCount, section, ticket, topic, user?.id],
+  );
+  const initialDraft = useMemo(() => readTestDraft(draftKey), [draftKey]);
+  const hasRestorableDraft = Boolean(initialDraft?.questions?.length);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
+  const [currentIndex, setCurrentIndex] = useState(() => Math.max(0, Number(initialDraft?.currentIndex || 0)));
+  const [answers, setAnswers] = useState(() => initialDraft?.answers || {});
   const [showResults, setShowResults] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(effectiveTime);
-  const [questions, setQuestions] = useState([]);
+  const [timeLeft, setTimeLeft] = useState(() => Math.max(0, Number(initialDraft?.timeLeft || effectiveTime)));
+  const [questions, setQuestions] = useState(() => initialDraft?.questions || []);
   const [resultMeta, setResultMeta] = useState(null);
   const [analyzingQuestion, setAnalyzingQuestion] = useState(null);
   const [exitDialogOpen, setExitDialogOpen] = useState(false);
@@ -78,12 +121,12 @@ export default function TakeTest() {
   const [ghostBestTime, setGhostBestTime] = useState(0);
   const [limitBlocked, setLimitBlocked] = useState(false);
   const [, setSavedIds] = useState(() => getSavedQuestionIds());
-  const startTimeRef = useRef(Date.now());
-  const attemptIdRef = useRef('');
+  const startTimeRef = useRef(Number(initialDraft?.startTime || Date.now()));
+  const attemptIdRef = useRef(String(initialDraft?.attemptId || ''));
   const answeredAllAtRef = useRef(null);
   const finishInProgressRef = useRef(false);
   const finishedAtRef = useRef(null);
-  const limitRegisteredRef = useRef(false);
+  const limitRegisteredRef = useRef(Boolean(initialDraft?.limitRegistered));
   const autoAdvanceRef = useRef(/** @type {number | null} */ (null));
   const allowNavigationRef = useRef(false);
   const { toast } = useToast();
@@ -96,7 +139,7 @@ export default function TakeTest() {
 
   const { data: rawQuestions = [], isLoading } = useQuery({
     queryKey: ['take-test', mode, category, topic, section, ticket, idsParam, requestedCount, user?.id],
-    enabled: (!requiresAuth || !!user) && !guestLocked,
+    enabled: !isLoadingAuth && (!requiresAuth || !!user) && !guestLocked && !hasRestorableDraft,
     queryFn: async () => {
       const seed = mode === 'top' ? `top100:${category || 'all'}` : undefined;
       if (requestedIds.length > 0) {
@@ -126,6 +169,7 @@ export default function TakeTest() {
   });
 
   useEffect(() => {
+    if (hasRestorableDraft) return;
     if (rawQuestions.length === 0) return;
     setQuestions(rawQuestions);
     setAnswers({});
@@ -145,12 +189,46 @@ export default function TakeTest() {
       registerFreeTestCompletion(user || null, mode);
       limitRegisteredRef.current = true;
     }
-  }, [rawQuestions, effectiveTime, mode, user]);
+  }, [rawQuestions, effectiveTime, mode, user, hasRestorableDraft]);
+
+  useEffect(() => {
+    if (!initialDraft?.questions?.length || questions.length > 0) return;
+    setQuestions(initialDraft.questions);
+    setAnswers(initialDraft.answers || {});
+    setCurrentIndex(Math.max(0, Number(initialDraft.currentIndex || 0)));
+    setTimeLeft(Math.max(0, Number(initialDraft.timeLeft || effectiveTime)));
+    startTimeRef.current = Number(initialDraft.startTime || Date.now());
+    attemptIdRef.current = String(initialDraft.attemptId || '');
+    limitRegisteredRef.current = Boolean(initialDraft.limitRegistered);
+  }, [effectiveTime, initialDraft, questions.length]);
+
+  useEffect(() => {
+    if (questions.length === 0 || showResults) return;
+    writeTestDraft(draftKey, {
+      answers,
+      attemptId: attemptIdRef.current,
+      currentIndex,
+      limitRegistered: limitRegisteredRef.current,
+      mode,
+      questions,
+      startTime: startTimeRef.current,
+      timeLeft,
+      updatedAt: Date.now(),
+    });
+  }, [answers, currentIndex, draftKey, mode, questions, showResults, timeLeft]);
 
   useEffect(() => () => {
     if (autoAdvanceRef.current) {
       window.clearTimeout(autoAdvanceRef.current);
     }
+  }, []);
+
+  useEffect(() => {
+    if (attemptIdRef.current) return;
+    attemptIdRef.current =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   }, []);
 
   useEffect(() => {
@@ -250,6 +328,7 @@ export default function TakeTest() {
     setIsFinishing(true);
     clearAutoAdvance();
     setShowResults(true);
+    removeTestDraft(draftKey);
     playTone('finish');
     const finishedAt = finishedAtRef.current || answeredAllAtRef.current || Date.now();
     finishedAtRef.current = finishedAt;
@@ -421,6 +500,7 @@ export default function TakeTest() {
   const confirmExit = () => {
     const retryPendingNavigation = pendingNavigation;
     clearAutoAdvance();
+    removeTestDraft(draftKey);
     setExitDialogOpen(false);
     setPendingNavigation(null);
     if (retryPendingNavigation) {

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import os
@@ -142,6 +142,7 @@ from services.progress_service import (
     submit_test_result as submit_test_result_use_case,
 )
 from services.profile_service import (
+    clear_avatar as clear_avatar_use_case,
     get_public_profile_by_id as get_public_profile_by_id_use_case,
     get_public_profile_by_username as get_public_profile_by_username_use_case,
     update_avatar as update_avatar_use_case,
@@ -287,7 +288,7 @@ def _json_dumps(value: Any) -> str:
 def _normalize_plan_code(plan_code: Any) -> str:
     normalized = PREMIUM_PLAN_ALIASES.get(str(plan_code or "").strip().lower())
     if not normalized:
-        raise HTTPException(400, "Невідомий тариф Premium")
+        raise HTTPException(400, "РќРµРІС–РґРѕРјРёР№ С‚Р°СЂРёС„ Premium")
     return normalized
 
 
@@ -786,7 +787,7 @@ def _admin_public() -> dict[str, Any]:
     return {
         "id": 0,
         "username": ADMIN_USERNAME,
-        "name": "Адміністратор",
+        "name": "РђРґРјС–РЅС–СЃС‚СЂР°С‚РѕСЂ",
         "full_name": "DrivePrep Admin",
         "email": SUPPORT_EMAIL,
         "is_admin": True,
@@ -811,7 +812,7 @@ def _check_admin_credentials(username: str, password: str) -> bool:
 
 def get_current_admin(authorization: Optional[str] = Header(default=None)) -> dict[str, Any]:
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(401, "Потрібен вхід в адмін-панель")
+        raise HTTPException(401, "РџРѕС‚СЂС–Р±РµРЅ РІС…С–Рґ РІ Р°РґРјС–РЅ-РїР°РЅРµР»СЊ")
 
     token = authorization[7:]
     try:
@@ -819,10 +820,10 @@ def get_current_admin(authorization: Optional[str] = Header(default=None)) -> di
         if payload.get("scope") == "admin":
             token_username = str(payload.get("sub") or "").replace("admin:", "", 1)
             if token_username.lower() != ADMIN_USERNAME.lower():
-                raise HTTPException(401, "Адмін-сесія недійсна")
+                raise HTTPException(401, "РђРґРјС–РЅ-СЃРµСЃС–СЏ РЅРµРґС–Р№СЃРЅР°")
             return _admin_public()
     except jwt.ExpiredSignatureError as exc:
-        raise HTTPException(401, "Адмін-сесія завершилася, увійдіть знову") from exc
+        raise HTTPException(401, "РђРґРјС–РЅ-СЃРµСЃС–СЏ Р·Р°РІРµСЂС€РёР»Р°СЃСЏ, СѓРІС–Р№РґС–С‚СЊ Р·РЅРѕРІСѓ") from exc
     except HTTPException:
         raise
     except Exception:
@@ -830,7 +831,7 @@ def get_current_admin(authorization: Optional[str] = Header(default=None)) -> di
 
     user = get_current_user(authorization)
     if not _is_admin_email(user.get("email")):
-        raise HTTPException(403, "Потрібні права адміністратора")
+        raise HTTPException(403, "РџРѕС‚СЂС–Р±РЅС– РїСЂР°РІР° Р°РґРјС–РЅС–СЃС‚СЂР°С‚РѕСЂР°")
     return user
 
 
@@ -845,16 +846,16 @@ def get_optional_admin(authorization: Optional[str] = Header(default=None)) -> O
 
 def get_current_user(authorization: Optional[str] = Header(default=None)) -> dict[str, Any]:
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(401, "Потрібна авторизація")
+        raise HTTPException(401, "РџРѕС‚СЂС–Р±РЅР° Р°РІС‚РѕСЂРёР·Р°С†С–СЏ")
 
     token = authorization[7:]
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         user_id = int(payload["sub"])
     except jwt.ExpiredSignatureError as exc:
-        raise HTTPException(401, "Сесія завершилася, увійдіть знову") from exc
+        raise HTTPException(401, "РЎРµСЃС–СЏ Р·Р°РІРµСЂС€РёР»Р°СЃСЏ, СѓРІС–Р№РґС–С‚СЊ Р·РЅРѕРІСѓ") from exc
     except Exception as exc:
-        raise HTTPException(401, "Невалідний токен") from exc
+        raise HTTPException(401, "РќРµРІР°Р»С–РґРЅРёР№ С‚РѕРєРµРЅ") from exc
 
     try:
         return get_session_user_use_case(user_id, is_admin_email=_is_admin_email)
@@ -883,7 +884,7 @@ def require_promo_admin(
         return {"source": "secret-key"}
     if admin:
         return admin
-    raise HTTPException(403, "Потрібні права адміністратора або коректний promo key")
+    raise HTTPException(403, "РџРѕС‚СЂС–Р±РЅС– РїСЂР°РІР° Р°РґРјС–РЅС–СЃС‚СЂР°С‚РѕСЂР° Р°Р±Рѕ РєРѕСЂРµРєС‚РЅРёР№ promo key")
 
 
 def _resolve_user_from_token(token: str) -> Optional[dict[str, Any]]:
@@ -911,7 +912,7 @@ async def websocket_bridge(websocket: WebSocket, token: str = Query(default=""))
 
 
 def _prepare_import_question(item: dict[str, Any]) -> dict[str, Any]:
-    raw_options = item.get("options") or item.get("РІР°СЂС–Р°РЅС‚Рё") or []
+    raw_options = item.get("options") or item.get("Р Р†Р В°РЎР‚РЎвЂ“Р В°Р Р…РЎвЂљР С‘") or []
     options: list[str] = []
     for option in raw_options:
         if isinstance(option, dict):
@@ -921,88 +922,88 @@ def _prepare_import_question(item: dict[str, Any]) -> dict[str, Any]:
         if text:
             options.append(text)
 
-    images = item.get("images") or item.get("РєР°СЂС‚РёРЅРєРё") or []
+    images = item.get("images") or item.get("Р С”Р В°РЎР‚РЎвЂљР С‘Р Р…Р С”Р С‘") or []
     if not images and item.get("image_url"):
         images = [item.get("image_url")]
 
-    correct_ans = item.get("correct_ans") or item.get("РїСЂР°РІРёР»СЊРЅР°_РІС–РґРїРѕРІС–РґСЊ")
+    correct_ans = item.get("correct_ans") or item.get("Р С—РЎР‚Р В°Р Р†Р С‘Р В»РЎРЉР Р…Р В°_Р Р†РЎвЂ“Р Т‘Р С—Р С•Р Р†РЎвЂ“Р Т‘РЎРЉ")
     correct_answer = str(item.get("correct_answer") or "").strip().upper()
     if not correct_ans and correct_answer:
         labels = ["A", "B", "C", "D", "E", "F"]
         if correct_answer in labels:
             correct_ans = labels.index(correct_answer) + 1
 
-    raw_category = item.get("category") or item.get("РєР°С‚РµРіРѕСЂС–СЏ")
+    raw_category = item.get("category") or item.get("Р С”Р В°РЎвЂљР ВµР С–Р С•РЎР‚РЎвЂ“РЎРЏ")
     if not raw_category:
-        raw_categories = item.get("РєР°С‚РµРіРѕСЂС–С—") or []
+        raw_categories = item.get("Р С”Р В°РЎвЂљР ВµР С–Р С•РЎР‚РЎвЂ“РЎвЂ”") or []
         if isinstance(raw_categories, list) and raw_categories:
             raw_category = raw_categories[0]
 
     return {
         "id": int(item["id"]),
-        "section": str(item.get("section") or item.get("РЎРµР·РґС–Р»") or item.get("РЎРѕР·РґС–Р»") or item.get("РЎР·РѕРґС–Р»") or item.get("РЎРґРѕР·РґС–Р»") or item.get("РЎСЂРѕР·РґС–Р»") or item.get("СЂРѕР·РґС–Р»") or ""),
-        "section_name": _clean_text(item.get("section_name") or item.get("РЅР°Р·РІР°_СЂРѕР·РґС–Р»Сѓ")),
-        "num_in_section": item.get("num_in_section") or item.get("РЅРѕРјРµСЂ_РІ_СЂРѕР·РґС–Р»С–"),
+        "section": str(item.get("section") or item.get("Р РЋР ВµР В·Р Т‘РЎвЂ“Р В»") or item.get("Р РЋР С•Р В·Р Т‘РЎвЂ“Р В»") or item.get("Р РЋР В·Р С•Р Т‘РЎвЂ“Р В»") or item.get("Р РЋР Т‘Р С•Р В·Р Т‘РЎвЂ“Р В»") or item.get("Р РЋРЎР‚Р С•Р В·Р Т‘РЎвЂ“Р В»") or item.get("РЎР‚Р С•Р В·Р Т‘РЎвЂ“Р В»") or ""),
+        "section_name": _clean_text(item.get("section_name") or item.get("Р Р…Р В°Р В·Р Р†Р В°_РЎР‚Р С•Р В·Р Т‘РЎвЂ“Р В»РЎС“")),
+        "num_in_section": item.get("num_in_section") or item.get("Р Р…Р С•Р СР ВµРЎР‚_Р Р†_РЎР‚Р С•Р В·Р Т‘РЎвЂ“Р В»РЎвЂ“"),
         "category": _normalize_category(raw_category),
-        "difficulty": _clean_text(item.get("difficulty") or item.get("СЃРєР»Р°РґРЅС–СЃС‚СЊ")) or "medium",
-        "explanation": _clean_text(item.get("explanation") or item.get("РїРѕСЏСЃРЅРµРЅРЅСЏ")),
-        "question_text": _clean_text(item.get("question_text") or item.get("С‚РµРєСЃС‚_РїРёС‚Р°РЅРЅСЏ")),
+        "difficulty": _clean_text(item.get("difficulty") or item.get("РЎРѓР С”Р В»Р В°Р Т‘Р Р…РЎвЂ“РЎРѓРЎвЂљРЎРЉ")) or "medium",
+        "explanation": _clean_text(item.get("explanation") or item.get("Р С—Р С•РЎРЏРЎРѓР Р…Р ВµР Р…Р Р…РЎРЏ")),
+        "question_text": _clean_text(item.get("question_text") or item.get("РЎвЂљР ВµР С”РЎРѓРЎвЂљ_Р С—Р С‘РЎвЂљР В°Р Р…Р Р…РЎРЏ")),
         "options": options,
         "correct_ans": int(correct_ans or 0),
         "images": [str(image) for image in images if str(image).strip()],
-        "page": item.get("page") or item.get("СЃС‚РѕСЂС–РЅРєР°"),
+        "page": item.get("page") or item.get("РЎРѓРЎвЂљР С•РЎР‚РЎвЂ“Р Р…Р С”Р В°"),
     }
 
 
 ACHIEVEMENTS_DEF = [
-    ("first_step", 1, "Перший виїзд", "Пройти перший тест", "tests", 1),
-    ("rookie", 2, "Новачок", "Пройти 10 тестів", "tests", 10),
-    ("driver", 3, "Водій", "Пройти 50 тестів", "tests", 50),
-    ("pro_driver", 4, "Профі", "Пройти 100 тестів", "tests", 100),
-    ("veteran_driver", 4, "Досвідчений водій", "Пройти 250 тестів", "tests", 250),
-    ("hundred", 1, "Сотня", "100 правильних відповідей", "correct", 100),
-    ("five_hundred", 2, "П'ятисотня", "500 правильних відповідей", "correct", 500),
-    ("thousand", 3, "Тисячник", "1000 правильних відповідей", "correct", 1000),
-    ("legend", 4, "Легенда", "5000 правильних відповідей", "correct", 5000),
-    ("streak_3", 1, "Розігрів", "3 дні підряд", "streak", 3),
-    ("streak_7", 2, "Темп", "7 днів підряд", "streak", 7),
-    ("streak_28", 3, "Вогонь", "28 днів підряд", "streak", 28),
-    ("streak_90", 4, "Стабільний темп", "90 днів активності підряд", "streak", 90),
-    ("marathon_10", 1, "Бігун", "10 у марафоні", "marathon", 10),
-    ("marathon_50", 2, "Спринтер", "50 у марафоні", "marathon", 50),
-    ("marathon_100", 3, "Блискавка", "100 у марафоні", "marathon", 100),
-    ("perfect_1", 1, "Без помилок", "Перший ідеальний тест", "perfect", 1),
-    ("perfect_5", 2, "Відмінник", "5 ідеальних тестів", "perfect", 5),
-    ("perfect_20", 3, "Чиста серія", "20 тестів без помилок", "perfect", 20),
-    ("exam_passed", 2, "Іспит складено", "Скласти перший іспит МВС або білет", "exam", 1),
-    ("exam_5", 3, "Стабільний іспит", "Скласти 5 іспитів МВС або білетів", "exam", 5),
-    ("exam_10", 3, "Десятка іспитів", "Скласти 10 іспитів МВС або білетів", "exam", 10),
-    ("exam_20", 4, "Екзаменаційний темп", "Скласти 20 іспитів МВС або білетів", "exam", 20),
-    ("exam_50", 4, "Готовий до сервісного центру", "Скласти 50 іспитів МВС або білетів", "exam", 50),
-    ("exam_perfect", 4, "Ідеальний іспит", "Скласти іспит МВС або білет без помилок", "exam", 1),
-    ("exam_perfect_5", 4, "П'ять чистих іспитів", "Скласти 5 іспитів або білетів без помилок", "exam", 5),
-    ("exam_perfect_10", 4, "Десять чистих іспитів", "Скласти 10 іспитів або білетів без помилок", "exam", 10),
-    ("accuracy_70", 1, "Рівна їзда", "Тримати загальну точність від 70%", "accuracy", 70),
-    ("accuracy_75", 1, "Впевнена база", "Тримати загальну точність від 75%", "accuracy", 75),
-    ("accuracy_80", 2, "Впевнена точність", "Тримати загальну точність від 80%", "accuracy", 80),
-    ("accuracy_85", 2, "Чіткий контроль", "Тримати загальну точність від 85%", "accuracy", 85),
-    ("accuracy_90", 3, "Точний маршрут", "Тримати загальну точність від 90%", "accuracy", 90),
-    ("accuracy_92", 3, "Майже без промахів", "Тримати загальну точність від 92%", "accuracy", 92),
-    ("accuracy_95", 4, "Ювелірна точність", "Тримати загальну точність від 95%", "accuracy", 95),
-    ("accuracy_98", 4, "Еталонна точність", "Тримати загальну точність від 98%", "accuracy", 98),
-    ("battle_first", 1, "Перший батл", "Завершити перший батл", "battle", 1),
-    ("battle_3", 1, "Три виклики", "Завершити 3 батли", "battle", 3),
-    ("battle_5", 2, "Батл-серія", "Завершити 5 батлів", "battle", 5),
-    ("battle_10", 2, "Десятка батлів", "Завершити 10 батлів", "battle", 10),
-    ("battle_20", 3, "Арена досвіду", "Завершити 20 батлів", "battle", 20),
-    ("battle_50", 4, "Ветеран батлів", "Завершити 50 батлів", "battle", 50),
-    ("battle_winner", 2, "Перемога в батлі", "Виграти перший батл", "battle_wins", 1),
-    ("battle_wins_3", 2, "Три перемоги", "Виграти 3 батли", "battle_wins", 3),
-    ("battle_wins_5", 3, "П'ять перемог", "Виграти 5 батлів", "battle_wins", 5),
-    ("battle_champion", 3, "Чемпіон батлів", "Виграти 10 батлів", "battle_wins", 10),
-    ("battle_wins_15", 4, "Серія переможця", "Виграти 15 батлів", "battle_wins", 15),
-    ("battle_wins_25", 4, "Лідер батлів", "Виграти 25 батлів", "battle_wins", 25),
-    ("battle_wins_50", 4, "Легенда дуелей", "Виграти 50 батлів", "battle_wins", 50),
+    ("first_step", 1, "РџРµСЂС€РёР№ РІРёС—Р·Рґ", "РџСЂРѕР№С‚Рё РїРµСЂС€РёР№ С‚РµСЃС‚", "tests", 1),
+    ("rookie", 2, "РќРѕРІР°С‡РѕРє", "РџСЂРѕР№С‚Рё 10 С‚РµСЃС‚С–РІ", "tests", 10),
+    ("driver", 3, "Р’РѕРґС–Р№", "РџСЂРѕР№С‚Рё 50 С‚РµСЃС‚С–РІ", "tests", 50),
+    ("pro_driver", 4, "РџСЂРѕС„С–", "РџСЂРѕР№С‚Рё 100 С‚РµСЃС‚С–РІ", "tests", 100),
+    ("veteran_driver", 4, "Р”РѕСЃРІС–РґС‡РµРЅРёР№ РІРѕРґС–Р№", "РџСЂРѕР№С‚Рё 250 С‚РµСЃС‚С–РІ", "tests", 250),
+    ("hundred", 1, "РЎРѕС‚РЅСЏ", "100 РїСЂР°РІРёР»СЊРЅРёС… РІС–РґРїРѕРІС–РґРµР№", "correct", 100),
+    ("five_hundred", 2, "Рџ'СЏС‚РёСЃРѕС‚РЅСЏ", "500 РїСЂР°РІРёР»СЊРЅРёС… РІС–РґРїРѕРІС–РґРµР№", "correct", 500),
+    ("thousand", 3, "РўРёСЃСЏС‡РЅРёРє", "1000 РїСЂР°РІРёР»СЊРЅРёС… РІС–РґРїРѕРІС–РґРµР№", "correct", 1000),
+    ("legend", 4, "Р›РµРіРµРЅРґР°", "5000 РїСЂР°РІРёР»СЊРЅРёС… РІС–РґРїРѕРІС–РґРµР№", "correct", 5000),
+    ("streak_3", 1, "Р РѕР·С–РіСЂС–РІ", "3 РґРЅС– РїС–РґСЂСЏРґ", "streak", 3),
+    ("streak_7", 2, "РўРµРјРї", "7 РґРЅС–РІ РїС–РґСЂСЏРґ", "streak", 7),
+    ("streak_28", 3, "Р’РѕРіРѕРЅСЊ", "28 РґРЅС–РІ РїС–РґСЂСЏРґ", "streak", 28),
+    ("streak_90", 4, "РЎС‚Р°Р±С–Р»СЊРЅРёР№ С‚РµРјРї", "90 РґРЅС–РІ Р°РєС‚РёРІРЅРѕСЃС‚С– РїС–РґСЂСЏРґ", "streak", 90),
+    ("marathon_10", 1, "Р‘С–РіСѓРЅ", "10 Сѓ РјР°СЂР°С„РѕРЅС–", "marathon", 10),
+    ("marathon_50", 2, "РЎРїСЂРёРЅС‚РµСЂ", "50 Сѓ РјР°СЂР°С„РѕРЅС–", "marathon", 50),
+    ("marathon_100", 3, "Р‘Р»РёСЃРєР°РІРєР°", "100 Сѓ РјР°СЂР°С„РѕРЅС–", "marathon", 100),
+    ("perfect_1", 1, "Р‘РµР· РїРѕРјРёР»РѕРє", "РџРµСЂС€РёР№ С–РґРµР°Р»СЊРЅРёР№ С‚РµСЃС‚", "perfect", 1),
+    ("perfect_5", 2, "Р’С–РґРјС–РЅРЅРёРє", "5 С–РґРµР°Р»СЊРЅРёС… С‚РµСЃС‚С–РІ", "perfect", 5),
+    ("perfect_20", 3, "Р§РёСЃС‚Р° СЃРµСЂС–СЏ", "20 С‚РµСЃС‚С–РІ Р±РµР· РїРѕРјРёР»РѕРє", "perfect", 20),
+    ("exam_passed", 2, "Р†СЃРїРёС‚ СЃРєР»Р°РґРµРЅРѕ", "РЎРєР»Р°СЃС‚Рё РїРµСЂС€РёР№ С–СЃРїРёС‚ РњР’РЎ Р°Р±Рѕ Р±С–Р»РµС‚", "exam", 1),
+    ("exam_5", 3, "РЎС‚Р°Р±С–Р»СЊРЅРёР№ С–СЃРїРёС‚", "РЎРєР»Р°СЃС‚Рё 5 С–СЃРїРёС‚С–РІ РњР’РЎ Р°Р±Рѕ Р±С–Р»РµС‚С–РІ", "exam", 5),
+    ("exam_10", 3, "Р”РµСЃСЏС‚РєР° С–СЃРїРёС‚С–РІ", "РЎРєР»Р°СЃС‚Рё 10 С–СЃРїРёС‚С–РІ РњР’РЎ Р°Р±Рѕ Р±С–Р»РµС‚С–РІ", "exam", 10),
+    ("exam_20", 4, "Р•РєР·Р°РјРµРЅР°С†С–Р№РЅРёР№ С‚РµРјРї", "РЎРєР»Р°СЃС‚Рё 20 С–СЃРїРёС‚С–РІ РњР’РЎ Р°Р±Рѕ Р±С–Р»РµС‚С–РІ", "exam", 20),
+    ("exam_50", 4, "Р“РѕС‚РѕРІРёР№ РґРѕ СЃРµСЂРІС–СЃРЅРѕРіРѕ С†РµРЅС‚СЂСѓ", "РЎРєР»Р°СЃС‚Рё 50 С–СЃРїРёС‚С–РІ РњР’РЎ Р°Р±Рѕ Р±С–Р»РµС‚С–РІ", "exam", 50),
+    ("exam_perfect", 4, "Р†РґРµР°Р»СЊРЅРёР№ С–СЃРїРёС‚", "РЎРєР»Р°СЃС‚Рё С–СЃРїРёС‚ РњР’РЎ Р°Р±Рѕ Р±С–Р»РµС‚ Р±РµР· РїРѕРјРёР»РѕРє", "exam", 1),
+    ("exam_perfect_5", 4, "Рџ'СЏС‚СЊ С‡РёСЃС‚РёС… С–СЃРїРёС‚С–РІ", "РЎРєР»Р°СЃС‚Рё 5 С–СЃРїРёС‚С–РІ Р°Р±Рѕ Р±С–Р»РµС‚С–РІ Р±РµР· РїРѕРјРёР»РѕРє", "exam", 5),
+    ("exam_perfect_10", 4, "Р”РµСЃСЏС‚СЊ С‡РёСЃС‚РёС… С–СЃРїРёС‚С–РІ", "РЎРєР»Р°СЃС‚Рё 10 С–СЃРїРёС‚С–РІ Р°Р±Рѕ Р±С–Р»РµС‚С–РІ Р±РµР· РїРѕРјРёР»РѕРє", "exam", 10),
+    ("accuracy_70", 1, "Р С–РІРЅР° С—Р·РґР°", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 70%", "accuracy", 70),
+    ("accuracy_75", 1, "Р’РїРµРІРЅРµРЅР° Р±Р°Р·Р°", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 75%", "accuracy", 75),
+    ("accuracy_80", 2, "Р’РїРµРІРЅРµРЅР° С‚РѕС‡РЅС–СЃС‚СЊ", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 80%", "accuracy", 80),
+    ("accuracy_85", 2, "Р§С–С‚РєРёР№ РєРѕРЅС‚СЂРѕР»СЊ", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 85%", "accuracy", 85),
+    ("accuracy_90", 3, "РўРѕС‡РЅРёР№ РјР°СЂС€СЂСѓС‚", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 90%", "accuracy", 90),
+    ("accuracy_92", 3, "РњР°Р№Р¶Рµ Р±РµР· РїСЂРѕРјР°С…С–РІ", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 92%", "accuracy", 92),
+    ("accuracy_95", 4, "Р®РІРµР»С–СЂРЅР° С‚РѕС‡РЅС–СЃС‚СЊ", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 95%", "accuracy", 95),
+    ("accuracy_98", 4, "Р•С‚Р°Р»РѕРЅРЅР° С‚РѕС‡РЅС–СЃС‚СЊ", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 98%", "accuracy", 98),
+    ("battle_first", 1, "РџРµСЂС€РёР№ Р±Р°С‚Р»", "Р—Р°РІРµСЂС€РёС‚Рё РїРµСЂС€РёР№ Р±Р°С‚Р»", "battle", 1),
+    ("battle_3", 1, "РўСЂРё РІРёРєР»РёРєРё", "Р—Р°РІРµСЂС€РёС‚Рё 3 Р±Р°С‚Р»Рё", "battle", 3),
+    ("battle_5", 2, "Р‘Р°С‚Р»-СЃРµСЂС–СЏ", "Р—Р°РІРµСЂС€РёС‚Рё 5 Р±Р°С‚Р»С–РІ", "battle", 5),
+    ("battle_10", 2, "Р”РµСЃСЏС‚РєР° Р±Р°С‚Р»С–РІ", "Р—Р°РІРµСЂС€РёС‚Рё 10 Р±Р°С‚Р»С–РІ", "battle", 10),
+    ("battle_20", 3, "РђСЂРµРЅР° РґРѕСЃРІС–РґСѓ", "Р—Р°РІРµСЂС€РёС‚Рё 20 Р±Р°С‚Р»С–РІ", "battle", 20),
+    ("battle_50", 4, "Р’РµС‚РµСЂР°РЅ Р±Р°С‚Р»С–РІ", "Р—Р°РІРµСЂС€РёС‚Рё 50 Р±Р°С‚Р»С–РІ", "battle", 50),
+    ("battle_winner", 2, "РџРµСЂРµРјРѕРіР° РІ Р±Р°С‚Р»С–", "Р’РёРіСЂР°С‚Рё РїРµСЂС€РёР№ Р±Р°С‚Р»", "battle_wins", 1),
+    ("battle_wins_3", 2, "РўСЂРё РїРµСЂРµРјРѕРіРё", "Р’РёРіСЂР°С‚Рё 3 Р±Р°С‚Р»Рё", "battle_wins", 3),
+    ("battle_wins_5", 3, "Рџ'СЏС‚СЊ РїРµСЂРµРјРѕРі", "Р’РёРіСЂР°С‚Рё 5 Р±Р°С‚Р»С–РІ", "battle_wins", 5),
+    ("battle_champion", 3, "Р§РµРјРїС–РѕРЅ Р±Р°С‚Р»С–РІ", "Р’РёРіСЂР°С‚Рё 10 Р±Р°С‚Р»С–РІ", "battle_wins", 10),
+    ("battle_wins_15", 4, "РЎРµСЂС–СЏ РїРµСЂРµРјРѕР¶С†СЏ", "Р’РёРіСЂР°С‚Рё 15 Р±Р°С‚Р»С–РІ", "battle_wins", 15),
+    ("battle_wins_25", 4, "Р›С–РґРµСЂ Р±Р°С‚Р»С–РІ", "Р’РёРіСЂР°С‚Рё 25 Р±Р°С‚Р»С–РІ", "battle_wins", 25),
+    ("battle_wins_50", 4, "Р›РµРіРµРЅРґР° РґСѓРµР»РµР№", "Р’РёРіСЂР°С‚Рё 50 Р±Р°С‚Р»С–РІ", "battle_wins", 50),
 ]
 
 
@@ -1080,9 +1081,9 @@ def auth_me(user=Depends(get_current_user)):
 @app.post("/api/admin/auth/login", include_in_schema=False)
 def admin_login(req: AdminLoginRequest):
     if not _is_admin_password_configured():
-        raise HTTPException(503, "Адмін-пароль не налаштовано. Додайте ADMIN_PASSWORD або ADMIN_PASSWORD_HASH у змінні середовища.")
+        raise HTTPException(503, "РђРґРјС–РЅ-РїР°СЂРѕР»СЊ РЅРµ РЅР°Р»Р°С€С‚РѕРІР°РЅРѕ. Р”РѕРґР°Р№С‚Рµ ADMIN_PASSWORD Р°Р±Рѕ ADMIN_PASSWORD_HASH Сѓ Р·РјС–РЅРЅС– СЃРµСЂРµРґРѕРІРёС‰Р°.")
     if not _check_admin_credentials(req.username, req.password):
-        raise HTTPException(401, "Невірний нік або пароль адміністратора")
+        raise HTTPException(401, "РќРµРІС–СЂРЅРёР№ РЅС–Рє Р°Р±Рѕ РїР°СЂРѕР»СЊ Р°РґРјС–РЅС–СЃС‚СЂР°С‚РѕСЂР°")
     token = create_admin_token(ADMIN_USERNAME, remember_me=req.remember_me)
     return {"token": token, "admin": _admin_public()}
 
@@ -1118,7 +1119,7 @@ def update_promo_config(req: PromoConfigRequest, admin=Depends(require_promo_adm
         settings["regular_prices"] = _normalize_price_map(req.regular_prices, settings["regular_prices"])
     _save_promo_settings(settings)
     return {
-        "message": "Налаштування акції збережено",
+        "message": "РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р°РєС†С–С— Р·Р±РµСЂРµР¶РµРЅРѕ",
         "status": _compute_promo_status(settings, persist=False),
     }
 
@@ -1139,7 +1140,7 @@ def start_promo(req: PromoConfigRequest, admin=Depends(require_promo_admin)):
     settings["started_at"] = datetime.utcnow().isoformat()
     _save_promo_settings(settings)
     return {
-        "message": "Акцію запущено без дати завершення" if settings.get("never_ends") else f"Акцію запущено на {settings['duration_days']} днів",
+        "message": "РђРєС†С–СЋ Р·Р°РїСѓС‰РµРЅРѕ Р±РµР· РґР°С‚Рё Р·Р°РІРµСЂС€РµРЅРЅСЏ" if settings.get("never_ends") else f"РђРєС†С–СЋ Р·Р°РїСѓС‰РµРЅРѕ РЅР° {settings['duration_days']} РґРЅС–РІ",
         "status": _compute_promo_status(settings, persist=False),
     }
 
@@ -1153,7 +1154,7 @@ def stop_promo(admin=Depends(require_promo_admin)):
     settings["never_ends"] = False
     _save_promo_settings(settings)
     return {
-        "message": "Акцію зупинено",
+        "message": "РђРєС†С–СЋ Р·СѓРїРёРЅРµРЅРѕ",
         "status": _compute_promo_status(settings, persist=False),
     }
 
@@ -1175,7 +1176,7 @@ def admin_premium_features(admin=Depends(require_admin)):
 def admin_update_premium_features(req: PremiumFeaturesUpdateRequest, admin=Depends(require_admin)):
     features = _normalize_premium_features(req.features)
     _save_premium_features(features)
-    return {"message": "Premium-фічі оновлено", "features": features}
+    return {"message": "Premium-С„С–С‡С– РѕРЅРѕРІР»РµРЅРѕ", "features": features}
 
 
 @app.get("/admin/premium/orders")
@@ -1334,11 +1335,14 @@ def ensure_question_metadata() -> None:
 
 @app.post("/users/me/avatar")
 def upload_avatar(file: UploadFile = File(...), user=Depends(get_current_user)):
-    if not file.content_type or not file.content_type.startswith("image/"):
+    ext = Path(file.filename or "avatar.png").suffix.lower() or ".png"
+    allowed_exts = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"}
+    content_type = (file.content_type or "").lower()
+    looks_like_image = content_type.startswith("image/") or ext in allowed_exts
+    if not looks_like_image:
         raise HTTPException(400, "Можна завантажити тільки зображення")
 
-    ext = Path(file.filename or "avatar.png").suffix.lower() or ".png"
-    if ext not in {".png", ".jpg", ".jpeg", ".webp"}:
+    if ext not in allowed_exts:
         ext = ".png"
     for old_file in UPLOAD_DIR.glob(f"user_{user['id']}_*"):
         try:
@@ -1352,6 +1356,16 @@ def upload_avatar(file: UploadFile = File(...), user=Depends(get_current_user)):
 
     avatar_url = f"/uploads/avatars/{filename}"
     return update_avatar_use_case(user, avatar_url, present_user=_user_public)
+
+
+@app.delete("/users/me/avatar")
+def delete_avatar(user=Depends(get_current_user)):
+    for old_file in UPLOAD_DIR.glob(f"user_{user['id']}_*"):
+        try:
+            old_file.unlink()
+        except OSError:
+            pass
+    return clear_avatar_use_case(user, present_user=_user_public)
 
 
 @app.get("/users/{user_id}/profile")
@@ -1458,11 +1472,11 @@ def import_questions(payload: list[dict[str, Any]], user=Depends(get_optional_us
 @app.post("/questions/import-bundled")
 def import_bundled_questions(user=Depends(get_optional_user)):
     if not DEFAULT_IMPORT_FILE.exists():
-        raise HTTPException(404, f"Файл не знайдено: {DEFAULT_IMPORT_FILE.name}")
+        raise HTTPException(404, f"Р¤Р°Р№Р» РЅРµ Р·РЅР°Р№РґРµРЅРѕ: {DEFAULT_IMPORT_FILE.name}")
     payload = json.loads(DEFAULT_IMPORT_FILE.read_text(encoding="utf-8"))
     questions = payload if isinstance(payload, list) else payload.get("questions", [])
     if not isinstance(questions, list):
-        raise HTTPException(400, "Невалідний формат bundled JSON")
+        raise HTTPException(400, "РќРµРІР°Р»С–РґРЅРёР№ С„РѕСЂРјР°С‚ bundled JSON")
     return import_questions(questions, user)
 
 
@@ -1775,10 +1789,10 @@ def admin_reset_user_password(user_id: int, admin=Depends(require_admin)):
         raise HTTPException(exc.status_code, exc.message) from exc
     sent = send_email(
         reset["email"],
-        "Скидання пароля PDRPrep",
-        f"<p>Адміністратор надіслав відновлення доступу. Ваш код: <b style='font-size:24px'>{reset['code']}</b></p>",
+        "РЎРєРёРґР°РЅРЅСЏ РїР°СЂРѕР»СЏ PDRPrep",
+        f"<p>РђРґРјС–РЅС–СЃС‚СЂР°С‚РѕСЂ РЅР°РґС–СЃР»Р°РІ РІС–РґРЅРѕРІР»РµРЅРЅСЏ РґРѕСЃС‚СѓРїСѓ. Р’Р°С€ РєРѕРґ: <b style='font-size:24px'>{reset['code']}</b></p>",
     )
-    return email_delivery_response(sent, reset["code"], "Лист на відновлення пароля надіслано")
+    return email_delivery_response(sent, reset["code"], "Р›РёСЃС‚ РЅР° РІС–РґРЅРѕРІР»РµРЅРЅСЏ РїР°СЂРѕР»СЏ РЅР°РґС–СЃР»Р°РЅРѕ")
 
 
 @app.post("/admin/users/{user_id}/achievements")
@@ -1856,7 +1870,7 @@ def _read_theory_parse_status(*, include_log: bool = True) -> dict[str, Any]:
         except Exception:
             status = {}
     else:
-        status = {"running": False, "message": "Парсинг ще не запускався"}
+        status = {"running": False, "message": "РџР°СЂСЃРёРЅРі С‰Рµ РЅРµ Р·Р°РїСѓСЃРєР°РІСЃСЏ"}
     if include_log and THEORY_PARSE_LOG_FILE.exists():
         try:
             lines = THEORY_PARSE_LOG_FILE.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -1876,7 +1890,7 @@ def _watch_theory_parse_process(process: subprocess.Popen) -> None:
             "running": False,
             "finished_at": _now_iso(),
             "exit_code": exit_code,
-            "message": "Парсинг завершено" if exit_code == 0 else "Парсинг завершився з помилкою",
+            "message": "РџР°СЂСЃРёРЅРі Р·Р°РІРµСЂС€РµРЅРѕ" if exit_code == 0 else "РџР°СЂСЃРёРЅРі Р·Р°РІРµСЂС€РёРІСЃСЏ Р· РїРѕРјРёР»РєРѕСЋ",
         }
     )
 
@@ -1893,7 +1907,7 @@ def admin_start_theory_parse(req: AdminTheoryParseRequest, admin=Depends(require
         RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
         script_path = BASE_DIR / "scripts" / "import_vodiy_theory.py"
         if not script_path.exists():
-            raise HTTPException(500, "Скрипт парсингу теорії не знайдено")
+            raise HTTPException(500, "РЎРєСЂРёРїС‚ РїР°СЂСЃРёРЅРіСѓ С‚РµРѕСЂС–С— РЅРµ Р·РЅР°Р№РґРµРЅРѕ")
 
         command = [sys.executable, str(script_path)]
         if req.chapters:
@@ -1922,7 +1936,7 @@ def admin_start_theory_parse(req: AdminTheoryParseRequest, admin=Depends(require
                 "started_at": _now_iso(),
                 "finished_at": None,
                 "exit_code": None,
-                "message": "Парсинг теорії запущено",
+                "message": "РџР°СЂСЃРёРЅРі С‚РµРѕСЂС–С— Р·Р°РїСѓС‰РµРЅРѕ",
                 "command": " ".join(command),
             }
         )

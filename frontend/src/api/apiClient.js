@@ -284,6 +284,11 @@ export const api = {
     return normalizeUser(response?.user || response);
   },
 
+  deleteAvatar: async () => {
+    const response = await request('/users/me/avatar', { method: 'DELETE' });
+    return normalizeUser(response?.user || response);
+  },
+
   getUserProfile: async (id) => normalizeUser(await request(`/users/${id}/profile`)),
   getUserProfileByUsername: async (username) => normalizeUser(await request(`/users/by-username/${String(username).replace(/^@/, '')}/profile`)),
 

@@ -105,3 +105,10 @@ class UserRepository:
             (avatar_url, user_id),
         )
         return self.get_user(user_id)
+
+    def clear_avatar(self, *, user_id: int) -> dict[str, Any]:
+        self.conn.execute(
+            "UPDATE users SET avatar_url = NULL, avatar_version = COALESCE(avatar_version, 0) + 1 WHERE id = %s",
+            (user_id,),
+        )
+        return self.get_user(user_id)

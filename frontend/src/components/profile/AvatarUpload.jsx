@@ -1,6 +1,6 @@
 // @ts-check
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Loader2, User2 } from 'lucide-react';
+import { Camera, Loader2, Trash2, User2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import api from '@/api/apiClient';
@@ -16,10 +16,12 @@ import api from '@/api/apiClient';
 export default function AvatarUpload({ avatarUrl = null, activeFrame = '', onAvatarChange, editable = true }) {
   const inputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(/** @type {string | null} */ (null));
   const [imageBroken, setImageBroken] = useState(false);
   const { toast } = useToast();
   const displayedAvatar = previewUrl || avatarUrl || null;
+  const isBusy = uploading || deleting;
   const hasFrame = Boolean(activeFrame && activeFrame !== 'default');
   const frameClass = cn(
     'flex h-24 w-24 items-center justify-center rounded-[28px] transition',
@@ -54,20 +56,28 @@ export default function AvatarUpload({ avatarUrl = null, activeFrame = '', onAva
    */
   const normalizeUploadFile = (file) => {
     const extension = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() : '';
-    const safeExt = extension && ['png', 'jpg', 'jpeg', 'webp'].includes(extension) ? extension : 'png';
-    return new File([file], `${crypto.randomUUID()}.${safeExt}`, { type: file.type || `image/${safeExt}` });
+    const safeExt = extension && ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(extension) ? extension : 'png';
+    const randomId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    return new File([file], `${randomId}.${safeExt}`, { type: file.type || `image/${safeExt === 'jpg' ? 'jpeg' : safeExt}` });
   };
 
   /** @param {import('react').ChangeEvent<HTMLInputElement>} event */
   const handleFile = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Невірний формат', description: 'Оберіть PNG, JPG або WEBP.', variant: 'destructive' });
+
+    const extension = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() : '';
+    const supportedByExtension = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(extension || '');
+    if (file.type && !file.type.startsWith('image/') && !supportedByExtension) {
+      toast({ title: 'Невірний формат', description: 'Оберіть PNG, JPG, WEBP, GIF або BMP.', variant: 'destructive' });
+      event.target.value = '';
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'Файл завеликий', description: 'Максимальний розмір аватара — 5MB.', variant: 'destructive' });
+      toast({ title: 'Файл завеликий', description: 'Максимальний розмір аватарки - 5MB.', variant: 'destructive' });
+      event.target.value = '';
       return;
     }
 
@@ -84,11 +94,11 @@ export default function AvatarUpload({ avatarUrl = null, activeFrame = '', onAva
       if (typeof onAvatarChange === 'function') {
         onAvatarChange(response);
       }
-      toast({ title: 'Аватар оновлено' });
+      toast({ title: 'Аватарку оновлено' });
     } catch (value) {
       setPreviewUrl(null);
       toast({
-        title: 'Не вдалося завантажити аватар',
+        title: 'Не вдалося завантажити аватарку',
         description: value instanceof Error ? value.message : 'Спробуйте ще раз.',
         variant: 'destructive',
       });
@@ -98,12 +108,38 @@ export default function AvatarUpload({ avatarUrl = null, activeFrame = '', onAva
     }
   };
 
+  const handleDeleteAvatar = async () => {
+    if (!displayedAvatar || isBusy) return;
+    setDeleting(true);
+    try {
+      const response = await api.deleteAvatar();
+      if (previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setPreviewUrl(null);
+      setImageBroken(false);
+      if (typeof onAvatarChange === 'function') {
+        onAvatarChange(response);
+      }
+      toast({ title: 'Аватарку видалено' });
+    } catch (value) {
+      toast({
+        title: 'Не вдалося видалити аватарку',
+        description: value instanceof Error ? value.message : 'Спробуйте ще раз.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="relative h-24 w-24 shrink-0">
       <button
         type="button"
         className={frameClass}
-        onClick={() => editable && inputRef.current?.click()}
+        onClick={() => editable && !isBusy && inputRef.current?.click()}
+        aria-label="Змінити аватарку"
       >
         <div className="h-full w-full overflow-hidden rounded-[22px] bg-slate-100 dark:bg-slate-800">
           {displayedAvatar && !imageBroken ? (
@@ -116,18 +152,37 @@ export default function AvatarUpload({ avatarUrl = null, activeFrame = '', onAva
               className="h-full w-full object-cover [backface-visibility:hidden]"
               onError={() => setImageBroken(true)}
             />
-          ) : <div className="flex h-full w-full items-center justify-center"><User2 className="h-9 w-9 text-slate-400" /></div>}
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <User2 className="h-9 w-9 text-slate-400" />
+            </div>
+          )}
         </div>
       </button>
+
       {editable ? (
-        <button
-          type="button"
-          className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-white dark:ring-slate-950"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading}
-        >
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-        </button>
+        <>
+          {displayedAvatar ? (
+            <button
+              type="button"
+              className="absolute -bottom-2 -left-2 flex h-8 w-8 items-center justify-center rounded-full bg-white text-rose-600 shadow-lg ring-4 ring-white transition hover:bg-rose-50 disabled:opacity-70 dark:bg-slate-900 dark:text-rose-300 dark:ring-slate-950 dark:hover:bg-rose-950/30"
+              onClick={handleDeleteAvatar}
+              disabled={isBusy}
+              aria-label="Видалити аватарку"
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-white transition disabled:opacity-70 dark:ring-slate-950"
+            onClick={() => inputRef.current?.click()}
+            disabled={isBusy}
+            aria-label="Змінити аватарку"
+          >
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+          </button>
+        </>
       ) : null}
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
     </div>
