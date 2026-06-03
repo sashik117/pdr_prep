@@ -9,6 +9,8 @@ export default function PremiumLimitDialog({
   title = 'Ви вичерпали денний ліміт',
   description = 'Безкоштовний доступ дозволяє зробити одну спробу на день. Premium відкриває навчання без денних обмежень, усі білети та повну аналітику.',
   homeLabel = 'Повернутися на головну',
+  primaryLabel = 'Отримати Premium',
+  primaryTo = '/pricing',
 }) {
   const navigate = useNavigate();
 
@@ -42,9 +44,9 @@ export default function PremiumLimitDialog({
           <div className="mt-8 grid gap-3">
             <Button
               className="min-h-14 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-base font-semibold text-white shadow-lg shadow-orange-500/20 hover:from-amber-500 hover:to-orange-600"
-              onClick={() => navigate('/pricing')}
+              onClick={() => navigate(primaryTo)}
             >
-              Отримати Premium
+              {primaryLabel}
             </Button>
             <Button
               variant="outline"

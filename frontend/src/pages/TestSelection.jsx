@@ -21,7 +21,7 @@ import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
 import api from '@/api/apiClient';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
-import { canStartFreeTest, getRemainingFreeTests } from '@/lib/accessLimits';
+import { getFreeDailyTestLimit, getRemainingFreeTests } from '@/lib/accessLimits';
 import { categoryGroups } from '@/lib/testCatalog';
 
 const modes = [
@@ -104,16 +104,10 @@ export default function TestSelection() {
       openLimit('Для роботи з Вашими помилками потрібно увійти в профіль, щоб ми знали, які питання повторити.');
       return false;
     }
-    if (!canStartFreeTest(user, modeId)) {
-      openLimit(user
-        ? 'Сьогодні безкоштовна спроба вже використана. Premium відкриває тренування без денних обмежень.'
-        : 'Гість може пройти лише один тест на день. Увійдіть, щоб зберігати прогрес, або оформіть Premium для навчання без лімітів.');
-      return false;
-    }
     return true;
   };
 
-  const accessActionForMode = (modeId) => (modeId === 'section' ? 'section_test' : 'test');
+  const accessActionForMode = (modeId) => (modeId === 'section' ? 'section_test_v2' : 'test_v2');
 
   const handleStart = async (modeId = selectedMode) => {
     if (!canStartMode(modeId)) return;
@@ -121,7 +115,9 @@ export default function TestSelection() {
       try {
         const access = await api.checkAccessLimit(accessActionForMode(modeId));
         if (!access?.allowed) {
-          openLimit('Безкоштовний доступ дозволяє пройти одну спробу на день. Premium відкриває тести без денних обмежень.');
+          openLimit(user
+            ? 'Ви використали 3 безкоштовні спроби на сьогодні. Premium відкриває тести без денних обмежень.'
+            : 'Гостьова спроба на сьогодні вже використана. Зареєструйтесь, щоб отримати більше спроб і зберігати прогрес.');
           return;
         }
       } catch {
@@ -286,7 +282,7 @@ export default function TestSelection() {
             </p>
             {!user?.is_premium && !currentMode.premium ? (
               <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-600 dark:text-amber-300">
-                Free: ще {getRemainingFreeTests(user, selectedMode)} із 1 спроби сьогодні
+                Free: ще {getRemainingFreeTests(user, selectedMode)} із {getFreeDailyTestLimit(user)} спроб сьогодні
               </p>
             ) : null}
           </div>
@@ -321,6 +317,8 @@ export default function TestSelection() {
         onOpenChange={setLimitOpen}
         title="Ви вичерпали ліміт тестів"
         description={limitText || 'Безкоштовний доступ дозволяє пройти одну спробу на день. Premium відкриває всі режими тестування без денних обмежень.'}
+        primaryLabel={user ? 'Отримати Premium' : 'Зареєструватися'}
+        primaryTo={user ? '/pricing' : '/auth?tab=register'}
       />
       <Dialog open={false && limitOpen} onOpenChange={setLimitOpen}>
         <DialogContent className="rounded-xl border-slate-200 bg-card text-slate-950 dark:border-slate-800 dark:text-white">

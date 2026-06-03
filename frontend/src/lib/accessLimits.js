@@ -1,10 +1,11 @@
 const DAY_KEY = new Date().toISOString().slice(0, 10);
-const TEST_LIMIT_PREFIX = 'pdr_free_test_limits:v2';
+const TEST_LIMIT_PREFIX = 'pdr_free_test_limits:v3';
 const BATTLE_LIMIT_PREFIX = 'pdr_free_battle_limits:v2';
 const TICKET_PREVIEW_PREFIX = 'pdr_free_ticket_preview_limits:v2';
 const GUEST_ID_KEY = 'driveprep_guest_id:v1';
 const GUEST_ID_COOKIE = 'driveprep_guest_id';
-const FREE_DAILY_TEST_LIMIT = 1;
+const FREE_DAILY_GUEST_TEST_LIMIT = 1;
+const FREE_DAILY_USER_TEST_LIMIT = 3;
 const FREE_DAILY_BATTLE_LIMIT = 1;
 const FREE_DAILY_TICKET_PREVIEW_LIMIT = 1;
 
@@ -77,7 +78,7 @@ export function getFreeTestUsage(user, mode) {
 
 export function canStartFreeTest(user, mode) {
   if (isPremiumUser(user)) return true;
-  return getFreeTestUsage(user, mode) < FREE_DAILY_TEST_LIMIT;
+  return getFreeTestUsage(user, mode) < getFreeDailyTestLimit(user);
 }
 
 export function registerFreeTestCompletion(user, mode) {
@@ -88,7 +89,11 @@ export function registerFreeTestCompletion(user, mode) {
 }
 
 export function getRemainingFreeTests(user, mode) {
-  return Math.max(0, FREE_DAILY_TEST_LIMIT - getFreeTestUsage(user, mode));
+  return Math.max(0, getFreeDailyTestLimit(user) - getFreeTestUsage(user, mode));
+}
+
+export function getFreeDailyTestLimit(user) {
+  return user ? FREE_DAILY_USER_TEST_LIMIT : FREE_DAILY_GUEST_TEST_LIMIT;
 }
 
 export function getFreeBattleUsage(user) {

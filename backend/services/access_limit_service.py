@@ -10,9 +10,12 @@ from core.config import JWT_SECRET
 from repositories.access_limit_repository import consume_usage, get_usage
 
 ACTION_LIMITS = {
-    "test": 1,
-    "section_test": 1,
-    "ticket_preview": 1,
+    "test": (1, 3),
+    "test_v2": (1, 3),
+    "section_test": (1, 3),
+    "section_test_v2": (1, 3),
+    "ticket_preview": (1, 3),
+    "ticket_preview_v2": (1, 3),
 }
 
 GUEST_RE = re.compile(r"[^a-zA-Z0-9:_-]+")
@@ -25,6 +28,14 @@ def clean_guest_id(value: str | None) -> str:
 
 def hash_value(value: str) -> str:
     return hmac.new(JWT_SECRET.encode("utf-8"), value.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def limit_for(action: str, user: dict[str, Any] | None) -> int | None:
+    limits = ACTION_LIMITS.get(action)
+    if not limits:
+        return None
+    guest_limit, user_limit = limits
+    return user_limit if user else guest_limit
 
 
 def access_scope(*, user: dict[str, Any] | None, guest_id: str | None, ip_address: str | None) -> dict[str, Any]:
@@ -51,7 +62,7 @@ def check_access_limit(*, action: str, user: dict[str, Any] | None, guest_id: st
     if user and bool(user.get("is_premium")):
         return {"allowed": True, "count": 0, "limit": None, "remaining": None, "premium": True}
 
-    limit = ACTION_LIMITS.get(action)
+    limit = limit_for(action, user)
     if not limit:
         return {"allowed": True, "count": 0, "limit": None, "remaining": None, "premium": False}
 
@@ -72,7 +83,7 @@ def consume_access_limit(*, action: str, user: dict[str, Any] | None, guest_id: 
     if user and bool(user.get("is_premium")):
         return {"allowed": True, "count": 0, "limit": None, "remaining": None, "premium": True}
 
-    limit = ACTION_LIMITS.get(action)
+    limit = limit_for(action, user)
     if not limit:
         return {"allowed": True, "count": 0, "limit": None, "remaining": None, "premium": False}
 

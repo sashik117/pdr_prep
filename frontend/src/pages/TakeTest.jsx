@@ -20,7 +20,7 @@ import SituationAnalysisModal from '@/components/test/SituationAnalysisModal';
 import GhostBar from '@/components/test/GhostBar';
 import LoginPrompt from '@/components/auth/LoginPrompt';
 import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
-import { canStartFreeTest, registerFreeTestCompletion } from '@/lib/accessLimits';
+import { registerFreeTestCompletion } from '@/lib/accessLimits';
 import { getSavedQuestionIds, isQuestionSaved, toggleSavedQuestion } from '@/lib/savedQuestions';
 import { playTone } from '@/lib/soundEffects';
 
@@ -189,7 +189,7 @@ export default function TakeTest() {
         if (!canceled) setServerAccessReady(true);
         return;
       }
-      const action = mode === 'section' ? 'section_test' : 'test';
+      const action = mode === 'section' ? 'section_test_v2' : 'test_v2';
       try {
         const access = await api.consumeAccessLimit(action);
         if (canceled) return;
@@ -277,9 +277,7 @@ export default function TakeTest() {
       setLimitBlocked(true);
       return;
     }
-    if (LIMITED_FREE_TEST_MODES.includes(mode) && !canStartFreeTest(user, mode)) {
-      setLimitBlocked(true);
-    }
+    // Server-side access limit decides this now.
   }, [mode, premiumOnly, user]);
 
   useEffect(() => {
@@ -581,6 +579,8 @@ export default function TakeTest() {
         onOpenChange={() => navigate('/')}
         title="Ви вичерпали ліміт тестів"
         description="Гість може пройти одну спробу на день. Увійдіть у профіль або оформіть Premium, щоб навчатися без обмежень і зберігати прогрес."
+        primaryLabel="Зареєструватися"
+        primaryTo="/auth?tab=register"
       />
     );
   }
@@ -593,7 +593,11 @@ export default function TakeTest() {
         title={premiumOnly ? 'Цей режим доступний у Premium' : 'Ви вичерпали денний ліміт'}
         description={premiumOnly
           ? 'Premium відкриває іспит МВС, білети як тест, усі режими практики та навчання без денних обмежень.'
-          : 'Безкоштовний доступ дозволяє пройти одну спробу на день. Premium відкриває тестування без денних обмежень.'}
+          : user
+            ? 'Ви використали 3 безкоштовні спроби на сьогодні. Premium відкриває тестування без денних обмежень.'
+            : 'Гостьова спроба на сьогодні вже використана. Зареєструйтесь, щоб отримати більше спроб і зберігати прогрес.'}
+        primaryLabel={user ? 'Отримати Premium' : 'Зареєструватися'}
+        primaryTo={user ? '/pricing' : '/auth?tab=register'}
         homeLabel="До вибору режиму"
       />
     );

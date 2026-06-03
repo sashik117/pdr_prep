@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
 import api from '@/api/apiClient';
 import { useAuth } from '@/lib/AuthContext';
-import { canStartFreeTest, getRemainingFreeTests } from '@/lib/accessLimits';
+import { getFreeDailyTestLimit, getRemainingFreeTests } from '@/lib/accessLimits';
 import { buildSections, categoryGroups } from '@/lib/testCatalog';
 import { cn } from '@/lib/utils';
 
@@ -99,13 +99,9 @@ export default function SectionTests() {
   };
 
   const startSection = async (sectionId) => {
-    if (!canStartFreeTest(user, 'section')) {
-      setLimitOpen(true);
-      return;
-    }
     if (!user?.is_premium) {
       try {
-        const access = await api.checkAccessLimit('section_test');
+        const access = await api.checkAccessLimit('section_test_v2');
         if (!access?.allowed) {
           setLimitOpen(true);
           return;
@@ -143,7 +139,7 @@ export default function SectionTests() {
             </p>
             {!user?.is_premium ? (
               <Badge variant="outline" className="mt-3 rounded-xl border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200">
-                Free: ще {getRemainingFreeTests(user, 'section')} із 1 спроби сьогодні
+                Free: ще {getRemainingFreeTests(user, 'section')} із {getFreeDailyTestLimit(user)} спроб сьогодні
               </Badge>
             ) : null}
           </div>
@@ -222,7 +218,11 @@ export default function SectionTests() {
         open={limitOpen}
         onOpenChange={setLimitOpen}
         title="Ви вичерпали ліміт практики"
-        description="Безкоштовний доступ дозволяє пройти одну спробу на день. Premium відкриває тренування по темах без денних обмежень."
+        description={user
+          ? 'Ви використали 3 безкоштовні спроби на сьогодні. Premium відкриває тренування по темах без денних обмежень.'
+          : 'Гостьова спроба на сьогодні вже використана. Зареєструйтесь, щоб отримати більше спроб і зберігати прогрес.'}
+        primaryLabel={user ? 'Отримати Premium' : 'Зареєструватися'}
+        primaryTo={user ? '/pricing' : '/auth?tab=register'}
       />
       <Dialog open={false && limitOpen} onOpenChange={setLimitOpen}>
         <DialogContent className="rounded-xl border-slate-200 bg-card text-slate-950 dark:border-slate-800 dark:text-white">
