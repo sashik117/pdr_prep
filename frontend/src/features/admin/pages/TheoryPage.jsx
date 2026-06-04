@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BookOpenText, FileImage, Layers3, PencilLine, Play, RefreshCw, Search, Video } from 'lucide-react';
+import { BookOpenText, FileImage, Layers3, PencilLine, Play, RefreshCw, Search, UploadCloud, Video } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,6 +62,19 @@ export default function TheoryPage() {
     mutationFn: () => api.startAdminTheoryParse({ write_seed: true }),
     onSuccess: async () => {
       await parseStatusQuery.refetch();
+    },
+  });
+
+  const imageUploadMutation = useMutation({
+    mutationFn: (file) => api.uploadAdminMedia(file, { scope: 'theory', sectionId: selectedSection?.id || null }),
+    onSuccess: async (uploaded) => {
+      if (!uploaded?.url || !selectedSection || !draft) return;
+      const imageHtml = `<p><img src="${uploaded.url}" alt="${escapeHtml(draft.title || selectedSection.title || 'Зображення теорії')}" loading="lazy" /></p>`;
+      updateDraft('content_html', `${draft.content_html || ''}\n${imageHtml}`.trim());
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['admin-theory-sections', category, search] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-theory-summary'] }),
+      ]);
     },
   });
 
@@ -262,6 +275,37 @@ export default function TheoryPage() {
 
                 <TheoryImagesPreview images={selectedSection.assets || []} title={selectedSection.title} />
 
+                <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-500/20 dark:bg-blue-500/10">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">Додати зображення до розділу</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-300">
+                        Файл завантажиться на сервер, додасться в медіа розділу і вставиться в HTML матеріалу.
+                      </p>
+                    </div>
+                    <label className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                      <UploadCloud className="mr-2 h-4 w-4" />
+                      {imageUploadMutation.isPending ? 'Завантажуємо...' : 'Вибрати файл'}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif,image/bmp,image/svg+xml"
+                        className="sr-only"
+                        disabled={imageUploadMutation.isPending}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) imageUploadMutation.mutate(file);
+                          event.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {imageUploadMutation.error ? (
+                    <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">
+                      {imageUploadMutation.error instanceof Error ? imageUploadMutation.error.message : 'Не вдалося завантажити файл'}
+                    </p>
+                  ) : null}
+                </div>
+
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Назва</span>
                   <Input value={draft.title} onChange={(event) => updateDraft('title', event.target.value)} />
@@ -361,4 +405,12 @@ function TheoryImagesPreview({ images = [], title }) {
       </div>
     </div>
   );
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
 }

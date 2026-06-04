@@ -473,6 +473,16 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
+  uploadAdminMedia: (file, { scope = 'general', sectionId = null } = {}) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('scope', scope);
+    if (sectionId) form.append('section_id', String(sectionId));
+    return request('/admin/media/upload', {
+      method: 'POST',
+      body: form,
+    });
+  },
   getAdminTheorySummary: () => request('/admin/theory/summary'),
   startAdminTheoryParse: (payload = {}) =>
     request('/admin/theory/parse', {

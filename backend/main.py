@@ -1128,9 +1128,9 @@ def consume_access_limit(
 @app.post("/api/admin/auth/login", include_in_schema=False)
 def admin_login(req: AdminLoginRequest):
     if not _is_admin_password_configured():
-        raise HTTPException(503, "РђРґРјС–РЅ-РїР°СЂРѕР»СЊ РЅРµ РЅР°Р»Р°С€С‚РѕРІР°РЅРѕ. Р”РѕРґР°Р№С‚Рµ ADMIN_PASSWORD Р°Р±Рѕ ADMIN_PASSWORD_HASH Сѓ Р·РјС–РЅРЅС– СЃРµСЂРµРґРѕРІРёС‰Р°.")
+        raise HTTPException(503, "Адмін-пароль не налаштовано. Додайте ADMIN_PASSWORD або ADMIN_PASSWORD_HASH у змінні середовища.")
     if not _check_admin_credentials(req.username, req.password):
-        raise HTTPException(401, "РќРµРІС–СЂРЅРёР№ РЅС–Рє Р°Р±Рѕ РїР°СЂРѕР»СЊ Р°РґРјС–РЅС–СЃС‚СЂР°С‚РѕСЂР°")
+        raise HTTPException(401, "Невірний нік або пароль адміністратора")
     token = create_admin_token(ADMIN_USERNAME, remember_me=req.remember_me)
     return {"token": token, "admin": _admin_public()}
 
@@ -1144,6 +1144,49 @@ def admin_me(admin=Depends(require_admin)):
         **_user_public(admin),
         "admin_session": False,
     }
+
+
+def _save_admin_media_upload(file: UploadFile, *, scope: str) -> dict[str, str]:
+    allowed_exts = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".svg"}
+    ext = Path(file.filename or "").suffix.lower()
+    content_type = (file.content_type or "").lower()
+    looks_like_image = content_type.startswith("image/") or ext in allowed_exts
+    if not looks_like_image or ext not in allowed_exts:
+        raise HTTPException(400, "Оберіть зображення у форматі PNG, JPG, WEBP, GIF, BMP або SVG.")
+
+    safe_scope = re.sub(r"[^a-z0-9_-]+", "-", str(scope or "general").lower()).strip("-") or "general"
+    target_dir = BASE_DIR / "uploads" / "admin" / safe_scope
+    target_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid4().hex[:10]}{ext}"
+    target = target_dir / filename
+    with target.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    url = f"/uploads/admin/{safe_scope}/{filename}"
+    return {"url": url, "filename": filename}
+
+
+@app.post("/admin/media/upload")
+@app.post("/api/admin/media/upload", include_in_schema=False)
+def admin_upload_media(
+    file: UploadFile = File(...),
+    scope: str = Form(default="general"),
+    section_id: Optional[int] = Form(default=None),
+    admin=Depends(require_admin),
+):
+    saved = _save_admin_media_upload(file, scope=scope)
+    if section_id and str(scope).startswith("theory"):
+        with db() as conn:
+            row = conn.execute("SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_order FROM theory_assets WHERE section_id = %s", (section_id,)).fetchone()
+            sort_order = int(row["next_order"] or 1)
+            conn.execute(
+                """
+                INSERT INTO theory_assets (section_id, asset_type, asset_url, caption, sort_order)
+                VALUES (%s, 'image', %s, '', %s)
+                """,
+                (section_id, saved["url"], sort_order),
+            )
+            conn.commit()
+    return {"url": saved["url"], "filename": saved["filename"]}
 
 
 @app.get("/promo/status")
@@ -1900,6 +1943,16 @@ def _now_iso() -> str:
     return datetime.utcnow().isoformat(timespec="seconds") + "Z"
 
 
+def _repair_mojibake(value: Any) -> Any:
+    if not isinstance(value, str) or not any(marker in value for marker in ("Р", "С", "вЂ")):
+        return value
+    try:
+        repaired = value.encode("cp1251").decode("utf-8")
+        return repaired if repaired.count("�") <= value.count("�") else value
+    except Exception:
+        return value
+
+
 def _write_theory_parse_status(payload: dict[str, Any]) -> dict[str, Any]:
     RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
     current = _read_theory_parse_status(include_log=False)
@@ -1917,7 +1970,9 @@ def _read_theory_parse_status(*, include_log: bool = True) -> dict[str, Any]:
         except Exception:
             status = {}
     else:
-        status = {"running": False, "message": "РџР°СЂСЃРёРЅРі С‰Рµ РЅРµ Р·Р°РїСѓСЃРєР°РІСЃСЏ"}
+        status = {"running": False, "message": "Парсинг ще не запускався"}
+    if "message" in status:
+        status["message"] = _repair_mojibake(status.get("message"))
     if include_log and THEORY_PARSE_LOG_FILE.exists():
         try:
             lines = THEORY_PARSE_LOG_FILE.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -1937,7 +1992,7 @@ def _watch_theory_parse_process(process: subprocess.Popen) -> None:
             "running": False,
             "finished_at": _now_iso(),
             "exit_code": exit_code,
-            "message": "РџР°СЂСЃРёРЅРі Р·Р°РІРµСЂС€РµРЅРѕ" if exit_code == 0 else "РџР°СЂСЃРёРЅРі Р·Р°РІРµСЂС€РёРІСЃСЏ Р· РїРѕРјРёР»РєРѕСЋ",
+            "message": "Парсинг завершено" if exit_code == 0 else "Парсинг завершився з помилкою",
         }
     )
 
@@ -1954,7 +2009,7 @@ def admin_start_theory_parse(req: AdminTheoryParseRequest, admin=Depends(require
         RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
         script_path = BASE_DIR / "scripts" / "import_vodiy_theory.py"
         if not script_path.exists():
-            raise HTTPException(500, "РЎРєСЂРёРїС‚ РїР°СЂСЃРёРЅРіСѓ С‚РµРѕСЂС–С— РЅРµ Р·РЅР°Р№РґРµРЅРѕ")
+            raise HTTPException(500, "Скрипт парсингу теорії не знайдено")
 
         command = [sys.executable, str(script_path)]
         if req.chapters:
@@ -1983,7 +2038,7 @@ def admin_start_theory_parse(req: AdminTheoryParseRequest, admin=Depends(require
                 "started_at": _now_iso(),
                 "finished_at": None,
                 "exit_code": None,
-                "message": "РџР°СЂСЃРёРЅРі С‚РµРѕСЂС–С— Р·Р°РїСѓС‰РµРЅРѕ",
+                "message": "Парсинг теорії запущено",
                 "command": " ".join(command),
             }
         )
