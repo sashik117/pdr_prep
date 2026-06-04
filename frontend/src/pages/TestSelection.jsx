@@ -121,8 +121,7 @@ export default function TestSelection() {
           return;
         }
       } catch {
-        openLimit('Не вдалося перевірити денний ліміт. Перевірте підключення і спробуйте ще раз.');
-        return;
+        // Let the test page perform the final server-side consume check.
       }
     }
     const query = new URLSearchParams({ mode: modeId });
@@ -319,6 +318,7 @@ export default function TestSelection() {
         description={limitText || 'Безкоштовний доступ дозволяє пройти одну спробу на день. Premium відкриває всі режими тестування без денних обмежень.'}
         primaryLabel={user ? 'Отримати Premium' : 'Зареєструватися'}
         primaryTo={user ? '/pricing' : '/auth?tab=register'}
+        intent={user ? 'premium' : 'register'}
       />
       <Dialog open={false && limitOpen} onOpenChange={setLimitOpen}>
         <DialogContent className="rounded-xl border-slate-200 bg-card text-slate-950 dark:border-slate-800 dark:text-white">

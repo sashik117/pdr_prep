@@ -581,6 +581,7 @@ export default function TakeTest() {
         description="Гість може пройти одну спробу на день. Увійдіть у профіль або оформіть Premium, щоб навчатися без обмежень і зберігати прогрес."
         primaryLabel="Зареєструватися"
         primaryTo="/auth?tab=register"
+        intent="register"
       />
     );
   }
@@ -598,6 +599,7 @@ export default function TakeTest() {
             : 'Гостьова спроба на сьогодні вже використана. Зареєструйтесь, щоб отримати більше спроб і зберігати прогрес.'}
         primaryLabel={user ? 'Отримати Premium' : 'Зареєструватися'}
         primaryTo={user ? '/pricing' : '/auth?tab=register'}
+        intent={user ? 'premium' : 'register'}
         homeLabel="До вибору режиму"
       />
     );

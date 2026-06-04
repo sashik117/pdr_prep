@@ -1,4 +1,4 @@
-import { Crown, X } from 'lucide-react';
+import { Crown, UserPlus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
@@ -11,8 +11,16 @@ export default function PremiumLimitDialog({
   homeLabel = 'Повернутися на головну',
   primaryLabel = 'Отримати Premium',
   primaryTo = '/pricing',
+  intent = 'premium',
 }) {
   const navigate = useNavigate();
+  const Icon = intent === 'register' ? UserPlus : Crown;
+  const iconWrapClass = intent === 'register'
+    ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-200'
+    : 'bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-200';
+  const iconBadgeClass = intent === 'register'
+    ? 'bg-gradient-to-br from-blue-500 to-sky-500'
+    : 'bg-gradient-to-br from-rose-500 to-fuchsia-600';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -30,9 +38,9 @@ export default function PremiumLimitDialog({
         </div>
 
         <div className="px-6 py-8 text-center sm:px-10">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-rose-100 text-rose-600 shadow-inner dark:bg-rose-500/15 dark:text-rose-200">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-fuchsia-600 text-white shadow-lg">
-              <Crown className="h-5 w-5" />
+          <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full shadow-inner ${iconWrapClass}`}>
+            <span className={`flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-lg ${iconBadgeClass}`}>
+              <Icon className="h-5 w-5" />
             </span>
           </div>
 
