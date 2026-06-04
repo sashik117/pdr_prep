@@ -25,7 +25,7 @@ import { getSavedQuestionIds, isQuestionSaved, toggleSavedQuestion } from '@/lib
 import { playTone } from '@/lib/soundEffects';
 
 const AUTO_ADVANCE_DELAY_MS = 1100;
-const AUTO_FINISH_DELAY_MS = 1600;
+const AUTO_FINISH_DELAY_MS = 1000;
 
 const MODE_CONFIG = {
   quick: { count: 10, label: 'Офіційні тести', time: 600 },
@@ -311,7 +311,6 @@ export default function TakeTest() {
       setTimeLeft((value) => {
         if (value <= 1) {
           clearInterval(timer);
-          void handleFinish();
           return 0;
         }
         return value - 1;
