@@ -30,12 +30,12 @@ export default function LoginPrompt({
         <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">{title}</h2>
         <p className="mx-auto mt-3 max-w-md text-slate-500 dark:text-slate-300">{description}</p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Button className="rounded-full px-6" onClick={() => navigateToLogin(redirectTo)}>
-            <LogIn className="mr-2 h-4 w-4" />
+          <Button className="min-h-12 rounded-full px-8 text-base" onClick={() => navigateToLogin(redirectTo)}>
+            <LogIn className="mr-2 h-5 w-5" />
             Увійти
           </Button>
-          <Button variant="outline" className="rounded-full px-6" onClick={() => navigateToRegister(redirectTo)}>
-            <UserPlus className="mr-2 h-4 w-4" />
+          <Button variant="outline" className="min-h-12 rounded-full px-8 text-base" onClick={() => navigateToRegister(redirectTo)}>
+            <UserPlus className="mr-2 h-5 w-5" />
             Реєстрація
           </Button>
         </div>

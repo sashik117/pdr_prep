@@ -21,6 +21,9 @@ export default function PremiumLimitDialog({
   const iconBadgeClass = intent === 'register'
     ? 'bg-gradient-to-br from-blue-500 to-sky-500'
     : 'bg-gradient-to-br from-rose-500 to-fuchsia-600';
+  const primaryButtonClass = intent === 'register'
+    ? 'min-h-14 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 text-base font-semibold text-white shadow-lg shadow-blue-500/20 hover:from-blue-700 hover:to-sky-600'
+    : 'min-h-14 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-base font-semibold text-white shadow-lg shadow-orange-500/20 hover:from-amber-500 hover:to-orange-600';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -51,7 +54,7 @@ export default function PremiumLimitDialog({
 
           <div className="mt-8 grid gap-3">
             <Button
-              className="min-h-14 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-base font-semibold text-white shadow-lg shadow-orange-500/20 hover:from-amber-500 hover:to-orange-600"
+              className={primaryButtonClass}
               onClick={() => navigate(primaryTo)}
             >
               {primaryLabel}

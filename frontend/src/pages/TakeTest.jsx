@@ -25,6 +25,7 @@ import { getSavedQuestionIds, isQuestionSaved, toggleSavedQuestion } from '@/lib
 import { playTone } from '@/lib/soundEffects';
 
 const AUTO_ADVANCE_DELAY_MS = 1100;
+const AUTO_FINISH_DELAY_MS = 1600;
 
 const MODE_CONFIG = {
   quick: { count: 10, label: 'Офіційні тести', time: 600 },
@@ -125,6 +126,7 @@ export default function TakeTest() {
   const [, setSavedIds] = useState(() => getSavedQuestionIds());
   const startTimeRef = useRef(Number(initialDraft?.startTime || Date.now()));
   const attemptIdRef = useRef(String(initialDraft?.attemptId || ''));
+  const answersRef = useRef(initialDraft?.answers || {});
   const answeredAllAtRef = useRef(null);
   const finishInProgressRef = useRef(false);
   const finishedAtRef = useRef(null);
@@ -133,6 +135,10 @@ export default function TakeTest() {
   const allowNavigationRef = useRef(false);
   const { toast } = useToast();
   const [pendingNavigation, setPendingNavigation] = useState(null);
+
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
 
   const ghostKey = useMemo(
     () => `ghost_best_time:${mode}:${category || 'all'}:${section || 'all'}:${topic || 'all'}`,
@@ -340,6 +346,8 @@ export default function TakeTest() {
     const question = questions[currentIndex];
     if (!question) return;
     if (answers[String(question.id)]) return;
+    const nextAnswers = { ...answersRef.current, [String(question.id)]: label };
+    answersRef.current = nextAnswers;
     setAnswers((prev) => {
       const next = { ...prev, [String(question.id)]: label };
       if (Object.keys(next).length >= questions.length && !answeredAllAtRef.current) {
@@ -356,8 +364,12 @@ export default function TakeTest() {
       const isLastQuestion = currentIndex >= questions.length - 1;
       if (!isLastQuestion) {
         setCurrentIndex((value) => Math.min(value + 1, questions.length - 1));
+        return;
       }
-    }, AUTO_ADVANCE_DELAY_MS);
+      if (Object.keys(nextAnswers).length >= questions.length) {
+        void handleFinish();
+      }
+    }, currentIndex >= questions.length - 1 ? AUTO_FINISH_DELAY_MS : AUTO_ADVANCE_DELAY_MS);
   };
 
   const handleFinish = async () => {
@@ -371,7 +383,8 @@ export default function TakeTest() {
     const finishedAt = finishedAtRef.current || answeredAllAtRef.current || Date.now();
     finishedAtRef.current = finishedAt;
     const timeSpent = Math.floor((finishedAt - startTimeRef.current) / 1000);
-    const correct = questions.filter((question) => answers[String(question.id)] === question.correct_answer).length;
+    const finalAnswers = answersRef.current;
+    const correct = questions.filter((question) => finalAnswers[String(question.id)] === question.correct_answer).length;
     const nextBest = ghostBestTime > 0 ? Math.min(ghostBestTime, timeSpent) : timeSpent;
     setGhostBestTime(nextBest);
     localStorage.setItem(ghostKey, String(nextBest));
@@ -385,8 +398,8 @@ export default function TakeTest() {
       client_attempt_id: attemptIdRef.current,
       answers: questions.map((question) => ({
         question_id: Number(question.id),
-        selected_index: answerToIndex(answers[String(question.id)]),
-        is_correct: answers[String(question.id)] === question.correct_answer,
+        selected_index: answerToIndex(finalAnswers[String(question.id)]),
+        is_correct: finalAnswers[String(question.id)] === question.correct_answer,
         time_ms: null,
       })),
     };
@@ -578,7 +591,7 @@ export default function TakeTest() {
         open
         onOpenChange={() => navigate('/')}
         title="Ви вичерпали ліміт тестів"
-        description="Гість може пройти одну спробу на день. Увійдіть у профіль або оформіть Premium, щоб навчатися без обмежень і зберігати прогрес."
+        description="Гість може пройти одну спробу на день. Зареєструйтесь, щоб отримати більше спроб і зберігати прогрес."
         primaryLabel="Зареєструватися"
         primaryTo="/auth?tab=register"
         intent="register"
@@ -789,7 +802,7 @@ export default function TakeTest() {
             <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }}>
               <div className={cn('mx-auto flex h-24 w-24 items-center justify-center rounded-full', passed ? 'bg-emerald-50 dark:bg-emerald-950/40' : 'bg-rose-50 dark:bg-rose-950/40')}>
                 <span className={cn('text-4xl font-semibold', passed ? 'text-emerald-600' : 'text-rose-600')}>
-                  {resultMeta?.percent ?? Math.round((correctCount / questions.length) * 100)}
+                  {resultMeta?.percent ?? Math.round((correctCount / questions.length) * 100)}%
                 </span>
               </div>
 
@@ -808,12 +821,6 @@ export default function TakeTest() {
                 <p className="mt-2 text-xs font-semibold text-rose-600 dark:text-rose-300">
                   Сервер прийняв результат, але не повернув повні дані про нагороду. Оновіть профіль і перевірте статистику.
                 </p>
-              ) : null}
-
-              {!user ? (
-                <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-left text-sm leading-6 text-blue-900 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-100">
-                  Це гостьова спроба. Ми показали результат, але зірочки, серія, збережені питання й аналітика відкриваються після входу в профіль.
-                </div>
               ) : null}
 
               {user ? <div className="mt-6 grid gap-4 sm:grid-cols-2">
