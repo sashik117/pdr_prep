@@ -149,12 +149,12 @@ export default function Header({ isOpen, setIsOpen, isAuthenticated, user, notif
             ) : (
               <div className="flex items-center gap-3">
                 <Link to="/auth?tab=login">
-                  <Button variant="ghost" size="sm" className="font-semibold text-gray-700 hover:bg-primary-50 hover:text-primary-600 dark:text-slate-200 dark:hover:bg-primary-500/10">
+                  <Button variant="ghost" className="min-h-11 rounded-full px-5 text-base font-semibold text-gray-700 hover:bg-primary-50 hover:text-primary-600 dark:text-slate-200 dark:hover:bg-primary-500/10">
                     Вхід
                   </Button>
                 </Link>
                 <Link to="/auth?tab=register">
-                  <Button size="sm" className="shadow-lg shadow-primary-500/20 transition-shadow hover:shadow-primary-500/30">
+                  <Button className="min-h-11 rounded-full px-6 text-base shadow-lg shadow-primary-500/20 transition-shadow hover:shadow-primary-500/30">
                     Реєстрація
                   </Button>
                 </Link>
@@ -257,10 +257,10 @@ export default function Header({ isOpen, setIsOpen, isAuthenticated, user, notif
                 ) : (
                   <div className="space-y-3 px-2">
                     <Link to="/auth?tab=login" onClick={() => setIsOpen(false)} className="block w-full">
-                      <Button variant="outline" className="w-full justify-center">Вхід</Button>
+                      <Button variant="outline" className="min-h-12 w-full justify-center rounded-full text-base">Вхід</Button>
                     </Link>
                     <Link to="/auth?tab=register" onClick={() => setIsOpen(false)} className="block w-full">
-                      <Button className="w-full justify-center shadow-lg shadow-primary-500/20">Реєстрація</Button>
+                      <Button className="min-h-12 w-full justify-center rounded-full text-base shadow-lg shadow-primary-500/20">Реєстрація</Button>
                     </Link>
                   </div>
                 )}
