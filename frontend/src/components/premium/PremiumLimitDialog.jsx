@@ -27,7 +27,7 @@ export default function PremiumLimitDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border-0 bg-white p-0 text-slate-950 shadow-2xl dark:bg-slate-950 dark:text-white sm:max-w-xl">
+      <DialogContent hideCloseButton className="max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border-0 bg-white p-0 text-slate-950 shadow-2xl dark:bg-slate-950 dark:text-white sm:max-w-xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
           <DialogTitle className="text-xl font-semibold tracking-[-0.03em]">Daily Limit Reached</DialogTitle>
           <button
