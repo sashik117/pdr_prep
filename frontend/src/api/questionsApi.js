@@ -6,6 +6,7 @@ export const IMAGE_BASE_PATH = '/images/questions_img/';
 export function getImageUrl(filename) {
   if (!filename) return null;
   if (filename.startsWith('http')) return filename;
+  if (filename.startsWith('/')) return filename;
   return `${IMAGE_BASE_PATH}${filename}`;
 }
 

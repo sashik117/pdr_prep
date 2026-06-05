@@ -104,6 +104,29 @@ export default function QuestionsPage() {
     });
   };
 
+  const handleImageFile = (file) => {
+    if (!file || !String(file.type || '').startsWith('image/')) {
+      setStatusMessage('Оберіть або вставте саме зображення.');
+      return;
+    }
+    imageUploadMutation.mutate(file);
+  };
+
+  const handlePasteImage = (event) => {
+    const items = Array.from(event.clipboardData?.items || []);
+    const imageItem = items.find((item) => item.kind === 'file' && item.type.startsWith('image/'));
+    const file = imageItem?.getAsFile();
+    if (!file) return;
+    event.preventDefault();
+    handleImageFile(file);
+  };
+
+  const handleDropImage = (event) => {
+    event.preventDefault();
+    const file = Array.from(event.dataTransfer?.files || []).find((item) => String(item.type || '').startsWith('image/'));
+    if (file) handleImageFile(file);
+  };
+
   const openEditor = (questionId) => {
     setSelectedQuestionId(questionId);
     setStatusMessage('');
@@ -206,7 +229,7 @@ export default function QuestionsPage() {
           <DialogTitle className="sr-only">Редагування питання</DialogTitle>
           <DialogDescription className="sr-only">Форма редагування тексту, відповідей і зображень питання.</DialogDescription>
           {selectedQuestion && draft ? (
-            <div className="space-y-4 p-4 sm:p-6">
+            <div className="space-y-4 p-4 sm:p-6" onPaste={handlePasteImage}>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/60">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                   <span>ID {selectedQuestion.id}</span>
@@ -247,28 +270,43 @@ export default function QuestionsPage() {
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Файли зображень</span>
                   <Textarea rows={3} value={draft.imagesText} onChange={(event) => updateDraft('imagesText', event.target.value)} />
-                  <div className="flex flex-wrap items-center gap-2">
-                    <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200 dark:hover:bg-blue-500/20">
-                      <UploadCloud className="mr-2 h-4 w-4" />
-                      {imageUploadMutation.isPending ? 'Завантажуємо...' : 'Завантажити зображення'}
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp,image/gif,image/bmp,image/svg+xml"
-                        className="sr-only"
-                        disabled={imageUploadMutation.isPending}
-                        onChange={(event) => {
-                          const file = event.target.files?.[0];
-                          if (file) imageUploadMutation.mutate(file);
-                          event.target.value = '';
-                        }}
-                      />
-                    </label>
-                    {imageUploadMutation.error ? (
-                      <span className="text-xs font-medium text-rose-600 dark:text-rose-300">
-                        {imageUploadMutation.error instanceof Error ? imageUploadMutation.error.message : 'Не вдалося завантажити файл'}
-                      </span>
-                    ) : null}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={handleDropImage}
+                    onPaste={handlePasteImage}
+                    className="rounded-xl border border-dashed border-blue-200 bg-blue-50/60 p-3 text-sm text-blue-800 transition hover:bg-blue-50 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-100"
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-semibold">Додати фото до питання</p>
+                        <p className="mt-1 text-xs text-blue-700/80 dark:text-blue-100/75">
+                          Оберіть з галереї, перетягніть файл сюди або вставте скопійоване зображення через Ctrl+V.
+                        </p>
+                      </div>
+                      <label className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                        <UploadCloud className="mr-2 h-4 w-4" />
+                        {imageUploadMutation.isPending ? 'Завантажуємо...' : 'Вибрати файл'}
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp,image/gif,image/bmp,image/svg+xml"
+                          className="sr-only"
+                          disabled={imageUploadMutation.isPending}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) handleImageFile(file);
+                            event.target.value = '';
+                          }}
+                        />
+                      </label>
+                    </div>
                   </div>
+                  {imageUploadMutation.error ? (
+                    <span className="block text-xs font-medium text-rose-600 dark:text-rose-300">
+                      {imageUploadMutation.error instanceof Error ? imageUploadMutation.error.message : 'Не вдалося завантажити файл'}
+                    </span>
+                  ) : null}
                 </label>
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Правильна</span>

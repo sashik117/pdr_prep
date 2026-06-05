@@ -136,6 +136,19 @@ def ensure_runtime_migrations() -> None:
         "CREATE INDEX IF NOT EXISTS idx_questions_ticket_number ON questions(ticket_number)",
         "CREATE INDEX IF NOT EXISTS idx_questions_ticket_question ON questions(ticket_number, question_number)",
         "CREATE INDEX IF NOT EXISTS idx_questions_text ON questions USING gin (to_tsvector('simple', question_text))",
+        """
+        CREATE TABLE IF NOT EXISTS admin_media_files (
+            id BIGSERIAL PRIMARY KEY,
+            scope TEXT NOT NULL DEFAULT 'general',
+            filename TEXT NOT NULL,
+            content_type TEXT NOT NULL DEFAULT 'application/octet-stream',
+            file_size INT NOT NULL DEFAULT 0,
+            data BYTEA NOT NULL,
+            uploaded_by TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS idx_admin_media_files_scope ON admin_media_files(scope)",
         "ALTER TABLE test_results ADD COLUMN IF NOT EXISTS client_attempt_id TEXT",
         "CREATE UNIQUE INDEX IF NOT EXISTS uq_test_results_user_attempt ON test_results(user_id, client_attempt_id) WHERE client_attempt_id IS NOT NULL",
         """

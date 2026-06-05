@@ -22,7 +22,7 @@ import psycopg
 from psycopg import errors as psycopg_errors
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from core.bootstrap import ensure_runtime_migrations, ensure_schema_indexes, ensure_schema_tables
 from core.config import (
@@ -1146,7 +1146,25 @@ def admin_me(admin=Depends(require_admin)):
     }
 
 
-def _save_admin_media_upload(file: UploadFile, *, scope: str) -> dict[str, str]:
+def _ensure_admin_media_table(conn) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS admin_media_files (
+            id BIGSERIAL PRIMARY KEY,
+            scope TEXT NOT NULL DEFAULT 'general',
+            filename TEXT NOT NULL,
+            content_type TEXT NOT NULL DEFAULT 'application/octet-stream',
+            file_size INT NOT NULL DEFAULT 0,
+            data BYTEA NOT NULL,
+            uploaded_by TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_admin_media_files_scope ON admin_media_files(scope)")
+
+
+def _save_admin_media_upload(file: UploadFile, *, scope: str, admin: Optional[dict[str, Any]] = None) -> dict[str, str]:
     allowed_exts = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".svg"}
     ext = Path(file.filename or "").suffix.lower()
     content_type = (file.content_type or "").lower()
@@ -1155,14 +1173,64 @@ def _save_admin_media_upload(file: UploadFile, *, scope: str) -> dict[str, str]:
         raise HTTPException(400, "Оберіть зображення у форматі PNG, JPG, WEBP, GIF, BMP або SVG.")
 
     safe_scope = re.sub(r"[^a-z0-9_-]+", "-", str(scope or "general").lower()).strip("-") or "general"
-    target_dir = BASE_DIR / "uploads" / "admin" / safe_scope
-    target_dir.mkdir(parents=True, exist_ok=True)
     filename = f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid4().hex[:10]}{ext}"
-    target = target_dir / filename
-    with target.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    url = f"/uploads/admin/{safe_scope}/{filename}"
+    content = file.file.read()
+    if not content:
+        raise HTTPException(400, "Файл порожній. Оберіть інше зображення.")
+    max_size = 8 * 1024 * 1024
+    if len(content) > max_size:
+        raise HTTPException(400, "Зображення завелике. Максимальний розмір — 8 МБ.")
+
+    try:
+        with db() as conn:
+            _ensure_admin_media_table(conn)
+            row = conn.execute(
+                """
+                INSERT INTO admin_media_files (scope, filename, content_type, file_size, data, uploaded_by)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (
+                    safe_scope,
+                    filename,
+                    content_type or "application/octet-stream",
+                    len(content),
+                    content,
+                    admin.get("username") or admin.get("email") if isinstance(admin, dict) else None,
+                ),
+            ).fetchone()
+            conn.commit()
+    except Exception as exc:
+        raise HTTPException(500, "Не вдалося зберегти зображення в базі даних.") from exc
+
+    saved_id = int(row["id"])
+    url = f"/media/admin/{saved_id}/{filename}"
     return {"url": url, "filename": filename}
+
+
+@app.get("/media/admin/{media_id}/{filename}")
+@app.get("/api/media/admin/{media_id}/{filename}", include_in_schema=False)
+def get_admin_media(media_id: int, filename: str):
+    with db() as conn:
+        _ensure_admin_media_table(conn)
+        row = conn.execute(
+            """
+            SELECT filename, content_type, data
+            FROM admin_media_files
+            WHERE id = %s
+            """,
+            (media_id,),
+        ).fetchone()
+    if not row:
+        raise HTTPException(404, "Зображення не знайдено")
+    return Response(
+        content=row["data"],
+        media_type=row["content_type"] or "application/octet-stream",
+        headers={
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "Content-Disposition": f'inline; filename="{row["filename"] or filename}"',
+        },
+    )
 
 
 @app.post("/admin/media/upload")
@@ -1173,7 +1241,7 @@ def admin_upload_media(
     section_id: Optional[int] = Form(default=None),
     admin=Depends(require_admin),
 ):
-    saved = _save_admin_media_upload(file, scope=scope)
+    saved = _save_admin_media_upload(file, scope=scope, admin=admin)
     if section_id and str(scope).startswith("theory"):
         with db() as conn:
             row = conn.execute("SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_order FROM theory_assets WHERE section_id = %s", (section_id,)).fetchone()
