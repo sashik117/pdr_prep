@@ -855,19 +855,19 @@ export default function TakeTest() {
                 </p>
               ) : null}
 
-              {user ? <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              {user ? <div className="mt-6 grid grid-cols-2 items-stretch gap-3">
                 <motion.div
                   initial={false}
                   animate={resultMeta?.earnedStar ? { scale: [0.72, 1.22, 1], rotate: [0, -8, 8, 0] } : { opacity: [0.72, 1] }}
                   transition={{ duration: 0.9 }}
                   className={cn(
-                    'rounded-2xl border p-4',
+                    'flex min-h-[132px] rounded-2xl border p-3 sm:min-h-[140px] sm:p-4',
                     resultMeta?.earnedStar ? 'border-amber-200 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/30' : 'border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-900/50',
                   )}
                 >
-                  <div className="flex items-center justify-center gap-3">
+                  <div className="flex w-full flex-col items-center justify-center gap-2 text-center">
                     <div className="relative">
-                      <Star className={cn('h-8 w-8 transition-all duration-700', resultMeta?.earnedStar ? 'fill-amber-400 text-amber-500 drop-shadow-[0_0_14px_rgba(251,191,36,0.45)]' : 'fill-slate-200 text-slate-300')} />
+                      <Star className={cn('h-7 w-7 transition-all duration-700 sm:h-8 sm:w-8', resultMeta?.earnedStar ? 'fill-amber-400 text-amber-500 drop-shadow-[0_0_14px_rgba(251,191,36,0.45)]' : 'fill-slate-200 text-slate-300')} />
                       {resultMeta?.earnedStar ? (
                         <motion.div
                           initial={{ opacity: 0, scale: 0.2, y: 8 }}
@@ -879,10 +879,10 @@ export default function TakeTest() {
                         </motion.div>
                       ) : null}
                     </div>
-                    <div className="text-left">
-                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">Зірочки</p>
-                      <p className="text-2xl font-semibold text-slate-950 dark:text-white">{resultMeta?.totalStars ?? '—'}</p>
-                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-300">
+                    <div>
+                      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400 sm:text-xs">Зірочки</p>
+                      <p className="text-2xl font-semibold leading-tight text-slate-950 dark:text-white">{resultMeta?.totalStars ?? '—'}</p>
+                      <p className="mt-1 line-clamp-2 text-[11px] font-semibold leading-4 text-slate-500 dark:text-slate-300 sm:text-xs">
                         {resultMeta?.earnedStar ? 'Нова зірочка отримана' : 'Без нової зірочки цього разу'}
                       </p>
                     </div>
@@ -894,31 +894,31 @@ export default function TakeTest() {
                   animate={resultMeta?.streakActivated || resultMeta?.streakRestored ? { scale: [0.92, 1.12, 1] } : {}}
                   transition={{ duration: 0.8 }}
                   className={cn(
-                    'rounded-2xl border p-4',
+                    'flex min-h-[132px] rounded-2xl border p-3 sm:min-h-[140px] sm:p-4',
                     (resultMeta?.streakActivated || resultMeta?.streakRestored || user?.streak_status === 'active')
                       ? 'border-orange-200 bg-orange-50 dark:border-orange-900/60 dark:bg-orange-950/30'
                       : 'border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-900/50',
                   )}
                 >
-                  <div className="flex items-center justify-center gap-3">
+                  <div className="flex w-full flex-col items-center justify-center gap-2 text-center">
                     <motion.div
                       initial={false}
                       animate={resultMeta?.streakActivated || resultMeta?.streakRestored ? { scale: [0.76, 1.2, 1], opacity: [0.55, 1], rotate: [0, -6, 4, 0] } : {}}
                       transition={{ duration: 0.8 }}
                     >
-                      <Flame className={cn('h-8 w-8 transition-all duration-700', (resultMeta?.streakActivated || resultMeta?.streakRestored || user?.streak_status === 'active') ? 'fill-orange-500 text-orange-500 drop-shadow-[0_0_14px_rgba(249,115,22,0.45)]' : 'text-slate-300')} />
+                      <Flame className={cn('h-7 w-7 transition-all duration-700 sm:h-8 sm:w-8', (resultMeta?.streakActivated || resultMeta?.streakRestored || user?.streak_status === 'active') ? 'fill-orange-500 text-orange-500 drop-shadow-[0_0_14px_rgba(249,115,22,0.45)]' : 'text-slate-300')} />
                     </motion.div>
-                    <div className="text-left">
-                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">Серія</p>
+                    <div>
+                      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400 sm:text-xs">Серія</p>
                       <motion.p
                         key={resultMeta?.streak ?? 0}
                         initial={(resultMeta?.streakActivated || resultMeta?.streakRestored) ? { opacity: 0, y: 10, scale: 0.92 } : false}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        className="text-2xl font-semibold text-slate-950 dark:text-white"
+                        className="text-2xl font-semibold leading-tight text-slate-950 dark:text-white"
                         >
                           {resultMeta?.streak ?? '—'}
                         </motion.p>
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-300">
+                        <p className="mt-1 line-clamp-2 text-[11px] font-semibold leading-4 text-slate-500 dark:text-slate-300 sm:text-xs">
                           {resultMeta?.streakRestored
                             ? 'Серію відновлено'
                             : resultMeta?.streakActivated
