@@ -2,7 +2,7 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { UNSAFE_NavigationContext, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Brain, CheckCircle, ChevronLeft, ChevronRight, Clock, Ghost, Flame } from 'lucide-react';
+import { AlertTriangle, Brain, CheckCircle, ChevronLeft, ChevronRight, Clock, Ghost, Flame, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,6 +67,18 @@ function removeTestDraft(key) {
   } catch {
     // Ignore storage failures.
   }
+}
+
+function normalizeQuestionResponse(response) {
+  const list = Array.isArray(response)
+    ? response
+    : Array.isArray(response?.questions)
+      ? response.questions
+      : Array.isArray(response?.items)
+        ? response.items
+        : [];
+
+  return list.map(normalizeQuestion).filter(Boolean);
 }
 
 export default function TakeTest() {
@@ -145,7 +157,7 @@ export default function TakeTest() {
     [mode, category, section, topic],
   );
 
-  const { data: rawQuestions = [], isLoading } = useQuery({
+  const { data: rawQuestions = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ['take-test', mode, category, topic, section, ticket, idsParam, requestedCount, user?.id],
     enabled: !isLoadingAuth && serverAccessReady && (!requiresAuth || !!user) && !guestLocked && !hasRestorableDraft,
     queryFn: async () => {
@@ -153,15 +165,15 @@ export default function TakeTest() {
       if (requestedIds.length > 0) {
         const limit = requestedCount > 0 ? Math.min(requestedCount, requestedIds.length) : requestedIds.length;
         const response = await fetchQuestions({ ids: requestedIds.slice(0, limit), limit });
-        return (response?.items || response || []).map(normalizeQuestion).filter(Boolean);
+        return normalizeQuestionResponse(response);
       }
       if (mode === 'mvs') {
         const response = await api.getMvsExamQuestions({ category: category || 'B' });
-        return (response?.questions || response || []).map(normalizeQuestion).filter(Boolean);
+        return normalizeQuestionResponse(response);
       }
       if (mode === 'ticket' && ticket) {
         const response = await api.getTicket(ticket, category || 'B');
-        return (response?.questions || []).map(normalizeQuestion).filter(Boolean);
+        return normalizeQuestionResponse(response);
       }
       const response = await fetchRandomQuestions({
         count: effectiveQuestionCount,
@@ -172,7 +184,7 @@ export default function TakeTest() {
         difficulty: mode === 'top' ? 'hard' : undefined,
         seed,
       });
-      return response.map(normalizeQuestion).filter(Boolean);
+      return normalizeQuestionResponse(response);
     },
   });
 
@@ -619,6 +631,27 @@ export default function TakeTest() {
 
   if (isLoading || (rawQuestions.length > 0 && questions.length === 0)) {
     return <Spinner text="Готуємо питання..." />;
+  }
+
+  if (isError) {
+    return (
+      <div className="mx-auto max-w-xl space-y-4 px-4 py-16 text-center sm:px-6">
+        <AlertTriangle className="mx-auto h-12 w-12 text-rose-500" />
+        <h2 className="text-xl font-medium text-slate-900 dark:text-white">Не вдалося завантажити питання</h2>
+        <p className="text-sm leading-6 text-slate-500 dark:text-slate-300">
+          Спробуйте ще раз. Якщо інтернет є, ми не ховаємо помилку білим екраном, а покажемо її тут.
+        </p>
+        {error?.message ? (
+          <p className="rounded-xl bg-rose-50 px-4 py-3 text-xs text-rose-700 dark:bg-rose-950/30 dark:text-rose-200">
+            {error.message}
+          </p>
+        ) : null}
+        <div className="flex flex-col justify-center gap-3 sm:flex-row">
+          <Button onClick={() => refetch()}>Спробувати ще раз</Button>
+          <Button variant="outline" onClick={() => navigate('/tests')}>Назад до тестів</Button>
+        </div>
+      </div>
+    );
   }
 
   if (!isLoading && questions.length === 0) {

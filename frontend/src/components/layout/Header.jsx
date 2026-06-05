@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
@@ -41,6 +41,7 @@ function Badge({ value }) {
 
 export default function Header({ isOpen, setIsOpen, isAuthenticated, user, notificationSummary, onLogout }) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const visibleNavItems = useMemo(
     () =>
@@ -56,6 +57,14 @@ export default function Header({ isOpen, setIsOpen, isAuthenticated, user, notif
     if (path === '/cabinet') return location.pathname === '/cabinet' || location.pathname === '/progress';
     if (path === '/tests') return location.pathname === '/tests' || location.pathname === '/test';
     return location.pathname.startsWith(path);
+  };
+
+  const navigateFromMobileMenu = (event, path) => {
+    event.preventDefault();
+    setIsOpen(false);
+    window.requestAnimationFrame(() => {
+      navigate(path);
+    });
   };
 
   return (
@@ -188,6 +197,7 @@ export default function Header({ isOpen, setIsOpen, isAuthenticated, user, notif
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.12, ease: 'easeOut' }}
             className="overflow-hidden border-t border-gray-100 bg-white dark:border-slate-800 dark:bg-slate-950 lg:hidden"
           >
             <div className="space-y-1 px-4 py-4">
@@ -198,9 +208,10 @@ export default function Header({ isOpen, setIsOpen, isAuthenticated, user, notif
                   <Link
                     key={item.path}
                     to={item.path}
-                    onClick={() => setIsOpen(false)}
+                    onPointerDown={() => setIsOpen(false)}
+                    onClick={(event) => navigateFromMobileMenu(event, item.path)}
                     className={cn(
-                      'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors',
+                      'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors active:scale-[0.99]',
                       isActive
                         ? 'bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-200'
                         : 'text-gray-600 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-900',
@@ -217,24 +228,27 @@ export default function Header({ isOpen, setIsOpen, isAuthenticated, user, notif
                   <div className="space-y-3">
                     <Link
                       to="/friends"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-900"
+                      onPointerDown={() => setIsOpen(false)}
+                      onClick={(event) => navigateFromMobileMenu(event, '/friends')}
+                      className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 active:scale-[0.99] dark:text-slate-300 dark:hover:bg-slate-900"
                     >
                       <MessageCircleMore className="h-5 w-5 text-gray-400" />
                       Друзі
                     </Link>
                     <Link
                       to="/settings"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-900"
+                      onPointerDown={() => setIsOpen(false)}
+                      onClick={(event) => navigateFromMobileMenu(event, '/settings')}
+                      className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 active:scale-[0.99] dark:text-slate-300 dark:hover:bg-slate-900"
                     >
                       <Settings className="h-5 w-5 text-gray-400" />
                       Налаштування
                     </Link>
                     <Link
                       to="/profile"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-900"
+                      onPointerDown={() => setIsOpen(false)}
+                      onClick={(event) => navigateFromMobileMenu(event, '/profile')}
+                      className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 active:scale-[0.99] dark:text-slate-300 dark:hover:bg-slate-900"
                     >
                       <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-50 text-gray-500 dark:bg-slate-900 dark:text-slate-200">
                         {user?.avatar_url ? (
@@ -247,8 +261,11 @@ export default function Header({ isOpen, setIsOpen, isAuthenticated, user, notif
                     </Link>
                     <button
                       type="button"
-                      onClick={onLogout}
-                      className="flex w-full items-center gap-3 rounded-xl px-6 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30"
+                      onClick={() => {
+                        setIsOpen(false);
+                        onLogout();
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-6 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 active:scale-[0.99] dark:text-red-300 dark:hover:bg-red-950/30"
                     >
                       <LogOut className="h-5 w-5" />
                       Вийти
@@ -256,10 +273,10 @@ export default function Header({ isOpen, setIsOpen, isAuthenticated, user, notif
                   </div>
                 ) : (
                   <div className="space-y-3 px-2">
-                    <Link to="/auth?tab=login" onClick={() => setIsOpen(false)} className="block w-full">
+                    <Link to="/auth?tab=login" onPointerDown={() => setIsOpen(false)} onClick={(event) => navigateFromMobileMenu(event, '/auth?tab=login')} className="block w-full">
                       <Button variant="outline" className="min-h-12 w-full justify-center rounded-full text-base">Вхід</Button>
                     </Link>
-                    <Link to="/auth?tab=register" onClick={() => setIsOpen(false)} className="block w-full">
+                    <Link to="/auth?tab=register" onPointerDown={() => setIsOpen(false)} onClick={(event) => navigateFromMobileMenu(event, '/auth?tab=register')} className="block w-full">
                       <Button className="min-h-12 w-full justify-center rounded-full text-base shadow-lg shadow-primary-500/20">Реєстрація</Button>
                     </Link>
                   </div>
