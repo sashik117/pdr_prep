@@ -923,7 +923,7 @@ export default function TakeTest() {
                             ? 'Серію відновлено'
                             : resultMeta?.streakActivated
                               ? 'Серія активна'
-                              : 'Прогрес серії оновлено'}
+                              : 'Серія активна'}
                         </p>
                       </div>
                     </div>

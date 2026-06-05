@@ -8,7 +8,6 @@ import {
   ClipboardList,
   Database,
   FileCheck2,
-  LineChart,
   MessageCircleHeart,
   PlayCircle,
   Save,
@@ -76,22 +75,20 @@ const extraModes = [
   {
     icon: Brain,
     title: 'Топ помилок багатьох',
-    description: 'Питання, на яких учні найчастіше плутаються під час підготовки.',
+    description: 'Добірка питань, у яких найчастіше помиляються під час підготовки до іспиту.',
     to: '/tests?mode=top',
   },
   {
     icon: Save,
     title: 'Збережені запитання',
-    description: 'Ваш особистий список важливого матеріалу для повторення в будь-який момент.',
+    description: 'Питання, які Ви відклали для спокійного повторення перед наступною спробою.',
     to: '/saved-questions',
-    auth: true,
   },
   {
-    icon: LineChart,
-    title: 'Аналітика',
-    description: 'Прогрес, історія проходжень і теми, які варто підтягнути.',
-    to: '/analytics',
-    auth: true,
+    icon: UsersRound,
+    title: 'Батли з друзями',
+    description: 'Короткі змагання у форматі тесту, щоб тренування було живим і мотивувало рухатись далі.',
+    to: '/battle',
   },
 ];
 
@@ -141,12 +138,16 @@ const supportActions = [
   { label: 'Написати в підтримку', to: '/support', icon: MessageCircleHeart, auth: true },
   { label: 'Відкрити відеолекції', to: '/study/video-lectures', icon: PlayCircle },
   { label: 'Переглянути Premium', to: '/pricing', icon: Trophy },
+  { label: 'Перейти в кабінет', to: '/cabinet', icon: Target, auth: true },
 ];
 
 export default function HomePage() {
-  const { isAuthenticated } = useAuth();
-  const visibleExtraModes = extraModes.filter((mode) => !mode.auth || isAuthenticated);
-  const visibleSupportActions = supportActions.filter((action) => !action.auth || isAuthenticated);
+  const { isAuthenticated, user } = useAuth();
+  const visibleExtraModes = extraModes;
+  const visibleSupportActions = supportActions.filter((action) => {
+    if (action.to === '/pricing' && user?.is_premium) return false;
+    return !action.auth || isAuthenticated;
+  });
   const accountCta = isAuthenticated
     ? { to: '/cabinet', label: 'До профілю' }
     : { to: '/auth?tab=register', label: 'Зареєструватися' };
@@ -345,13 +346,13 @@ export default function HomePage() {
             <div className="grid gap-8 md:grid-cols-[1.7fr_1fr] md:items-center">
               <div>
                 <PlayCircle className="mb-4 h-11 w-11 text-blue-100" />
-                <h3 className="text-2xl font-semibold">Відео та пояснення поруч із теорією</h3>
+                <h3 className="text-2xl font-semibold">Відеолекції для складних тем</h3>
                 <p className="mt-3 max-w-2xl leading-7 text-blue-100">
-                  Коли розділ має відео, користувач бачить його в контексті теми. Текст, ілюстрації та тестова практика залишаються пов’язаними.
+                  Короткі пояснення допомагають швидше розібрати правила, знаки, розмітку та типові дорожні ситуації. Це зручно, коли тексту недостатньо і хочеться побачити приклад.
                 </p>
               </div>
               <div className="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm leading-6 text-blue-50">
-                Відео відкриваються всередині теорії, щоб не розривати навчання на окремі випадкові переходи.
+                Дивіться урок, повертайтеся до теми й одразу закріплюйте матеріал тестами. Усе зібрано в одному місці, без зайвого пошуку.
               </div>
             </div>
           </motion.div>
@@ -429,7 +430,7 @@ export default function HomePage() {
       </section>
 
       <section className="bg-slate-50 py-12 dark:bg-slate-900/60">
-        <div className="ml-auto mr-auto grid w-full max-w-[1100px] gap-3 px-5 sm:px-6 md:grid-cols-3 lg:px-8">
+        <div className="ml-auto mr-auto grid w-full max-w-[1100px] gap-3 px-5 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
           {visibleSupportActions.map((action) => {
             const Icon = action.icon;
             return (

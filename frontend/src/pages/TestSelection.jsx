@@ -180,7 +180,7 @@ export default function TestSelection() {
                   <mode.icon className="h-5 w-5" />
                 </div>
                 <Badge variant="outline" className="border-slate-200 bg-transparent text-slate-600 dark:border-slate-700 dark:bg-transparent dark:text-slate-300">
-                  {mode.premium ? <Crown className="mr-1 h-3.5 w-3.5 text-amber-500" /> : null}
+                  {mode.premium && !user?.is_premium ? <Crown className="mr-1 h-3.5 w-3.5 text-amber-500" /> : null}
                   {mode.questions} питань
                 </Badge>
               </div>

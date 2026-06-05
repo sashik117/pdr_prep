@@ -6,8 +6,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 export default function PremiumLimitDialog({
   open,
   onOpenChange,
-  title = 'Ви вичерпали денний ліміт',
-  description = 'Безкоштовний доступ дозволяє зробити одну спробу на день. Premium відкриває навчання без денних обмежень, усі білети та повну аналітику.',
+  title = 'Денний ліміт вичерпано',
+  description = 'Безкоштовний доступ має обмеження на кількість спроб за день. Завтра ліміт оновиться автоматично.',
   homeLabel = 'Повернутися на головну',
   primaryLabel = 'Отримати Premium',
   primaryTo = '/pricing',
@@ -29,7 +29,7 @@ export default function PremiumLimitDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent hideCloseButton className="max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border-0 bg-white p-0 text-slate-950 shadow-2xl dark:bg-slate-950 dark:text-white sm:max-w-xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
-          <DialogTitle className="text-xl font-semibold tracking-[-0.03em]">Daily Limit Reached</DialogTitle>
+          <DialogTitle className="text-xl font-semibold tracking-[-0.03em]">{title}</DialogTitle>
           <button
             type="button"
             className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-100"
@@ -47,7 +47,9 @@ export default function PremiumLimitDialog({
             </span>
           </div>
 
-          <h2 className="mt-6 text-2xl font-semibold tracking-[-0.04em]">{title}</h2>
+          <h2 className="mt-6 text-2xl font-semibold tracking-[-0.04em]">
+            {intent === 'register' ? 'Створіть профіль для більшої кількості спроб' : title}
+          </h2>
           <DialogDescription className="mx-auto mt-4 max-w-md text-base leading-7 text-slate-600 dark:text-slate-300">
             {description}
           </DialogDescription>

@@ -3,8 +3,9 @@ from __future__ import annotations
 import hashlib
 import hmac
 import re
-from datetime import date
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from core.config import JWT_SECRET
 from repositories.access_limit_repository import consume_usage, get_usage
@@ -19,6 +20,7 @@ ACTION_LIMITS = {
 }
 
 GUEST_RE = re.compile(r"[^a-zA-Z0-9:_-]+")
+APP_TIMEZONE = ZoneInfo("Europe/Kyiv")
 
 
 def clean_guest_id(value: str | None) -> str:
@@ -28,6 +30,10 @@ def clean_guest_id(value: str | None) -> str:
 
 def hash_value(value: str) -> str:
     return hmac.new(JWT_SECRET.encode("utf-8"), value.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def current_usage_date():
+    return datetime.now(APP_TIMEZONE).date()
 
 
 def limit_for(action: str, user: dict[str, Any] | None) -> int | None:
@@ -67,7 +73,7 @@ def check_access_limit(*, action: str, user: dict[str, Any] | None, guest_id: st
         return {"allowed": True, "count": 0, "limit": None, "remaining": None, "premium": False}
 
     scope = access_scope(user=user, guest_id=guest_id, ip_address=ip_address)
-    today = date.today()
+    today = current_usage_date()
     row = get_usage(usage_date=today, action=action, scope_hash=scope["scope_hash"])
     count = int(row["count"] if row else 0)
     return {
@@ -89,7 +95,7 @@ def consume_access_limit(*, action: str, user: dict[str, Any] | None, guest_id: 
 
     scope = access_scope(user=user, guest_id=guest_id, ip_address=ip_address)
     result = consume_usage(
-        usage_date=date.today(),
+        usage_date=current_usage_date(),
         action=action,
         scope_hash=scope["scope_hash"],
         limit=limit,

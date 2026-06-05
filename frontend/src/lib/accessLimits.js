@@ -1,4 +1,12 @@
-const DAY_KEY = new Date().toISOString().slice(0, 10);
+function getLocalDayKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+const DAY_KEY = getLocalDayKey();
 const TEST_LIMIT_PREFIX = 'pdr_free_test_limits:v3';
 const BATTLE_LIMIT_PREFIX = 'pdr_free_battle_limits:v2';
 const TICKET_PREVIEW_PREFIX = 'pdr_free_ticket_preview_limits:v2';
