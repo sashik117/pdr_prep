@@ -6,7 +6,7 @@ from typing import Any
 
 from core.database import db
 from repositories.admin_question_repository import AdminQuestionRepository
-from schemas.requests import AdminQuestionUpdateRequest
+from schemas.requests import AdminQuestionCreateRequest, AdminQuestionUpdateRequest
 from services.errors import ServiceError
 
 
@@ -35,6 +35,80 @@ def list_admin_question_sections() -> list[dict[str, Any]]:
         return AdminQuestionRepository(conn).list_sections()
 
 
+def _normalize_question_values(
+    req: AdminQuestionCreateRequest | AdminQuestionUpdateRequest,
+    *,
+    clean_text: TextCleaner,
+    require_all: bool,
+) -> dict[str, Any]:
+    values: dict[str, Any] = {}
+    section = getattr(req, "section", None)
+    if section is not None:
+        clean_section = str(section).strip()
+        if not clean_section:
+            raise ServiceError(400, "Вкажіть розділ питання")
+        values["section"] = clean_section
+    question_text = getattr(req, "question_text", None)
+    if question_text is not None:
+        clean_question = question_text.strip()
+        if not clean_question:
+            raise ServiceError(400, "Вкажіть текст питання")
+        values["question_text"] = clean_question
+    explanation = getattr(req, "explanation", None)
+    if explanation is not None:
+        values["explanation"] = explanation.strip()
+    difficulty = getattr(req, "difficulty", None)
+    if difficulty is not None:
+        values["difficulty"] = difficulty.strip().lower() or "medium"
+    section_name = getattr(req, "section_name", None)
+    if section_name is not None:
+        values["section_name"] = section_name.strip()
+    options_value = getattr(req, "options", None)
+    if options_value is not None:
+        options = [clean_text(option) for option in options_value if clean_text(option)]
+        if len(options) < 2:
+            raise ServiceError(400, "Потрібно щонайменше 2 варіанти відповіді")
+        values["options"] = json.dumps(options, ensure_ascii=False)
+    images_value = getattr(req, "images", None)
+    if images_value is not None:
+        values["images"] = json.dumps([str(item).strip() for item in images_value if str(item).strip()], ensure_ascii=False)
+    correct_ans = getattr(req, "correct_ans", None)
+    if correct_ans is not None:
+        correct = int(correct_ans)
+        if correct < 1:
+            raise ServiceError(400, "Правильна відповідь має бути 1 або більше")
+        values["correct_ans"] = correct
+
+    if require_all:
+        for field in ("section", "question_text", "options", "correct_ans"):
+            if field not in values:
+                raise ServiceError(400, "Заповніть розділ, текст, відповіді та правильний варіант")
+    if "options" in values and "correct_ans" in values:
+        options = json.loads(values["options"])
+        if int(values["correct_ans"]) > len(options):
+            raise ServiceError(400, "Номер правильної відповіді більший за кількість варіантів")
+    return values
+
+
+def create_admin_question(
+    req: AdminQuestionCreateRequest,
+    *,
+    clean_text: TextCleaner,
+    present_question: QuestionPresenter,
+) -> dict[str, Any]:
+    values = _normalize_question_values(req, clean_text=clean_text, require_all=True)
+    values.setdefault("difficulty", "medium")
+    values.setdefault("section_name", "")
+    values.setdefault("explanation", "")
+    values.setdefault("images", "[]")
+
+    with db() as conn:
+        repo = AdminQuestionRepository(conn)
+        row = repo.create_question(values=values)
+        conn.commit()
+    return present_question(row)
+
+
 def update_admin_question(
     question_id: int,
     req: AdminQuestionUpdateRequest,
@@ -42,24 +116,7 @@ def update_admin_question(
     clean_text: TextCleaner,
     present_question: QuestionPresenter,
 ) -> dict[str, Any]:
-    values: dict[str, Any] = {}
-    if req.question_text is not None:
-        values["question_text"] = req.question_text.strip()
-    if req.explanation is not None:
-        values["explanation"] = req.explanation.strip()
-    if req.difficulty is not None:
-        values["difficulty"] = req.difficulty.strip().lower() or "medium"
-    if req.section_name is not None:
-        values["section_name"] = req.section_name.strip()
-    if req.options is not None:
-        options = [clean_text(option) for option in req.options if clean_text(option)]
-        if len(options) < 2:
-            raise ServiceError(400, "Потрібно щонайменше 2 варіанти відповіді")
-        values["options"] = json.dumps(options, ensure_ascii=False)
-    if req.images is not None:
-        values["images"] = json.dumps([str(item).strip() for item in req.images if str(item).strip()], ensure_ascii=False)
-    if req.correct_ans is not None:
-        values["correct_ans"] = int(req.correct_ans)
+    values = _normalize_question_values(req, clean_text=clean_text, require_all=False)
     if not values:
         raise ServiceError(400, "Немає полів для оновлення")
 

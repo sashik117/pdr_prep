@@ -82,6 +82,7 @@ from repositories.auth_repository import AuthRepository
 from repositories.stars_repository import StarsRepository
 from schemas.requests import (
     AdminAchievementUpdateRequest,
+    AdminQuestionCreateRequest,
     AccessLimitRequest,
     AdminLoginRequest,
     AdminQuestionUpdateRequest,
@@ -193,6 +194,7 @@ from services.access_limit_service import (
     consume_access_limit as consume_access_limit_use_case,
 )
 from services.admin_question_service import (
+    create_admin_question as create_admin_question_use_case,
     list_admin_question_sections as list_admin_question_sections_use_case,
     search_admin_questions as search_admin_questions_use_case,
     update_admin_question as update_admin_question_use_case,
@@ -1989,6 +1991,18 @@ def admin_search_questions(
 @app.get("/admin/questions/sections")
 def admin_question_sections(admin=Depends(require_admin)):
     return list_admin_question_sections_use_case()
+
+
+@app.post("/admin/questions")
+def admin_create_question(req: AdminQuestionCreateRequest, admin=Depends(require_admin)):
+    try:
+        return create_admin_question_use_case(
+            req,
+            clean_text=_clean_text,
+            present_question=_sanitize_question_row,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.patch("/admin/questions/{question_id}")

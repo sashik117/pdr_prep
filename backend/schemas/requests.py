@@ -154,6 +154,7 @@ class AdminAchievementUpdateRequest(BaseModel):
 
 
 class AdminQuestionUpdateRequest(BaseModel):
+    section: Optional[str] = None
     question_text: Optional[str] = None
     explanation: Optional[str] = None
     difficulty: Optional[str] = None
@@ -161,6 +162,17 @@ class AdminQuestionUpdateRequest(BaseModel):
     options: Optional[list[str]] = None
     images: Optional[list[str]] = None
     correct_ans: Optional[int] = None
+
+
+class AdminQuestionCreateRequest(BaseModel):
+    section: str
+    question_text: str
+    options: list[str]
+    correct_ans: int
+    section_name: Optional[str] = None
+    explanation: Optional[str] = None
+    difficulty: Optional[str] = "medium"
+    images: Optional[list[str]] = None
 
 
 class AdminTheoryParseRequest(BaseModel):

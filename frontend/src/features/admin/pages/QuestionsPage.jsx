@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, FileQuestion, ImageIcon, PencilLine, Search, ShieldCheck, UploadCloud } from 'lucide-react';
+import { CheckCircle2, FileQuestion, ImageIcon, PencilLine, Plus, Search, ShieldCheck, UploadCloud } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +22,9 @@ export default function QuestionsPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
+  const [inlineStatusMessage, setInlineStatusMessage] = useState('');
   const [drafts, setDrafts] = useState({});
+  const [createDraft, setCreateDraft] = useState(null);
 
   const sectionsQuery = useQuery({ queryKey: ['admin-question-sections'], queryFn: () => api.getAdminQuestionSections() });
   const questionsQuery = useQuery({
@@ -36,18 +38,20 @@ export default function QuestionsPage() {
     () => questions.find((question) => question.id === selectedQuestionId) || null,
     [questions, selectedQuestionId],
   );
+  const isCreating = Boolean(createDraft);
 
   useEffect(() => {
-    if (selectedQuestionId && !questions.some((question) => question.id === selectedQuestionId)) {
+    if (!isCreating && selectedQuestionId && !questions.some((question) => question.id === selectedQuestionId)) {
       setSelectedQuestionId(null);
       setEditorOpen(false);
     }
-  }, [questions, selectedQuestionId]);
+  }, [questions, selectedQuestionId, isCreating]);
 
   const questionMutation = useMutation({
     mutationFn: ({ questionId, payload }) => api.updateAdminQuestion(questionId, payload),
     onSuccess: async (updated) => {
       setStatusMessage('Питання успішно оновлено.');
+      setInlineStatusMessage('Оновлено');
       setDrafts((current) => {
         const next = { ...current };
         delete next[updated.id];
@@ -61,19 +65,40 @@ export default function QuestionsPage() {
   const imageUploadMutation = useMutation({
     mutationFn: (file) => api.uploadAdminMedia(file, { scope: 'questions' }),
     onSuccess: async (uploaded) => {
-      if (!uploaded?.url || !selectedQuestion || !draft) return;
+      if (!uploaded?.url || (!selectedQuestion && !isCreating) || !draft) return;
       const currentImages = textToLines(draft.imagesText);
       const nextImages = [...currentImages, uploaded.url];
       updateDraft('imagesText', nextImages.join('\n'));
-      await api.updateAdminQuestion(selectedQuestion.id, buildQuestionPayload(draft, nextImages));
-      setStatusMessage('Зображення завантажено і прив’язано до питання.');
+      if (selectedQuestion) {
+        await api.updateAdminQuestion(selectedQuestion.id, buildQuestionPayload(draft, nextImages));
+        setStatusMessage('Зображення завантажено і прив’язано до питання.');
+        setInlineStatusMessage('Фото додано');
+        await queryClient.invalidateQueries({ queryKey: ['admin-questions', section, search] });
+        await queryClient.invalidateQueries({ queryKey: ['admin-question-sections'] });
+      } else {
+        setStatusMessage('Зображення завантажено. Збережіть питання, щоб воно з’явилося в базі.');
+        setInlineStatusMessage('Фото додано');
+      }
+    },
+  });
+
+  const createQuestionMutation = useMutation({
+    mutationFn: (payload) => api.createAdminQuestion(payload),
+    onSuccess: async (created) => {
+      setStatusMessage('Питання успішно додано.');
+      setInlineStatusMessage('Додано');
+      setCreateDraft(null);
+      setSelectedQuestionId(created.id);
       await queryClient.invalidateQueries({ queryKey: ['admin-questions', section, search] });
       await queryClient.invalidateQueries({ queryKey: ['admin-question-sections'] });
     },
   });
 
-  const draft = selectedQuestion
-    ? drafts[selectedQuestion.id] || {
+  const draft = isCreating
+    ? createDraft
+    : selectedQuestion
+      ? drafts[selectedQuestion.id] || {
+        section: selectedQuestion.section || '',
         question_text: selectedQuestion.question_text || '',
         explanation: selectedQuestion.explanation || '',
         difficulty: selectedQuestion.difficulty || 'medium',
@@ -82,14 +107,20 @@ export default function QuestionsPage() {
         imagesText: questionImagesToText(selectedQuestion.images),
         correct_ans: selectedQuestion.correct_ans || 1,
       }
-    : null;
+      : null;
 
   const totalQuestions = sections.reduce((sum, item) => sum + Number(item.count || 0), 0);
   const questionsWithImages = questions.filter((question) => Array.isArray(question.images) && question.images.length > 0).length;
   const hardQuestions = questions.filter((question) => String(question.difficulty || '').toLowerCase().includes('hard')).length;
 
   const updateDraft = (key, value) => {
-    if (!selectedQuestion || !draft) return;
+    if (!draft) return;
+    setInlineStatusMessage('');
+    if (isCreating) {
+      setCreateDraft((current) => ({ ...(current || draft), [key]: value }));
+      return;
+    }
+    if (!selectedQuestion) return;
     setDrafts((current) => ({
       ...current,
       [selectedQuestion.id]: { ...draft, [key]: value },
@@ -97,7 +128,12 @@ export default function QuestionsPage() {
   };
 
   const saveQuestion = () => {
-    if (!selectedQuestion || !draft) return;
+    if (!draft) return;
+    if (isCreating) {
+      createQuestionMutation.mutate(buildQuestionPayload(draft));
+      return;
+    }
+    if (!selectedQuestion) return;
     questionMutation.mutate({
       questionId: selectedQuestion.id,
       payload: buildQuestionPayload(draft),
@@ -128,8 +164,31 @@ export default function QuestionsPage() {
   };
 
   const openEditor = (questionId) => {
+    setCreateDraft(null);
     setSelectedQuestionId(questionId);
     setStatusMessage('');
+    setInlineStatusMessage('');
+    setEditorOpen(true);
+  };
+
+  const openCreateEditor = () => {
+    const defaultSection = section !== 'all' ? String(section) : String(sections[0]?.section || '1');
+    const defaultSectionName = section !== 'all'
+      ? String(sections.find((item) => String(item.section) === String(section))?.section_name || '')
+      : String(sections[0]?.section_name || '');
+    setSelectedQuestionId(null);
+    setCreateDraft({
+      section: defaultSection,
+      question_text: '',
+      explanation: '',
+      difficulty: 'medium',
+      section_name: defaultSectionName,
+      optionsText: '',
+      imagesText: '',
+      correct_ans: 1,
+    });
+    setStatusMessage('');
+    setInlineStatusMessage('');
     setEditorOpen(true);
   };
 
@@ -151,7 +210,13 @@ export default function QuestionsPage() {
       <div className="mt-6">
         <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
           <CardHeader className="space-y-4">
-            <CardTitle className="text-lg font-semibold">База питань</CardTitle>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="text-lg font-semibold">База питань</CardTitle>
+              <Button className="rounded-lg" onClick={openCreateEditor}>
+                <Plus className="mr-2 h-4 w-4" />
+                Додати питання
+              </Button>
+            </div>
             <div className="grid gap-3 md:grid-cols-[1fr_260px]">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -224,19 +289,30 @@ export default function QuestionsPage() {
         </Card>
       </div>
 
-      <Dialog open={editorOpen && Boolean(selectedQuestion && draft)} onOpenChange={setEditorOpen}>
+      <Dialog
+        open={editorOpen && Boolean(draft && (selectedQuestion || isCreating))}
+        onOpenChange={(open) => {
+          setEditorOpen(open);
+          if (!open) {
+            setCreateDraft(null);
+            setInlineStatusMessage('');
+          }
+        }}
+      >
         <DialogContent className="max-h-[92vh] max-w-[min(980px,calc(100vw-1rem))] overflow-y-auto rounded-2xl p-0">
           <DialogTitle className="sr-only">Редагування питання</DialogTitle>
           <DialogDescription className="sr-only">Форма редагування тексту, відповідей і зображень питання.</DialogDescription>
-          {selectedQuestion && draft ? (
+          {draft && (selectedQuestion || isCreating) ? (
             <div className="space-y-4 p-4 sm:p-6" onPaste={handlePasteImage}>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/60">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  <span>ID {selectedQuestion.id}</span>
-                  <span>Розділ {selectedQuestion.section}</span>
-                  <span>Правильна відповідь: {selectedQuestion.correct_ans}</span>
+                  <span>{isCreating ? 'Нове питання' : `ID ${selectedQuestion.id}`}</span>
+                  <span>Розділ {draft.section || selectedQuestion?.section}</span>
+                  <span>Правильна відповідь: {draft.correct_ans || selectedQuestion?.correct_ans}</span>
                 </div>
-                <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">Редагування питання</h2>
+                <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
+                  {isCreating ? 'Додавання питання' : 'Редагування питання'}
+                </h2>
                 {statusMessage ? (
                   <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200">
                     {statusMessage}
@@ -249,7 +325,11 @@ export default function QuestionsPage() {
                 <Textarea rows={4} value={draft.question_text} onChange={(event) => updateDraft('question_text', event.target.value)} />
               </label>
 
-              <div className="grid gap-3 sm:grid-cols-[1fr_150px]">
+              <div className="grid gap-3 sm:grid-cols-[140px_1fr_150px]">
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Розділ</span>
+                  <Input value={draft.section || ''} onChange={(event) => updateDraft('section', event.target.value)} />
+                </label>
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Назва розділу</span>
                   <Input value={draft.section_name} onChange={(event) => updateDraft('section_name', event.target.value)} />
@@ -314,17 +394,30 @@ export default function QuestionsPage() {
                 </label>
               </div>
 
-              <QuestionImagesPreview images={textToLines(draft.imagesText)} questionId={selectedQuestion.id} onPreview={setPreviewImage} />
+              <QuestionImagesPreview images={textToLines(draft.imagesText)} questionId={selectedQuestion?.id || 'new'} onPreview={setPreviewImage} />
 
               <label className="space-y-2">
                 <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Пояснення</span>
                 <Textarea rows={5} value={draft.explanation} onChange={(event) => updateDraft('explanation', event.target.value)} />
               </label>
 
-              <div className="sticky bottom-0 -mx-4 flex justify-end border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:-mx-6 sm:px-6">
-                <Button className="rounded-lg" disabled={questionMutation.isPending} onClick={saveQuestion}>
+              <div className="sticky bottom-0 -mx-4 flex flex-col gap-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:-mx-6 sm:flex-row sm:items-center sm:justify-end sm:px-6">
+                {inlineStatusMessage || questionMutation.error || createQuestionMutation.error ? (
+                  <span className={questionMutation.error || createQuestionMutation.error ? 'text-sm font-medium text-rose-600 dark:text-rose-300' : 'text-sm font-medium text-emerald-600 dark:text-emerald-300'}>
+                    {questionMutation.error instanceof Error
+                      ? questionMutation.error.message
+                      : createQuestionMutation.error instanceof Error
+                        ? createQuestionMutation.error.message
+                        : inlineStatusMessage}
+                  </span>
+                ) : null}
+                <Button className="rounded-lg" disabled={questionMutation.isPending || createQuestionMutation.isPending} onClick={saveQuestion}>
                   <PencilLine className="mr-2 h-4 w-4" />
-                  {questionMutation.isPending ? 'Зберігаємо...' : 'Зберегти питання'}
+                  {questionMutation.isPending || createQuestionMutation.isPending
+                    ? 'Зберігаємо...'
+                    : isCreating
+                      ? 'Додати питання'
+                      : 'Зберегти зміни'}
                 </Button>
               </div>
             </div>
@@ -394,6 +487,7 @@ function QuestionImagesPreview({ images = [], questionId, onPreview }) {
 
 function buildQuestionPayload(draft, imagesOverride = null) {
   return {
+    section: String(draft.section || '').trim(),
     question_text: draft.question_text,
     explanation: draft.explanation,
     difficulty: draft.difficulty,

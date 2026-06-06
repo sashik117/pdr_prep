@@ -468,6 +468,11 @@ export const api = {
     const query = toQueryString(typeof search === 'object' ? search : { search });
     return request(`/admin/questions${query ? `?${query}` : ''}`);
   },
+  createAdminQuestion: (payload) =>
+    request('/admin/questions', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   updateAdminQuestion: (questionId, payload) =>
     request(`/admin/questions/${questionId}`, {
       method: 'PATCH',
