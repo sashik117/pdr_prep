@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 import psycopg
-from psycopg import errors
+from psycopg import errors, sql
 
 
 ADMIN_QUESTION_COLUMNS = "id, section, section_name, difficulty, question_text, explanation, options, images, correct_ans"
@@ -108,7 +108,38 @@ class AdminQuestionRepository:
             params,
         )
 
+    def _delete_question_dependencies(self, *, question_id: int) -> None:
+        references = self.conn.execute(
+            """
+            SELECT
+                tc.table_schema,
+                tc.table_name,
+                kcu.column_name
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.key_column_usage kcu
+              ON tc.constraint_name = kcu.constraint_name
+             AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage ccu
+              ON ccu.constraint_name = tc.constraint_name
+             AND ccu.table_schema = tc.table_schema
+            WHERE tc.constraint_type = 'FOREIGN KEY'
+              AND ccu.table_name = 'questions'
+              AND ccu.column_name = 'id'
+            """
+        ).fetchall()
+        for ref in references:
+            schema = ref["table_schema"]
+            table = ref["table_name"]
+            column = ref["column_name"]
+            query = sql.SQL("DELETE FROM {}.{} WHERE {} = %s").format(
+                sql.Identifier(schema),
+                sql.Identifier(table),
+                sql.Identifier(column),
+            )
+            self.conn.execute(query, (question_id,))
+
     def delete_question(self, *, question_id: int) -> bool:
+        self._delete_question_dependencies(question_id=question_id)
         result = self.conn.execute("DELETE FROM questions WHERE id = %s", (question_id,))
         return bool(result.rowcount)
 
