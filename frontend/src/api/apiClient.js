@@ -478,6 +478,10 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
+  deleteAdminQuestion: (questionId) =>
+    request(`/admin/questions/${questionId}`, {
+      method: 'DELETE',
+    }),
   uploadAdminMedia: (file, { scope = 'general', sectionId = null } = {}) => {
     const form = new FormData();
     form.append('file', file);

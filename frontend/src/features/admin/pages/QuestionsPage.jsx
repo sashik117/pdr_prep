@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, FileQuestion, ImageIcon, PencilLine, Plus, Search, ShieldCheck, UploadCloud } from 'lucide-react';
+import { CheckCircle2, FileQuestion, ImageIcon, PencilLine, Plus, Search, ShieldCheck, Trash2, UploadCloud } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,6 +94,25 @@ export default function QuestionsPage() {
     },
   });
 
+  const deleteQuestionMutation = useMutation({
+    mutationFn: (questionId) => api.deleteAdminQuestion(questionId),
+    onSuccess: async () => {
+      setStatusMessage('Питання видалено.');
+      setInlineStatusMessage('');
+      setDrafts((current) => {
+        if (!selectedQuestionId) return current;
+        const next = { ...current };
+        delete next[selectedQuestionId];
+        return next;
+      });
+      setEditorOpen(false);
+      setSelectedQuestionId(null);
+      setCreateDraft(null);
+      await queryClient.invalidateQueries({ queryKey: ['admin-questions', section, search] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-question-sections'] });
+    },
+  });
+
   const draft = isCreating
     ? createDraft
     : selectedQuestion
@@ -138,6 +157,13 @@ export default function QuestionsPage() {
       questionId: selectedQuestion.id,
       payload: buildQuestionPayload(draft),
     });
+  };
+
+  const deleteQuestion = () => {
+    if (!selectedQuestion || isCreating) return;
+    const confirmed = window.confirm(`Видалити питання #${selectedQuestion.id}? Цю дію не можна скасувати.`);
+    if (!confirmed) return;
+    deleteQuestionMutation.mutate(selectedQuestion.id);
   };
 
   const handleImageFile = (file) => {
@@ -199,6 +225,12 @@ export default function QuestionsPage() {
         title="Питання та розділи тестів"
         description="Фільтруйте питання за розділами ПДР, перевіряйте ілюстрації, варіанти відповідей та пояснення."
       />
+
+      {statusMessage && !editorOpen ? (
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+          {statusMessage}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={FileQuestion} label="У базі" value={totalQuestions} hint={`${sections.length} розділів`} tone="blue" />
@@ -401,17 +433,32 @@ export default function QuestionsPage() {
                 <Textarea rows={5} value={draft.explanation} onChange={(event) => updateDraft('explanation', event.target.value)} />
               </label>
 
-              <div className="sticky bottom-0 -mx-4 flex flex-col gap-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:-mx-6 sm:flex-row sm:items-center sm:justify-end sm:px-6">
-                {inlineStatusMessage || questionMutation.error || createQuestionMutation.error ? (
-                  <span className={questionMutation.error || createQuestionMutation.error ? 'text-sm font-medium text-rose-600 dark:text-rose-300' : 'text-sm font-medium text-emerald-600 dark:text-emerald-300'}>
+              <div className="sticky bottom-0 -mx-4 flex flex-col gap-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                {!isCreating ? (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="rounded-lg"
+                    disabled={deleteQuestionMutation.isPending}
+                    onClick={deleteQuestion}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {deleteQuestionMutation.isPending ? 'Видаляємо...' : 'Видалити питання'}
+                  </Button>
+                ) : <span />}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                {inlineStatusMessage || questionMutation.error || createQuestionMutation.error || deleteQuestionMutation.error ? (
+                  <span className={questionMutation.error || createQuestionMutation.error || deleteQuestionMutation.error ? 'text-sm font-medium text-rose-600 dark:text-rose-300' : 'text-sm font-medium text-emerald-600 dark:text-emerald-300'}>
                     {questionMutation.error instanceof Error
                       ? questionMutation.error.message
                       : createQuestionMutation.error instanceof Error
                         ? createQuestionMutation.error.message
-                        : inlineStatusMessage}
+                        : deleteQuestionMutation.error instanceof Error
+                          ? deleteQuestionMutation.error.message
+                          : inlineStatusMessage}
                   </span>
                 ) : null}
-                <Button className="rounded-lg" disabled={questionMutation.isPending || createQuestionMutation.isPending} onClick={saveQuestion}>
+                <Button className="rounded-lg" disabled={questionMutation.isPending || createQuestionMutation.isPending || deleteQuestionMutation.isPending} onClick={saveQuestion}>
                   <PencilLine className="mr-2 h-4 w-4" />
                   {questionMutation.isPending || createQuestionMutation.isPending
                     ? 'Зберігаємо...'
@@ -419,6 +466,7 @@ export default function QuestionsPage() {
                       ? 'Додати питання'
                       : 'Зберегти зміни'}
                 </Button>
+                </div>
               </div>
             </div>
           ) : null}

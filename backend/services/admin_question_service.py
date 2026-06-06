@@ -48,30 +48,40 @@ def _normalize_question_values(
         if not clean_section:
             raise ServiceError(400, "Вкажіть розділ питання")
         values["section"] = clean_section
+
     question_text = getattr(req, "question_text", None)
     if question_text is not None:
         clean_question = question_text.strip()
         if not clean_question:
             raise ServiceError(400, "Вкажіть текст питання")
         values["question_text"] = clean_question
+
     explanation = getattr(req, "explanation", None)
     if explanation is not None:
         values["explanation"] = explanation.strip()
+
     difficulty = getattr(req, "difficulty", None)
     if difficulty is not None:
         values["difficulty"] = difficulty.strip().lower() or "medium"
+
     section_name = getattr(req, "section_name", None)
     if section_name is not None:
         values["section_name"] = section_name.strip()
+
     options_value = getattr(req, "options", None)
     if options_value is not None:
         options = [clean_text(option) for option in options_value if clean_text(option)]
         if len(options) < 2:
             raise ServiceError(400, "Потрібно щонайменше 2 варіанти відповіді")
         values["options"] = json.dumps(options, ensure_ascii=False)
+
     images_value = getattr(req, "images", None)
     if images_value is not None:
-        values["images"] = json.dumps([str(item).strip() for item in images_value if str(item).strip()], ensure_ascii=False)
+        values["images"] = json.dumps(
+            [str(item).strip() for item in images_value if str(item).strip()],
+            ensure_ascii=False,
+        )
+
     correct_ans = getattr(req, "correct_ans", None)
     if correct_ans is not None:
         correct = int(correct_ans)
@@ -83,10 +93,12 @@ def _normalize_question_values(
         for field in ("section", "question_text", "options", "correct_ans"):
             if field not in values:
                 raise ServiceError(400, "Заповніть розділ, текст, відповіді та правильний варіант")
+
     if "options" in values and "correct_ans" in values:
         options = json.loads(values["options"])
         if int(values["correct_ans"]) > len(options):
             raise ServiceError(400, "Номер правильної відповіді більший за кількість варіантів")
+
     return values
 
 
@@ -128,3 +140,13 @@ def update_admin_question(
         conn.commit()
         row = repo.get_question(question_id=question_id)
     return present_question(row or {})
+
+
+def delete_admin_question(question_id: int) -> dict[str, Any]:
+    with db() as conn:
+        repo = AdminQuestionRepository(conn)
+        deleted = repo.delete_question(question_id=question_id)
+        if not deleted:
+            raise ServiceError(404, "Питання не знайдено")
+        conn.commit()
+    return {"ok": True, "deleted_id": question_id}

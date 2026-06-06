@@ -195,6 +195,7 @@ from services.access_limit_service import (
 )
 from services.admin_question_service import (
     create_admin_question as create_admin_question_use_case,
+    delete_admin_question as delete_admin_question_use_case,
     list_admin_question_sections as list_admin_question_sections_use_case,
     search_admin_questions as search_admin_questions_use_case,
     update_admin_question as update_admin_question_use_case,
@@ -2014,6 +2015,14 @@ def admin_update_question(question_id: int, req: AdminQuestionUpdateRequest, adm
             clean_text=_clean_text,
             present_question=_sanitize_question_row,
         )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
+
+
+@app.delete("/admin/questions/{question_id}")
+def admin_delete_question(question_id: int, admin=Depends(require_admin)):
+    try:
+        return delete_admin_question_use_case(question_id)
     except ServiceError as exc:
         raise HTTPException(exc.status_code, exc.message) from exc
 

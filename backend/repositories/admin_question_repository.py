@@ -98,6 +98,10 @@ class AdminQuestionRepository:
             params,
         )
 
+    def delete_question(self, *, question_id: int) -> bool:
+        result = self.conn.execute("DELETE FROM questions WHERE id = %s", (question_id,))
+        return bool(result.rowcount)
+
     def get_question(self, *, question_id: int) -> Optional[dict[str, Any]]:
         row = self.conn.execute(
             f"SELECT {ADMIN_QUESTION_COLUMNS} FROM questions WHERE id = %s",
