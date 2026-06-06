@@ -1669,14 +1669,18 @@ def get_progress_results(user=Depends(get_current_user)):
 
 @app.get("/progress/stats", response_model=ProgressStatsResponse)
 def get_progress_stats(user=Depends(get_current_user)):
-    return get_progress_stats_use_case(
-        user,
-        present_user=_user_public,
-        resolve_streak=_streak_snapshot,
-        available_stars=_available_stars,
-        build_frame_shop=_frame_shop_payload,
-        section_order_sql=_section_order_sql,
-    )
+    try:
+        return get_progress_stats_use_case(
+            user,
+            present_user=_user_public,
+            resolve_streak=_streak_snapshot,
+            available_stars=_available_stars,
+            build_frame_shop=_frame_shop_payload,
+            section_order_sql=_section_order_sql,
+        )
+    except Exception as exc:
+        print(f"[PROGRESS STATS ERROR] {type(exc).__name__}: {exc}", flush=True)
+        raise
 
 
 @app.get("/achievements")

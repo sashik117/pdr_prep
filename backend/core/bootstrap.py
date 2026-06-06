@@ -137,6 +137,20 @@ def ensure_runtime_migrations() -> None:
         "CREATE INDEX IF NOT EXISTS idx_questions_ticket_question ON questions(ticket_number, question_number)",
         "CREATE INDEX IF NOT EXISTS idx_questions_text ON questions USING gin (to_tsvector('simple', question_text))",
         """
+        CREATE TABLE IF NOT EXISTS user_achievements (
+            id SERIAL PRIMARY KEY,
+            user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            achievement_id TEXT NOT NULL,
+            achievement_name TEXT,
+            achievement_desc TEXT,
+            tier INT,
+            category TEXT,
+            earned_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            UNIQUE (user_id, achievement_id)
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS idx_user_achievements_user ON user_achievements(user_id)",
+        """
         CREATE TABLE IF NOT EXISTS admin_media_files (
             id BIGSERIAL PRIMARY KEY,
             scope TEXT NOT NULL DEFAULT 'general',

@@ -188,6 +188,23 @@ def get_progress_stats(
     order_sql = section_order_sql("q.section")
 
     with db() as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_achievements (
+                id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                achievement_id TEXT NOT NULL,
+                achievement_name TEXT,
+                achievement_desc TEXT,
+                tier INT,
+                category TEXT,
+                earned_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                UNIQUE (user_id, achievement_id)
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_user_achievements_user ON user_achievements(user_id)")
+        conn.commit()
         repo = ProgressRepository(conn)
         user_row = repo.get_user(user_id)
         streak = resolve_streak(user_row)
