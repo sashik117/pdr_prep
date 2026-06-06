@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, FileQuestion, ImageIcon, PencilLine, Plus, Search, ShieldCheck, Trash2, UploadCloud } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,10 +17,12 @@ import { questionImagesToText, questionOptionsToText, textToLines } from '@/feat
 
 export default function QuestionsPage() {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
-  const [section, setSection] = useState('all');
-  const [selectedQuestionId, setSelectedQuestionId] = useState(null);
-  const [editorOpen, setEditorOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuestionId = Number(searchParams.get('question') || 0) || null;
+  const [search, setSearch] = useState(() => searchParams.get('search') || '');
+  const [section, setSection] = useState(() => searchParams.get('section') || 'all');
+  const [selectedQuestionId, setSelectedQuestionId] = useState(initialQuestionId);
+  const [editorOpen, setEditorOpen] = useState(Boolean(initialQuestionId));
   const [previewImage, setPreviewImage] = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [inlineStatusMessage, setInlineStatusMessage] = useState('');
@@ -41,17 +44,31 @@ export default function QuestionsPage() {
   const isCreating = Boolean(createDraft);
 
   useEffect(() => {
+    if (questionsQuery.isLoading || questionsQuery.isFetching) return;
     if (!isCreating && selectedQuestionId && !questions.some((question) => question.id === selectedQuestionId)) {
       setSelectedQuestionId(null);
       setEditorOpen(false);
     }
-  }, [questions, selectedQuestionId, isCreating]);
+  }, [questions, selectedQuestionId, isCreating, questionsQuery.isLoading, questionsQuery.isFetching]);
+
+  useEffect(() => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (section && section !== 'all') next.set('section', section);
+      else next.delete('section');
+      if (search.trim()) next.set('search', search.trim());
+      else next.delete('search');
+      if (selectedQuestionId && editorOpen && !isCreating) next.set('question', String(selectedQuestionId));
+      else next.delete('question');
+      return next;
+    }, { replace: true });
+  }, [section, search, selectedQuestionId, editorOpen, isCreating, setSearchParams]);
 
   const questionMutation = useMutation({
     mutationFn: ({ questionId, payload }) => api.updateAdminQuestion(questionId, payload),
     onSuccess: async (updated) => {
-      setStatusMessage('Питання успішно оновлено.');
-      setInlineStatusMessage('Оновлено');
+      setStatusMessage('');
+      setInlineStatusMessage('Питання оновлено');
       setDrafts((current) => {
         const next = { ...current };
         delete next[updated.id];
@@ -71,13 +88,13 @@ export default function QuestionsPage() {
       updateDraft('imagesText', nextImages.join('\n'));
       if (selectedQuestion) {
         await api.updateAdminQuestion(selectedQuestion.id, buildQuestionPayload(draft, nextImages));
-        setStatusMessage('Зображення завантажено і прив’язано до питання.');
+        setStatusMessage('');
         setInlineStatusMessage('Фото додано');
         await queryClient.invalidateQueries({ queryKey: ['admin-questions', section, search] });
         await queryClient.invalidateQueries({ queryKey: ['admin-question-sections'] });
       } else {
-        setStatusMessage('Зображення завантажено. Збережіть питання, щоб воно з’явилося в базі.');
-        setInlineStatusMessage('Фото додано');
+        setStatusMessage('');
+        setInlineStatusMessage('Фото додано. Збережіть питання');
       }
     },
   });
@@ -85,12 +102,20 @@ export default function QuestionsPage() {
   const createQuestionMutation = useMutation({
     mutationFn: (payload) => api.createAdminQuestion(payload),
     onSuccess: async (created) => {
-      setStatusMessage('Питання успішно додано.');
-      setInlineStatusMessage('Додано');
+      setStatusMessage('');
+      setInlineStatusMessage('Питання додано');
+      const createdSection = String(created?.section || section || 'all');
+      setSearch('');
+      setSection(createdSection);
+      queryClient.setQueryData(['admin-questions', createdSection, ''], (current = []) => {
+        const list = Array.isArray(current) ? current : [];
+        return [created, ...list.filter((item) => item.id !== created.id)];
+      });
+      await queryClient.invalidateQueries({ queryKey: ['admin-question-sections'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-questions', createdSection, ''] });
       setCreateDraft(null);
       setSelectedQuestionId(created.id);
-      await queryClient.invalidateQueries({ queryKey: ['admin-questions', section, search] });
-      await queryClient.invalidateQueries({ queryKey: ['admin-question-sections'] });
+      setEditorOpen(true);
     },
   });
 
@@ -345,11 +370,6 @@ export default function QuestionsPage() {
                 <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
                   {isCreating ? 'Додавання питання' : 'Редагування питання'}
                 </h2>
-                {statusMessage ? (
-                  <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200">
-                    {statusMessage}
-                  </p>
-                ) : null}
               </div>
 
               <label className="space-y-2">

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 import psycopg
+from psycopg import errors
 
 
 ADMIN_QUESTION_COLUMNS = "id, section, section_name, difficulty, question_text, explanation, options, images, correct_ans"
@@ -61,26 +62,35 @@ class AdminQuestionRepository:
     def create_question(self, *, values: dict[str, Any]) -> dict[str, Any]:
         row = self.conn.execute("SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM questions").fetchone()
         question_id = int((row or {}).get("next_id") or 1)
-        inserted = self.conn.execute(
-            """
-            INSERT INTO questions (
-                id, section, section_name, difficulty, question_text, explanation, options, images, correct_ans
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s)
-            RETURNING id
-            """,
-            (
-                question_id,
-                values["section"],
-                values.get("section_name"),
-                values.get("difficulty") or "medium",
-                values["question_text"],
-                values.get("explanation") or "",
-                values["options"],
-                values.get("images") or "[]",
-                values["correct_ans"],
-            ),
-        ).fetchone()
+        inserted = None
+        for offset in range(10):
+            try:
+                inserted = self.conn.execute(
+                    """
+                    INSERT INTO questions (
+                        id, section, section_name, difficulty, question_text, explanation, options, images, correct_ans
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s)
+                    RETURNING id
+                    """,
+                    (
+                        question_id + offset,
+                        values["section"],
+                        values.get("section_name"),
+                        values.get("difficulty") or "medium",
+                        values["question_text"],
+                        values.get("explanation") or "",
+                        values["options"],
+                        values.get("images") or "[]",
+                        values["correct_ans"],
+                    ),
+                ).fetchone()
+                break
+            except errors.UniqueViolation:
+                self.conn.rollback()
+                continue
+        if not inserted:
+            raise RuntimeError("Could not allocate question id")
         return self.get_question(question_id=int(inserted["id"])) or {}
 
     def update_question(self, *, question_id: int, values: dict[str, Any]) -> None:
