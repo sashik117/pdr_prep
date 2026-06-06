@@ -1201,6 +1201,7 @@ def _save_admin_media_upload(file: UploadFile, *, scope: str, admin: Optional[di
             ).fetchone()
             conn.commit()
     except Exception as exc:
+        print(f"[ADMIN MEDIA ERROR] failed to save upload in database: {type(exc).__name__}: {exc}", flush=True)
         raise HTTPException(500, "Не вдалося зберегти зображення в базі даних.") from exc
 
     saved_id = int(row["id"])
