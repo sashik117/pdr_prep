@@ -28,11 +28,12 @@ export default function QuestionsPage() {
   const [inlineStatusMessage, setInlineStatusMessage] = useState('');
   const [drafts, setDrafts] = useState({});
   const [createDraft, setCreateDraft] = useState(null);
+  const questionListLimit = section === 'all' && !search.trim() ? 120 : 1000;
 
   const sectionsQuery = useQuery({ queryKey: ['admin-question-sections'], queryFn: () => api.getAdminQuestionSections() });
   const questionsQuery = useQuery({
-    queryKey: ['admin-questions', section, search],
-    queryFn: () => api.searchAdminQuestions({ search, section: section === 'all' ? '' : section, limit: 80 }),
+    queryKey: ['admin-questions', section, search, questionListLimit],
+    queryFn: () => api.searchAdminQuestions({ search, section: section === 'all' ? '' : section, limit: questionListLimit }),
   });
 
   const sections = sectionsQuery.data || [];
@@ -107,12 +108,12 @@ export default function QuestionsPage() {
       const createdSection = String(created?.section || section || 'all');
       setSearch('');
       setSection(createdSection);
-      queryClient.setQueryData(['admin-questions', createdSection, ''], (current = []) => {
+      queryClient.setQueryData(['admin-questions', createdSection, '', 1000], (current = []) => {
         const list = Array.isArray(current) ? current : [];
         return [created, ...list.filter((item) => item.id !== created.id)];
       });
       await queryClient.invalidateQueries({ queryKey: ['admin-question-sections'] });
-      await queryClient.invalidateQueries({ queryKey: ['admin-questions', createdSection, ''] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-questions', createdSection, '', 1000] });
       setCreateDraft(null);
       setSelectedQuestionId(created.id);
       setEditorOpen(true);

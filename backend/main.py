@@ -1978,7 +1978,7 @@ def admin_update_user_achievements(user_id: int, req: AdminAchievementUpdateRequ
 def admin_search_questions(
     search: str = Query(default=""),
     section: str = Query(default=""),
-    limit: int = Query(default=40, ge=1, le=100),
+    limit: int = Query(default=40, ge=1, le=1000),
     admin=Depends(require_admin),
 ):
     return search_admin_questions_use_case(
