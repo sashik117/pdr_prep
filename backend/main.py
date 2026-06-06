@@ -67,6 +67,7 @@ from core.config import (
     THEORY_PARSE_STATUS_FILE,
     UPLOAD_DIR,
 )
+from core.database import db
 from domain.auth import (
     email_is_verified as domain_email_is_verified,
     normalize_username as domain_normalize_username,
