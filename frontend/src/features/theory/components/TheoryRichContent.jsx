@@ -86,6 +86,7 @@ function normalizeTheoryIframeSrc(value) {
     embed.searchParams.set('iv_load_policy', '3');
     embed.searchParams.set('playsinline', '1');
     embed.searchParams.set('disablekb', '1');
+    embed.searchParams.set('cc_load_policy', '0');
     return embed.toString();
   } catch {
     return '';
@@ -286,8 +287,8 @@ export default function TheoryRichContent({ html, className }) {
         '[&_iframe]:my-5 [&_iframe]:overflow-hidden [&_iframe]:rounded-xl [&_iframe]:border [&_iframe]:border-slate-200 [&_iframe]:bg-black dark:[&_iframe]:border-slate-700',
         '[&_[data-youtube-player=true]]:relative [&_[data-youtube-player=true]]:my-5 [&_[data-youtube-player=true]]:aspect-video [&_[data-youtube-player=true]]:overflow-hidden [&_[data-youtube-player=true]]:rounded-xl [&_[data-youtube-player=true]]:bg-black',
         '[&_[data-youtube-player=true]_iframe]:my-0 [&_[data-youtube-player=true]_iframe]:h-full [&_[data-youtube-player=true]_iframe]:w-full',
-        '[&_[data-youtube-shield=top]]:pointer-events-auto [&_[data-youtube-shield=top]]:absolute [&_[data-youtube-shield=top]]:left-0 [&_[data-youtube-shield=top]]:top-0 [&_[data-youtube-shield=top]]:z-10 [&_[data-youtube-shield=top]]:h-[60px] [&_[data-youtube-shield=top]]:w-full',
-        '[&_[data-youtube-shield=logo]]:pointer-events-auto [&_[data-youtube-shield=logo]]:absolute [&_[data-youtube-shield=logo]]:bottom-0 [&_[data-youtube-shield=logo]]:right-0 [&_[data-youtube-shield=logo]]:z-10 [&_[data-youtube-shield=logo]]:h-[40px] [&_[data-youtube-shield=logo]]:w-[80px]',
+        '[&_[data-youtube-shield=top]]:pointer-events-auto [&_[data-youtube-shield=top]]:absolute [&_[data-youtube-shield=top]]:left-0 [&_[data-youtube-shield=top]]:top-0 [&_[data-youtube-shield=top]]:z-10 [&_[data-youtube-shield=top]]:h-[86px] [&_[data-youtube-shield=top]]:w-full',
+        '[&_[data-youtube-shield=logo]]:pointer-events-auto [&_[data-youtube-shield=logo]]:absolute [&_[data-youtube-shield=logo]]:bottom-0 [&_[data-youtube-shield=logo]]:right-0 [&_[data-youtube-shield=logo]]:z-10 [&_[data-youtube-shield=logo]]:h-[58px] [&_[data-youtube-shield=logo]]:w-[132px]',
         '[&_[data-table-scroll="true"]]:my-6 [&_[data-table-scroll="true"]]:overflow-x-auto [&_[data-table-scroll="true"]]:rounded-lg [&_[data-table-scroll="true"]]:ring-1 [&_[data-table-scroll="true"]]:ring-slate-200 dark:[&_[data-table-scroll="true"]]:ring-slate-800',
         '[&_table]:w-full [&_table]:min-w-[620px] [&_table]:border-separate [&_table]:border-spacing-0 [&_table]:bg-white [&_table]:text-sm dark:[&_table]:bg-slate-950',
         '[&_td]:border-b [&_td]:border-slate-200 [&_td]:px-3 [&_td]:py-3 [&_td]:align-top [&_td]:leading-6 dark:[&_td]:border-slate-800',

@@ -31,6 +31,7 @@ function normalizeEmbedUrl(value) {
         embed.searchParams.set('iv_load_policy', '3');
         embed.searchParams.set('playsinline', '1');
         embed.searchParams.set('disablekb', '1');
+        embed.searchParams.set('cc_load_policy', '0');
         return embed.toString();
       }
       url.hostname = 'www.youtube-nocookie.com';
@@ -44,6 +45,7 @@ function normalizeEmbedUrl(value) {
       url.searchParams.set('iv_load_policy', '3');
       url.searchParams.set('playsinline', '1');
       url.searchParams.set('disablekb', '1');
+      url.searchParams.set('cc_load_policy', '0');
     }
     return url.toString();
   } catch {
@@ -71,8 +73,8 @@ export default function TheoryVideoPanel({ title, embedUrl = '', videoUrl = '' }
           <div className="relative overflow-hidden rounded-lg bg-slate-950 shadow-sm">
             {loaded ? (
               <>
-                <div className="pointer-events-auto absolute left-0 top-0 z-10 h-[60px] w-full bg-transparent" />
-                <div className="pointer-events-auto absolute bottom-0 right-0 z-10 h-[40px] w-[80px] bg-transparent" />
+                <div className="pointer-events-auto absolute left-0 top-0 z-10 h-[86px] w-full bg-transparent" />
+                <div className="pointer-events-auto absolute bottom-0 right-0 z-10 h-[58px] w-[132px] bg-transparent" />
                 <iframe
                   src={safeEmbedUrl}
                   title={`Відео: ${title}`}

@@ -140,7 +140,7 @@ export default function TheoryTopicPage() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-8 sm:space-y-8 sm:px-6 lg:px-8">
       <div className="flex items-center gap-3">
-        <Button asChild variant="outline" className="rounded-lg">
+        <Button asChild variant="ghost" className="-ml-2 rounded-full px-3 text-slate-600 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white">
           <Link to="/study">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Назад
@@ -277,8 +277,11 @@ export default function TheoryTopicPage() {
         <div className="space-y-4">
           {hasNestedTopics && selectedTopicSlug ? (
             <div className="flex items-center gap-3">
-              <Button asChild variant="outline" className="rounded-lg">
-                <Link to={`/study/${topicKey}`}>Назад до підтем</Link>
+              <Button asChild variant="ghost" className="-ml-2 rounded-full px-3 text-slate-600 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white">
+                <Link to={`/study/${topicKey}`}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Назад до підтем
+                </Link>
               </Button>
             </div>
           ) : null}

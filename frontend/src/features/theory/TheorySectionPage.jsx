@@ -107,7 +107,7 @@ export default function TheorySectionPage() {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 pb-8 sm:space-y-8 sm:px-6 lg:px-8">
       <div className="flex items-center gap-3">
-        <Button asChild variant="outline" className="rounded-lg">
+        <Button asChild variant="ghost" className="-ml-2 rounded-full px-3 text-slate-600 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white">
           <Link to={resolvedTopicKey ? `/study/${resolvedTopicKey}` : '/study'}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Назад до розділів

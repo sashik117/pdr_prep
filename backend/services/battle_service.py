@@ -300,6 +300,17 @@ def submit_battle_answers(battle_id: int, req: BattleSubmitRequest, user: dict[s
             now=now,
         )
         repo.save_submission(submitted.battle)
+        user_id = repo.get_user_id_by_email(user["email"])
+        if user_id:
+            repo.create_battle_progress(
+                user_id=user_id,
+                battle_id=battle_id,
+                question_ids=submitted.battle.get("question_ids") or [],
+                answers=submitted.battle["challenger_answers"] if role == "challenger" else submitted.battle["opponent_answers"],
+                questions_by_id=questions_by_id,
+                score=submitted.score,
+                time_seconds=req.time_seconds,
+            )
         conn.commit()
 
     return BattleSubmitResult(

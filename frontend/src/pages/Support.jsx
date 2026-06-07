@@ -1,7 +1,8 @@
 ﻿// @ts-nocheck
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Headset, LifeBuoy, Mail, Send } from 'lucide-react';
+import { ArrowLeft, Headset, LifeBuoy, Mail, Send } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,6 +25,7 @@ function formatMessageTime(value) {
 }
 
 export default function Support() {
+  const navigate = useNavigate();
   const { user, isCheckingAccess, isTemporaryAuthFailure, canAccess, checkUserAuth } = useProtectedScreen();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState('');
@@ -90,6 +92,11 @@ export default function Support() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
+      <Button type="button" variant="ghost" className="-ml-2 rounded-full px-3" onClick={() => navigate(-1)}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Назад
+      </Button>
+
       <Card className="border-white/90 bg-[linear-gradient(135deg,rgba(20,107,255,0.08),rgba(255,255,255,1)_48%,rgba(224,242,254,0.88))] shadow-[0_18px_45px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(8,47,73,0.9)_50%,rgba(15,23,42,0.98))]">
         <CardContent className="p-6 sm:p-7">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -121,7 +128,7 @@ export default function Support() {
             <CardTitle>Діалог із підтримкою</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="max-h-[460px] space-y-3 overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/70 sm:p-4">
+            <div className="max-h-[520px] space-y-3 overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/70 sm:p-4">
               {sortedThread.length > 0 ? sortedThread.map((item) => {
                 const index = sortedThread.findIndex((entry) => entry.id === item.id);
                 const previous = index > 0 ? sortedThread[index - 1] : null;
@@ -138,7 +145,7 @@ export default function Support() {
                       </div>
                     ) : null}
                     <div
-                      className={`max-w-[86%] rounded-xl px-4 py-2.5 text-sm leading-6 shadow-sm ${
+                      className={`w-fit max-w-[82%] rounded-xl px-3.5 py-2 text-sm leading-6 shadow-sm sm:max-w-[74%] ${
                         mine
                           ? 'ml-auto bg-primary text-primary-foreground'
                           : isSupport
@@ -147,7 +154,7 @@ export default function Support() {
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        <p className="font-medium">{mine ? 'Ви' : 'Підтримка'}</p>
+                        <p className="text-xs font-semibold">{mine ? 'Ви' : 'Підтримка'}</p>
                         {isSupport && !mine ? (
                           <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-primary-foreground">
                             Support
@@ -168,13 +175,13 @@ export default function Support() {
               )}
             </div>
 
-            <div className="rounded-xl border border-sky-100 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+            <div className="rounded-xl border border-sky-100 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <Textarea
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
-                rows={3}
+                rows={2}
                 placeholder="Опишіть проблему або питання простими словами..."
-                className="min-h-[92px] resize-none"
+                className="min-h-[54px] resize-none py-2.5"
               />
               <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs text-slate-500 dark:text-slate-400">Підтримка відповідає прямо в цей розділ, тому можна просто повернутися сюди пізніше.</p>

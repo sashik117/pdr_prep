@@ -63,10 +63,18 @@ class ProgressRepository:
             cursor.executemany(
                 """
                 INSERT INTO user_answers (user_id, question_id, selected_index, is_correct, time_ms)
-                VALUES (%s, %s, %s, %s, %s)
+                SELECT %s, %s, %s, %s, %s
+                WHERE EXISTS (SELECT 1 FROM questions WHERE id = %s)
                 """,
                 [
-                    (user_id, answer.question_id, answer.selected_index, answer.is_correct, answer.time_ms)
+                    (
+                        user_id,
+                        answer.question_id,
+                        answer.selected_index,
+                        answer.is_correct,
+                        answer.time_ms,
+                        answer.question_id,
+                    )
                     for answer in answers
                 ],
             )
@@ -157,7 +165,41 @@ class ProgressRepository:
             """,
             (user_id,),
         ).fetchall()
-        return [dict(row) for row in rows]
+        if rows:
+            return [dict(row) for row in rows]
+
+        fallback_rows = self.conn.execute(
+            """
+            WITH result_stats AS (
+                SELECT section,
+                       SUM(correct)::int AS correct,
+                       SUM(total)::int AS total,
+                       ROUND((SUM(correct)::numeric / NULLIF(SUM(total), 0)) * 100)::int AS accuracy_percent
+                FROM test_results
+                WHERE user_id = %s
+                  AND section IS NOT NULL
+                  AND section <> ''
+                  AND total > 0
+                GROUP BY section
+            ),
+            question_sections AS (
+                SELECT DISTINCT ON (section) section, section_name
+                FROM questions
+                WHERE section IS NOT NULL
+                ORDER BY section, section_name NULLS LAST
+            )
+            SELECT result_stats.section,
+                   COALESCE(question_sections.section_name, result_stats.section) AS section_name,
+                   result_stats.correct,
+                   result_stats.total,
+                   result_stats.accuracy_percent
+            FROM result_stats
+            LEFT JOIN question_sections ON question_sections.section = result_stats.section
+            ORDER BY result_stats.section
+            """,
+            (user_id,),
+        ).fetchall()
+        return [dict(row) for row in fallback_rows]
 
     def list_weak_sections(self, *, user_id: int, section_order_sql: str, limit: int = 8) -> list[dict[str, Any]]:
         rows = self.conn.execute(
@@ -181,7 +223,45 @@ class ProgressRepository:
             """,
             (user_id, limit),
         ).fetchall()
-        return [dict(row) for row in rows]
+        if rows:
+            return [dict(row) for row in rows]
+
+        fallback_rows = self.conn.execute(
+            """
+            WITH result_stats AS (
+                SELECT section,
+                       SUM(total - correct)::int AS wrong,
+                       SUM(correct)::int AS correct,
+                       SUM(total)::int AS total,
+                       ROUND((SUM(correct)::numeric / NULLIF(SUM(total), 0)) * 100)::int AS accuracy_percent
+                FROM test_results
+                WHERE user_id = %s
+                  AND section IS NOT NULL
+                  AND section <> ''
+                  AND total > 0
+                GROUP BY section
+                HAVING SUM(total - correct) > 0
+            ),
+            question_sections AS (
+                SELECT DISTINCT ON (section) section, section_name
+                FROM questions
+                WHERE section IS NOT NULL
+                ORDER BY section, section_name NULLS LAST
+            )
+            SELECT result_stats.section,
+                   COALESCE(question_sections.section_name, result_stats.section) AS section_name,
+                   result_stats.wrong,
+                   result_stats.correct,
+                   result_stats.total,
+                   result_stats.accuracy_percent
+            FROM result_stats
+            LEFT JOIN question_sections ON question_sections.section = result_stats.section
+            ORDER BY result_stats.wrong DESC, result_stats.total DESC, result_stats.section
+            LIMIT %s
+            """,
+            (user_id, limit),
+        ).fetchall()
+        return [dict(row) for row in fallback_rows]
 
     def list_recent_tests(self, *, user_id: int, limit: int = 20) -> list[dict[str, Any]]:
         rows = self.conn.execute(
@@ -257,13 +337,21 @@ class ProgressRepository:
     def list_activity_days(self, *, user_id: int, days: int = 90) -> list[str]:
         rows = self.conn.execute(
             """
-            SELECT DISTINCT DATE(answered_at)::text AS day
-            FROM user_answers
-            WHERE user_id = %s
-              AND answered_at > NOW() - (%s * INTERVAL '1 day')
+            SELECT DISTINCT day
+            FROM (
+                SELECT DATE(answered_at)::text AS day
+                FROM user_answers
+                WHERE user_id = %s
+                  AND answered_at > NOW() - (%s * INTERVAL '1 day')
+                UNION
+                SELECT DATE(created_at)::text AS day
+                FROM test_results
+                WHERE user_id = %s
+                  AND created_at > NOW() - (%s * INTERVAL '1 day')
+            ) activity
             ORDER BY day
             """,
-            (user_id, days),
+            (user_id, days, user_id, days),
         ).fetchall()
         return sorted({str(row["day"]) for row in rows})
 

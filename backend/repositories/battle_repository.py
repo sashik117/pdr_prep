@@ -6,7 +6,6 @@ from typing import Any
 
 import psycopg
 
-
 class BattleRepository:
     def __init__(self, conn: psycopg.Connection):
         self.conn = conn
@@ -197,3 +196,70 @@ class BattleRepository:
                 battle["id"],
             ),
         )
+
+    def get_user_id_by_email(self, email: str) -> int | None:
+        row = self.conn.execute("SELECT id FROM users WHERE LOWER(email) = LOWER(%s)", (email,)).fetchone()
+        return int(row["id"]) if row else None
+
+    def create_battle_progress(
+        self,
+        *,
+        user_id: int,
+        battle_id: int,
+        question_ids: list[Any],
+        answers: dict[str, str],
+        questions_by_id: dict[str, dict[str, Any]],
+        score: int,
+        time_seconds: int,
+    ) -> None:
+        client_attempt_id = f"battle:{battle_id}:user:{user_id}"
+        inserted = self.conn.execute(
+            """
+            INSERT INTO test_results (user_id, section, mode, total, correct, time_seconds, client_attempt_id)
+            VALUES (%s, %s, 'battle', %s, %s, %s, %s)
+            ON CONFLICT (user_id, client_attempt_id) WHERE client_attempt_id IS NOT NULL DO NOTHING
+            RETURNING id
+            """,
+            (user_id, "battle", len(question_ids), score, int(time_seconds or 0), client_attempt_id),
+        ).fetchone()
+        if not inserted:
+            return
+
+        self.conn.execute(
+            """
+            UPDATE users
+            SET total_tests = total_tests + 1,
+                total_correct = total_correct + %s,
+                total_answers = total_answers + %s
+            WHERE id = %s
+            """,
+            (score, len(question_ids), user_id),
+        )
+
+        answer_rows: list[tuple[int, int, bool, None]] = []
+        for question_id in question_ids:
+            key = str(question_id)
+            question = questions_by_id.get(key)
+            if not question:
+                continue
+            label = str(answers.get(key) or "").strip().upper()
+            if not label:
+                continue
+            index = ["A", "B", "C", "D", "E", "F"].index(label) + 1 if label in ["A", "B", "C", "D", "E", "F"] else 0
+            if index <= 0:
+                continue
+            answer_rows.append((int(question_id), index, index == int(question.get("correct_ans") or 0), None))
+
+        if answer_rows:
+            with self.conn.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO user_answers (user_id, question_id, selected_index, is_correct, time_ms)
+                    SELECT %s, %s, %s, %s, %s
+                    WHERE EXISTS (SELECT 1 FROM questions WHERE id = %s)
+                    """,
+                    [
+                        (user_id, question_id, selected_index, is_correct, time_ms, question_id)
+                        for question_id, selected_index, is_correct, time_ms in answer_rows
+                    ],
+                )
