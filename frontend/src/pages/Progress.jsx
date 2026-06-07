@@ -39,7 +39,7 @@ import FramePicker from '@/components/profile/FramePicker';
 import LoginPrompt from '@/components/auth/LoginPrompt';
 import ProtectedScreenFallback from '@/components/auth/ProtectedScreenFallback';
 import ActivityCalendar from '@/components/progress/ActivityCalendar';
-import { ACHIEVEMENTS_DEF, TIER_COLORS, getUnlockedFrames } from '@/lib/achievements';
+import { ACHIEVEMENTS_DEF, TIER_COLORS, getAchievementCopy, getUnlockedFrames } from '@/lib/achievements';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const timeRangeOptions = [15, 30, 60, 120];
@@ -83,11 +83,19 @@ export default function Progress({ view = 'dashboard' }) {
     queryFn: () => api.getStats(),
     enabled: !!user,
   });
+  const resultsQuery = useQuery({
+    queryKey: ['cabinet-results'],
+    queryFn: () => api.getTestResults(),
+    enabled: !!user,
+  });
   const stats = statsQuery.data;
+  const resultsFallback = resultsQuery.data || [];
+  const fallbackCorrect = resultsFallback.reduce((sum, row) => sum + Number(row.correct || 0), 0);
+  const fallbackAnswers = resultsFallback.reduce((sum, row) => sum + Number(row.total || 0), 0);
   const profile = { ...(stats?.user || {}), ...(user || {}) };
-  const totalTests = stats?.total_tests || 0;
-  const totalCorrect = stats?.total_correct || 0;
-  const totalAnswers = stats?.total_answers || 0;
+  const totalTests = stats?.total_tests || resultsFallback.length || 0;
+  const totalCorrect = stats?.total_correct || fallbackCorrect || 0;
+  const totalAnswers = stats?.total_answers || fallbackAnswers || 0;
   const accuracy = totalAnswers > 0 ? Math.round((totalCorrect / totalAnswers) * 100) : 0;
   const streak = stats?.streak_days || profile?.streak_days || 0;
   const streakStatus = stats?.streak_status || profile?.streak_status || 'inactive';
@@ -98,7 +106,7 @@ export default function Progress({ view = 'dashboard' }) {
   const failedTests = Math.max(0, totalTests - passedTests);
   const totalWrong = stats?.total_wrong ?? Math.max(0, totalAnswers - totalCorrect);
   const progressPercent = Math.min(100, Math.max(8, totalTests * 2 + Math.round(accuracy * 0.4)));
-  const recentTests = stats?.recent_tests || [];
+  const recentTests = (stats?.recent_tests?.length ? stats.recent_tests : resultsFallback) || [];
   const quickActions = [
     {
       to: '/tests?mode=quick&category=B',
@@ -173,8 +181,8 @@ export default function Progress({ view = 'dashboard' }) {
   const achievements = useMemo(() => (
     (stats?.achievements || []).map((achievement) => ({
       id: achievement.achievement_id,
-      name: achievement.achievement_name || achievement.achievement_id,
-      description: achievement.achievement_desc || 'Досягнення відкрито',
+      name: getAchievementCopy(achievement.achievement_id)?.name || achievement.achievement_name || achievement.achievement_id,
+      description: getAchievementCopy(achievement.achievement_id)?.desc || achievement.achievement_desc || 'Досягнення відкрито',
       tier: achievement.tier || 1,
     }))
   ), [stats]);
@@ -191,17 +199,26 @@ export default function Progress({ view = 'dashboard' }) {
   );
 
   const performanceChart = useMemo(() => (
-    (stats?.recent_tests || [])
+    (recentTests || [])
       .slice(0, 8)
       .reverse()
       .map((result, index) => ({
         name: `Спроба ${index + 1}`,
         score: result.total ? Math.round(((result.correct || 0) / result.total) * 100) : 0,
       }))
-  ), [stats]);
+  ), [recentTests]);
 
   const timeRangeRows = useMemo(() => {
-    const rows = Array.isArray(stats?.daily_test_time) ? stats.daily_test_time : [];
+    const rows = Array.isArray(stats?.daily_test_time) && stats.daily_test_time.length
+      ? stats.daily_test_time
+      : Object.values((resultsFallback || []).reduce((acc, row) => {
+        const day = String(row.created_at || '').slice(0, 10);
+        if (!day) return acc;
+        acc[day] = acc[day] || { day, seconds: 0, tests: 0 };
+        acc[day].seconds += Number(row.time_seconds || 0);
+        acc[day].tests += 1;
+        return acc;
+      }, {}));
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const since = new Date(today);
@@ -212,9 +229,15 @@ export default function Progress({ view = 'dashboard' }) {
         return !Number.isNaN(day.getTime()) && day >= since;
       })
       .sort((left, right) => String(left.day).localeCompare(String(right.day)));
-  }, [stats?.daily_test_time, timeRange]);
+  }, [resultsFallback, stats?.daily_test_time, timeRange]);
 
   const totalRangeTime = timeRangeRows.reduce((sum, row) => sum + Number(row.seconds || 0), 0);
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayTestingTime = stats?.today_test_time_seconds || timeRangeRows.find((row) => row.day === todayKey)?.seconds || 0;
+  const activityDays = useMemo(() => {
+    if (stats?.activity_days?.length) return stats.activity_days;
+    return [...new Set((resultsFallback || []).map((row) => String(row.created_at || '').slice(0, 10)).filter(Boolean))];
+  }, [resultsFallback, stats?.activity_days]);
   const timeChartData = useMemo(
     () =>
       timeRangeRows.map((row) => ({
@@ -578,7 +601,7 @@ export default function Progress({ view = 'dashboard' }) {
               <div className="rounded-[20px] border border-blue-100 bg-blue-50/80 p-3 text-center dark:border-blue-500/20 dark:bg-blue-950/25 sm:rounded-[22px] sm:p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-blue-600 dark:text-blue-300 sm:text-xs">Сьогодні</p>
                 <p className="mt-1.5 text-lg font-semibold tracking-[-0.04em] text-blue-700 dark:text-blue-200 sm:mt-2 sm:text-2xl">
-                  {formatDuration(stats?.today_test_time_seconds || 0)}
+                  {formatDuration(todayTestingTime)}
                 </p>
               </div>
               <div className="rounded-[20px] border border-emerald-100 bg-emerald-50/80 p-3 text-center dark:border-emerald-500/20 dark:bg-emerald-950/25 sm:rounded-[22px] sm:p-4">
@@ -646,7 +669,7 @@ export default function Progress({ view = 'dashboard' }) {
             <CardTitle className="dark:text-white">Активність по місяцях</CardTitle>
           </CardHeader>
           <CardContent>
-            <ActivityCalendar dates={stats?.activity_days || []} startDate={profile?.created_at || user?.created_at || null} />
+            <ActivityCalendar dates={activityDays} startDate={profile?.created_at || user?.created_at || null} />
           </CardContent>
         </Card>
       </div>

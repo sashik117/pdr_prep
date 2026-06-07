@@ -16,12 +16,12 @@ const SUPPORT_EMAIL = 'pdr.preparation@gmail.com';
 
 function formatDateHeader(value) {
   if (!value) return '';
-  return new Intl.DateTimeFormat('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(value));
+  return new Intl.DateTimeFormat('uk-UA', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Kyiv' }).format(new Date(value));
 }
 
 function formatMessageTime(value) {
   if (!value) return '';
-  return new Intl.DateTimeFormat('uk-UA', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+  return new Intl.DateTimeFormat('uk-UA', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv' }).format(new Date(value));
 }
 
 export default function Support() {
@@ -128,7 +128,7 @@ export default function Support() {
             <CardTitle>Діалог із підтримкою</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="max-h-[520px] space-y-3 overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/70 sm:p-4">
+            <div className="max-h-[680px] min-h-[520px] space-y-2.5 overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/70 sm:min-h-[620px] sm:p-4">
               {sortedThread.length > 0 ? sortedThread.map((item) => {
                 const index = sortedThread.findIndex((entry) => entry.id === item.id);
                 const previous = index > 0 ? sortedThread[index - 1] : null;
@@ -145,7 +145,7 @@ export default function Support() {
                       </div>
                     ) : null}
                     <div
-                      className={`w-fit max-w-[82%] rounded-xl px-3.5 py-2 text-sm leading-6 shadow-sm sm:max-w-[74%] ${
+                      className={`w-fit max-w-[82%] rounded-lg px-3 py-1.5 text-sm leading-5 shadow-sm sm:max-w-[70%] ${
                         mine
                           ? 'ml-auto bg-primary text-primary-foreground'
                           : isSupport
@@ -161,8 +161,8 @@ export default function Support() {
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-1 whitespace-pre-wrap break-words">{item.content}</p>
-                      <p className={`mt-1.5 text-[11px] ${mine ? 'text-primary-foreground/75' : 'text-slate-400 dark:text-slate-500'}`}>
+                      <p className="mt-0.5 whitespace-pre-wrap break-words">{item.content}</p>
+                      <p className={`mt-1 text-[10px] leading-none ${mine ? 'text-primary-foreground/75' : 'text-slate-400 dark:text-slate-500'}`}>
                         {formatMessageTime(item.created_at)}
                       </p>
                     </div>

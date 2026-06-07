@@ -207,6 +207,7 @@ def get_progress_stats(
         conn.commit()
         repo = ProgressRepository(conn)
         user_row = repo.get_user(user_id)
+        result_totals = repo.get_result_totals(user_id=user_id)
         streak = resolve_streak(user_row)
         by_section = repo.list_section_accuracy(user_id=user_id, section_order_sql=order_sql)
         weak_sections = repo.list_weak_sections(user_id=user_id, section_order_sql=order_sql)
@@ -221,12 +222,13 @@ def get_progress_stats(
         earned_achievement_ids = [str(row["achievement_id"]) for row in achievements]
         frame_shop = build_frame_shop(user_row, earned_achievement_ids, total_stars)
 
-    total_answers = int(user_row.get("total_answers") or 0)
-    total_correct = int(user_row.get("total_correct") or 0)
+    total_tests = max(int(user_row.get("total_tests") or 0), int(result_totals.get("total_tests") or 0))
+    total_answers = max(int(user_row.get("total_answers") or 0), int(result_totals.get("total_answers") or 0))
+    total_correct = max(int(user_row.get("total_correct") or 0), int(result_totals.get("total_correct") or 0))
 
     return ProgressStatsResponse(
         user=present_user(user_row),
-        total_tests=int(user_row.get("total_tests") or 0),
+        total_tests=total_tests,
         total_correct=total_correct,
         total_answers=total_answers,
         total_wrong=max(0, total_answers - total_correct),

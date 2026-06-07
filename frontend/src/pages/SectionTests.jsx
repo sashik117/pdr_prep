@@ -62,6 +62,12 @@ export default function SectionTests() {
     enabled: !!user,
     staleTime: 120000,
   });
+  const resultsQuery = useQuery({
+    queryKey: ['section-tests-results'],
+    queryFn: () => api.getTestResults(),
+    enabled: !!user,
+    staleTime: 120000,
+  });
 
   const progressBySection = useMemo(() => {
     const map = new Map();
@@ -69,8 +75,19 @@ export default function SectionTests() {
       map.set(String(row.section), row);
       if (row.section_name) map.set(String(row.section_name).toLowerCase(), row);
     });
+    if (map.size === 0) {
+      (resultsQuery.data || [])
+        .filter((row) => row.mode === 'section' && row.section)
+        .forEach((row) => {
+          const key = String(row.section);
+          const current = map.get(key) || { section: key, section_name: key, total: 0, correct: 0 };
+          current.total += Number(row.total || 0);
+          current.correct += Number(row.correct || 0);
+          map.set(key, current);
+        });
+    }
     return map;
-  }, [statsQuery.data]);
+  }, [resultsQuery.data, statsQuery.data]);
 
   const sections = useMemo(() => {
     const prepared = buildSections(rawSections).map((section) => {

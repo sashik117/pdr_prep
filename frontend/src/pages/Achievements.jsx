@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useProtectedScreen } from '@/lib/useProtectedScreen';
 import api from '@/api/apiClient';
-import { ACHIEVEMENTS_DEF, TIER_COLORS } from '@/lib/achievements';
+import { ACHIEVEMENTS_DEF, TIER_COLORS, getAchievementCopy } from '@/lib/achievements';
 
 const categories = [
   { id: 'all', label: 'Усі' },
@@ -46,12 +46,13 @@ export default function Achievements() {
     const byId = new Map(achievementsFromApi.map((item) => [item.id || item.achievement_id, item]));
     const merged = ACHIEVEMENTS_DEF.map((definition) => {
       const apiItem = byId.get(definition.id);
+      const copy = getAchievementCopy(definition.id);
       if (apiItem) {
         return {
           ...apiItem,
           id: apiItem.id || apiItem.achievement_id || definition.id,
-          name: apiItem.name || apiItem.achievement_name || definition.name,
-          description: apiItem.description || apiItem.achievement_desc || definition.desc,
+          name: copy?.name || apiItem.name || apiItem.achievement_name || definition.name,
+          description: copy?.desc || apiItem.description || apiItem.achievement_desc || definition.desc,
           category: apiItem.category || definition.category,
           tier: Number(apiItem.tier ?? definition.tier),
           target: Number(apiItem.target ?? apiItem.threshold ?? definition.target),
@@ -61,8 +62,8 @@ export default function Achievements() {
 
       return {
         id: definition.id,
-        name: definition.name,
-        description: definition.desc,
+        name: copy?.name || definition.name,
+        description: copy?.desc || definition.desc,
         category: definition.category,
         tier: definition.tier,
         target: definition.target,
@@ -78,21 +79,25 @@ export default function Achievements() {
     achievementsFromApi.forEach((item) => {
       const id = item.id || item.achievement_id;
       if (id && !ACHIEVEMENTS_DEF.some((definition) => definition.id === id)) {
-        merged.push(item);
+        const copy = getAchievementCopy(id);
+        merged.push({
+          ...item,
+          name: copy?.name || item.name || item.achievement_name || id,
+          description: copy?.desc || item.description || item.achievement_desc || 'Досягнення відкрито',
+        });
       }
     });
 
     return merged;
   }, [achievementsFromApi]);
+
   const earnedAchievements = useMemo(() => achievements.filter((achievement) => achievement.earned), [achievements]);
   const earnedCount = earnedAchievements.length;
   const totalProgress = achievements.length ? Math.round((earnedCount / achievements.length) * 100) : 0;
-
   const filtered = useMemo(
     () => (filterCategory === 'all' ? achievements : achievements.filter((achievement) => achievement.category === filterCategory)),
     [achievements, filterCategory],
   );
-
   const showcaseAchievements = useMemo(
     () => featuredIds.map((id) => earnedAchievements.find((achievement) => achievement.id === id)).filter(Boolean),
     [earnedAchievements, featuredIds],
@@ -127,11 +132,7 @@ export default function Achievements() {
   if (!canAccess || !user) {
     return (
       <div className="mx-auto max-w-xl px-4 py-14 text-center sm:py-20">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white"
-        >
+        <button type="button" onClick={() => navigate(-1)} className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white">
           <ArrowLeft className="h-4 w-4" />
           Назад
         </button>
@@ -139,9 +140,7 @@ export default function Achievements() {
           <Lock className="h-7 w-7 text-slate-500 dark:text-slate-300" />
         </div>
         <h2 className="mt-5 text-2xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-white">Досягнення відкриваються після входу</h2>
-        <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-300">
-          Увійдіть, щоб бачити прогрес нагород, серії, рекорди й обирати бейджі для профілю.
-        </p>
+        <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-300">Увійдіть, щоб бачити прогрес нагород, серії, рекорди й обирати бейджі для профілю.</p>
         <div className="mt-6 flex justify-center gap-3">
           <Button onClick={() => navigateToLogin('/achievements')}>Увійти</Button>
           <Button variant="outline" onClick={() => navigateToRegister('/achievements')}>Реєстрація</Button>
@@ -152,20 +151,12 @@ export default function Achievements() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        className="-ml-2 inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white"
-      >
+      <button type="button" onClick={() => navigate(-1)} className="-ml-2 inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-white">
         <ArrowLeft className="h-4 w-4" />
         Назад
       </button>
 
-      <motion.section
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]"
-      >
+      <motion.section initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <Card className="border-slate-200 bg-card shadow-md dark:border-slate-800">
           <CardContent className="p-5 sm:p-6">
             <div className="flex items-start gap-4">
@@ -175,9 +166,7 @@ export default function Achievements() {
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-600 dark:text-amber-300">Колекція нагород</p>
                 <h1 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl">Мої досягнення</h1>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  Кожна нагорода відкривається автоматично, коли Ви виконуєте умову. Прогрес показано просто: скільки вже є і скільки потрібно.
-                </p>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">Кожна нагорода відкривається автоматично, коли Ви виконуєте умову. Прогрес показано просто: скільки вже є і скільки потрібно.</p>
               </div>
             </div>
 
@@ -187,12 +176,7 @@ export default function Achievements() {
                 <span>{totalProgress}%</span>
               </div>
               <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-amber-400 via-sky-500 to-emerald-500"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${totalProgress}%` }}
-                  transition={{ duration: 0.65, ease: 'easeOut' }}
-                />
+                <motion.div className="h-full rounded-full bg-gradient-to-r from-amber-400 via-sky-500 to-emerald-500" initial={{ width: 0 }} animate={{ width: `${totalProgress}%` }} transition={{ duration: 0.65, ease: 'easeOut' }} />
               </div>
             </div>
           </CardContent>
@@ -209,9 +193,7 @@ export default function Achievements() {
                 {showcaseAchievements.length > 0 ? (
                   showcaseAchievements.map((achievement) => <ShowcaseBadge key={achievement.id} achievement={achievement} />)
                 ) : (
-                  <p className="text-sm leading-6 text-slate-500 dark:text-slate-300">
-                    Натисніть на отриману нагороду нижче, щоб показати її у профілі.
-                  </p>
+                  <p className="text-sm leading-6 text-slate-500 dark:text-slate-300">Натисніть на отриману нагороду нижче, щоб показати її у профілі.</p>
                 )}
               </div>
             </div>
@@ -241,13 +223,7 @@ export default function Achievements() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {filtered.map((achievement, index) => (
-          <AchievementCard
-            key={achievement.id}
-            achievement={achievement}
-            index={index}
-            featured={featuredIds.includes(achievement.id)}
-            onToggleFeatured={() => toggleFeatured(achievement.id)}
-          />
+          <AchievementCard key={achievement.id} achievement={achievement} index={index} featured={featuredIds.includes(achievement.id)} onToggleFeatured={() => toggleFeatured(achievement.id)} />
         ))}
       </div>
     </div>
@@ -263,39 +239,17 @@ function AchievementCard({ achievement, index, featured, onToggleFeatured }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.025 }}>
-      <Card
-        className={cn(
-          'h-full transition-all',
-          locked
-            ? 'border-slate-200 bg-slate-50/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/72'
-            : 'border-slate-200 bg-card shadow-md dark:border-slate-800',
-          featured && 'ring-2 ring-primary/30',
-        )}
-      >
+      <Card className={cn('h-full transition-all', locked ? 'border-slate-200 bg-slate-50/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/72' : 'border-slate-200 bg-card shadow-md dark:border-slate-800', featured && 'ring-2 ring-primary/30')}>
         <CardContent className="flex h-full flex-col p-5">
           <div className="flex items-start gap-4">
-            <div
-              className={cn(
-                'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border shadow-sm',
-                locked
-                  ? 'border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500'
-                  : cn(colors.bg, colors.text, colors.border),
-              )}
-            >
+            <div className={cn('mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border shadow-sm', locked ? 'border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500' : cn(colors.bg, colors.text, colors.border))}>
               {achievement.earned ? <CheckCircle2 className="h-6 w-6" /> : <Award className="h-6 w-6" />}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className={cn('font-semibold', locked ? 'text-slate-600 dark:text-slate-300' : 'text-slate-950 dark:text-white')}>{achievement.name}</h3>
-                <span
-                  className={cn(
-                    'rounded-full border px-2 py-0.5 text-[11px] font-semibold',
-                    locked
-                      ? 'border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400'
-                      : cn(colors.bg, colors.text, colors.border),
-                  )}
-                >
-                  {colors.label}
+                <span className={cn('rounded-full border px-2 py-0.5 text-[11px] font-semibold', locked ? 'border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400' : cn(colors.bg, colors.text, colors.border))}>
+                  {locked ? 'Не відкрито' : colors.label}
                 </span>
               </div>
               <p className={cn('mt-2 text-sm leading-6', locked ? 'text-slate-500 dark:text-slate-400' : 'text-slate-600 dark:text-slate-300')}>{achievement.description}</p>
@@ -314,22 +268,11 @@ function AchievementCard({ achievement, index, featured, onToggleFeatured }) {
 
           <div className="mt-auto pt-5">
             {achievement.earned ? (
-              <button
-                type="button"
-                className={cn(
-                  'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
-                  featured
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950/35 dark:text-emerald-200',
-                )}
-                onClick={onToggleFeatured}
-              >
+              <button type="button" className={cn('rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors', featured ? 'bg-primary text-primary-foreground' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950/35 dark:text-emerald-200')} onClick={onToggleFeatured}>
                 {featured ? 'На вітрині' : 'Додати у вітрину'}
               </button>
             ) : (
-              <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-                Ще не відкрито
-              </span>
+              <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">Ще не відкрито</span>
             )}
           </div>
         </CardContent>
@@ -340,9 +283,5 @@ function AchievementCard({ achievement, index, featured, onToggleFeatured }) {
 
 function ShowcaseBadge({ achievement }) {
   const colors = TIER_COLORS[achievement.tier] || TIER_COLORS[1];
-  return (
-    <div className={cn('inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm', colors.bg, colors.text, colors.border)}>
-      {achievement.name}
-    </div>
-  );
+  return <div className={cn('inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm', colors.bg, colors.text, colors.border)}>{achievement.name}</div>;
 }

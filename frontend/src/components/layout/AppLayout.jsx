@@ -76,8 +76,17 @@ export default function AppLayout() {
           break;
         }
       }
-      queryClient.invalidateQueries({ queryKey: ['cabinet-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['test-results'] });
+      await Promise.allSettled([
+        queryClient.invalidateQueries({ queryKey: ['cabinet-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['cabinet-results'] }),
+        queryClient.invalidateQueries({ queryKey: ['analytics-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['analytics-results'] }),
+        queryClient.invalidateQueries({ queryKey: ['section-tests-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['section-tests-results'] }),
+        queryClient.invalidateQueries({ queryKey: ['marathon-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['mistakes-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['achievements'] }),
+      ]);
     };
 
     const checkServerConnection = async () => {
@@ -151,13 +160,16 @@ export default function AppLayout() {
       void checkServerConnection();
     }, 15000);
     networkBootRef.current = false;
+    if (isAuthenticated) {
+      void syncPendingResults();
+    }
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.clearInterval(interval);
     };
-  }, [queryClient, toast]);
+  }, [isAuthenticated, queryClient, toast]);
 
   useEffect(() => {
     if (!isAuthenticated) return undefined;

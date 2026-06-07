@@ -178,19 +178,24 @@ export default function Analytics() {
 
   const stats = statsQuery.data || {};
   const results = resultsQuery.data || [];
-  const totalTests = stats.total_tests || 0;
-  const totalCorrect = stats.total_correct || 0;
-  const totalAnswered = stats.total_answers || 0;
+  const fallbackCorrect = results.reduce((sum, row) => sum + Number(row.correct || 0), 0);
+  const fallbackAnswered = results.reduce((sum, row) => sum + Number(row.total || 0), 0);
+  const totalTests = stats.total_tests || results.length || 0;
+  const totalCorrect = stats.total_correct || fallbackCorrect || 0;
+  const totalAnswered = stats.total_answers || fallbackAnswered || 0;
   const streak = stats.streak_days || 0;
   const marathonBest = stats.marathon_best || 0;
   const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
   const passedCount = results.filter((item) => item.passed).length;
   const failedCount = Math.max(0, results.length - passedCount);
   const bestExamTime = stats.best_exam_time_seconds || 0;
-  const totalTestingTime = stats.total_test_time_seconds || 0;
+  const totalTestingTime = stats.total_test_time_seconds || results.reduce((sum, row) => sum + Number(row.time_seconds || 0), 0) || 0;
   const averageScore = results.length
     ? Math.round(results.reduce((sum, item) => sum + (item.score_percent || 0), 0) / results.length)
     : 0;
+  const activityDays = stats.activity_days?.length
+    ? stats.activity_days
+    : [...new Set(results.map((row) => String(row.created_at || '').slice(0, 10)).filter(Boolean))];
 
   const last30 = buildLast30Days(results);
   const scoreTrend = last30.filter((item) => item.accuracy !== null);
@@ -200,7 +205,19 @@ export default function Analytics() {
     score: item.score_percent || 0,
   }));
 
-  const sectionData = (stats.by_section || [])
+  const sectionSource = stats.by_section?.length
+    ? stats.by_section
+    : Object.values(results
+      .filter((row) => row.section)
+      .reduce((acc, row) => {
+        const key = String(row.section);
+        acc[key] = acc[key] || { section: key, section_name: key, total: 0, correct: 0 };
+        acc[key].total += Number(row.total || 0);
+        acc[key].correct += Number(row.correct || 0);
+        return acc;
+      }, {}));
+
+  const sectionData = (sectionSource || [])
     .map((item) => {
       const total = Number(item.total) || 0;
       const correct = Number(item.correct) || 0;
@@ -315,7 +332,7 @@ export default function Analytics() {
 
           <div className="grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
             <ChartCard title="Календар активності">
-              <ActivityCalendar dates={stats.activity_days || []} startDate={stats?.user?.created_at || user?.created_at || null} />
+              <ActivityCalendar dates={activityDays} startDate={stats?.user?.created_at || user?.created_at || null} />
             </ChartCard>
 
             <ChartCard title="Останні результати">

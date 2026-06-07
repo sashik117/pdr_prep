@@ -23,6 +23,7 @@ import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
 import { registerFreeTestCompletion } from '@/lib/accessLimits';
 import { getSavedQuestionIds, isQuestionSaved, toggleSavedQuestion } from '@/lib/savedQuestions';
 import { playTone } from '@/lib/soundEffects';
+import { getAchievementCopy } from '@/lib/achievements';
 
 const AUTO_ADVANCE_DELAY_MS = 1100;
 const AUTO_FINISH_DELAY_MS = 1000;
@@ -121,6 +122,7 @@ export default function TakeTest() {
   const [currentIndex, setCurrentIndex] = useState(() => Math.max(0, Number(initialDraft?.currentIndex || 0)));
   const [answers, setAnswers] = useState(() => initialDraft?.answers || {});
   const [showResults, setShowResults] = useState(false);
+  const [resultsDialogOpen, setResultsDialogOpen] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
   const [timeLeft, setTimeLeft] = useState(() => Math.max(0, Number(initialDraft?.timeLeft || effectiveTime)));
   const [questions, setQuestions] = useState(() => initialDraft?.questions || []);
@@ -389,6 +391,7 @@ export default function TakeTest() {
     setIsFinishing(true);
     clearAutoAdvance();
     setShowResults(true);
+    setResultsDialogOpen(true);
     removeTestDraft(draftKey);
     playTone('finish');
     const finishedAt = finishedAtRef.current || answeredAllAtRef.current || Date.now();
@@ -399,6 +402,18 @@ export default function TakeTest() {
     const nextBest = ghostBestTime > 0 ? Math.min(ghostBestTime, timeSpent) : timeSpent;
     setGhostBestTime(nextBest);
     localStorage.setItem(ghostKey, String(nextBest));
+    const validAnswerRows = questions
+      .map((question) => {
+        const questionId = Number(question.id);
+        if (!Number.isFinite(questionId)) return null;
+        return {
+          question_id: questionId,
+          selected_index: answerToIndex(finalAnswers[String(question.id)]),
+          is_correct: finalAnswers[String(question.id)] === question.correct_answer,
+          time_ms: null,
+        };
+      })
+      .filter(Boolean);
 
     const resultPayload = {
       section: section || topic || null,
@@ -407,12 +422,7 @@ export default function TakeTest() {
       correct,
       time_seconds: timeSpent,
       client_attempt_id: attemptIdRef.current,
-      answers: questions.map((question) => ({
-        question_id: Number(question.id),
-        selected_index: answerToIndex(finalAnswers[String(question.id)]),
-        is_correct: finalAnswers[String(question.id)] === question.correct_answer,
-        time_ms: null,
-      })),
+      answers: validAnswerRows,
     };
 
     let response = null;
@@ -423,8 +433,11 @@ export default function TakeTest() {
         resultSyncStatus = 'synced';
         await Promise.allSettled([
           queryClient.invalidateQueries({ queryKey: ['cabinet-stats'] }),
+          queryClient.invalidateQueries({ queryKey: ['cabinet-results'] }),
           queryClient.invalidateQueries({ queryKey: ['analytics-stats'] }),
           queryClient.invalidateQueries({ queryKey: ['analytics-results'] }),
+          queryClient.invalidateQueries({ queryKey: ['section-tests-stats'] }),
+          queryClient.invalidateQueries({ queryKey: ['section-tests-results'] }),
           queryClient.invalidateQueries({ queryKey: ['mistakes-stats'] }),
           queryClient.invalidateQueries({ queryKey: ['achievements'] }),
           queryClient.invalidateQueries({ queryKey: ['friends-list'] }),
@@ -432,9 +445,10 @@ export default function TakeTest() {
         ]);
 
         (response?.new_achievements || []).forEach((achievement) => {
+          const achievementCopy = getAchievementCopy?.(achievement.id) || getAchievementCopy?.(achievement.achievement_id);
           toast({
-            title: `Нове досягнення: ${achievement.name}`,
-            description: achievement.description,
+            title: `Нове досягнення: ${achievementCopy?.name || achievement.name}`,
+            description: achievementCopy?.desc || achievement.description,
           });
         });
       } catch {
@@ -487,6 +501,14 @@ export default function TakeTest() {
   const correctCount = questions.filter((question) => answers[String(question.id)] === question.correct_answer).length;
   const passed = questions.length > 0 && correctCount / questions.length >= 0.8;
   const hasStartedUnfinishedTest = !showResults && questions.length > 0;
+  const returnPath = useMemo(() => {
+    if (mode === 'ticket') return '/tickets';
+    if (mode === 'section') return `/section-tests${category ? `?category=${encodeURIComponent(category)}` : ''}`;
+    if (mode === 'difficult') return '/mistakes';
+    if (mode === 'top') return '/mistakes';
+    if (mode === 'srs') return '/repetition';
+    return '/tests';
+  }, [category, mode]);
 
   useEffect(() => {
     if (!hasStartedUnfinishedTest || typeof navigator?.block !== 'function') return undefined;
@@ -571,7 +593,7 @@ export default function TakeTest() {
       return;
     }
     allowNavigationRef.current = true;
-    navigate('/tests');
+    navigate(returnPath);
   };
 
   const cancelExit = () => {
@@ -660,7 +682,7 @@ export default function TakeTest() {
         <AlertTriangle className="mx-auto h-12 w-12 text-slate-400" />
         <h2 className="text-xl font-medium text-slate-900 dark:text-white">Питань для цього набору не знайдено</h2>
         <p className="text-sm text-slate-500 dark:text-slate-300">Спробуйте іншу категорію або інший розділ.</p>
-        <Button onClick={() => navigate('/tests')}>Назад до вибору</Button>
+        <Button onClick={() => navigate(returnPath)}>Назад до вибору</Button>
       </div>
     );
   }
@@ -826,7 +848,7 @@ export default function TakeTest() {
         />
       ) : null}
 
-      <Dialog open={showResults} onOpenChange={() => {}}>
+      <Dialog open={showResults && resultsDialogOpen} onOpenChange={setResultsDialogOpen}>
         <DialogContent className="overflow-hidden rounded-xl border-slate-200 bg-card p-0 shadow-xl sm:max-w-xl dark:border-slate-800">
           <DialogTitle className="sr-only">Результат тесту</DialogTitle>
           <DialogDescription className="sr-only">Підсумок тесту, серії активності та ідеальних зірок.</DialogDescription>
@@ -931,7 +953,10 @@ export default function TakeTest() {
               </div> : null}
 
               <div className="mt-6 flex flex-wrap justify-center gap-3">
-                <Button variant="outline" onClick={() => navigate('/tests')}>
+                <Button variant="outline" onClick={() => setResultsDialogOpen(false)}>
+                  Переглянути відповіді
+                </Button>
+                <Button variant="outline" onClick={() => navigate(returnPath)}>
                   Повернутися до списку
                 </Button>
                 {user ? <Button onClick={() => navigate('/cabinet')}>До кабінету</Button> : null}

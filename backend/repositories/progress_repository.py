@@ -147,6 +147,19 @@ class ProgressRepository:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    def get_result_totals(self, *, user_id: int) -> dict[str, Any]:
+        row = self.conn.execute(
+            """
+            SELECT COUNT(*)::int AS total_tests,
+                   COALESCE(SUM(correct), 0)::int AS total_correct,
+                   COALESCE(SUM(total), 0)::int AS total_answers
+            FROM test_results
+            WHERE user_id = %s
+            """,
+            (user_id,),
+        ).fetchone()
+        return dict(row) if row else {"total_tests": 0, "total_correct": 0, "total_answers": 0}
+
     def list_section_accuracy(self, *, user_id: int, section_order_sql: str) -> list[dict[str, Any]]:
         rows = self.conn.execute(
             """

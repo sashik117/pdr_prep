@@ -5,7 +5,7 @@ from typing import Any
 import psycopg
 
 from core.database import db
-from domain.achievements import achievement_progress_value, should_award_achievement
+from domain.achievements import achievement_copy, achievement_progress_value, should_award_achievement
 from repositories.achievement_repository import AchievementRepository
 
 
@@ -26,6 +26,7 @@ def check_achievements(
 
     created: list[dict[str, Any]] = []
     for achievement_id, tier, name, description, category, threshold in definitions:
+        name, description = achievement_copy(achievement_id, name, description)
         if achievement_id in earned:
             continue
         if not should_award_achievement(
@@ -87,6 +88,7 @@ def list_achievement_progress(
 
     result: list[dict[str, Any]] = []
     for achievement_id, tier, name, description, category, threshold in definitions:
+        name, description = achievement_copy(achievement_id, name, description)
         current = achievement_progress_value(
             achievement_id=achievement_id,
             category=category,

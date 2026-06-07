@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ const TOTAL_LIVES = 3;
 
 export default function Marathon() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, isCheckingAccess, isTemporaryAuthFailure, canAccess, checkUserAuth } = useProtectedScreen();
   const [phase, setPhase] = useState('idle');
   const [queue, setQueue] = useState(/** @type {import('@/types/questions').QuestionViewModel[]} */ ([]));
@@ -35,6 +36,45 @@ export default function Marathon() {
   });
 
   const bestScore = stats?.marathon_best || 0;
+
+  const answerToIndex = (answer) => ['A', 'B', 'C', 'D', 'E', 'F'].indexOf(answer || '') + 1;
+
+  const saveMarathonProgress = async ({ finalScore, answeredQuestion, selectedLabel }) => {
+    const answeredQuestions = answeredQuestion ? [...queue.slice(0, currentIndex), answeredQuestion] : queue.slice(0, currentIndex + 1);
+    const answers = answeredQuestions
+      .map((question) => {
+        const questionId = Number(question.id);
+        if (!Number.isFinite(questionId)) return null;
+        const label = question.id === answeredQuestion?.id ? selectedLabel : question.correct_answer;
+        return {
+          question_id: questionId,
+          selected_index: answerToIndex(label),
+          is_correct: label === question.correct_answer,
+          time_ms: null,
+        };
+      })
+      .filter(Boolean);
+    const total = Math.max(answeredQuestions.length, finalScore);
+    await Promise.allSettled([
+      api.submitMarathonScore(finalScore),
+      api.submitTestResult({
+        section: 'marathon',
+        mode: 'marathon',
+        total,
+        correct: finalScore,
+        time_seconds: 0,
+        client_attempt_id: `marathon:${Date.now()}:${Math.random().toString(16).slice(2)}`,
+        answers,
+      }),
+    ]);
+    await Promise.allSettled([
+      queryClient.invalidateQueries({ queryKey: ['marathon-stats'] }),
+      queryClient.invalidateQueries({ queryKey: ['cabinet-stats'] }),
+      queryClient.invalidateQueries({ queryKey: ['analytics-stats'] }),
+      queryClient.invalidateQueries({ queryKey: ['analytics-results'] }),
+      queryClient.invalidateQueries({ queryKey: ['achievements'] }),
+    ]);
+  };
 
   /** @param {number[]} excludeIds */
   const loadNextQuestion = async (excludeIds) => {
@@ -65,10 +105,11 @@ export default function Marathon() {
     const currentQuestion = queue[currentIndex];
     if (!currentQuestion) return;
 
-    const nextScore = score + 1;
+    const isCorrect = label === currentQuestion.correct_answer;
+    const nextScore = isCorrect ? score + 1 : score;
     setScore(nextScore);
 
-    if (label !== currentQuestion.correct_answer) {
+    if (!isCorrect) {
       const nextLives = lives - 1;
       const brokenIndex = Math.max(0, lives - 1);
       setBreakingHeartIndex(brokenIndex);
@@ -76,7 +117,7 @@ export default function Marathon() {
 
       if (nextLives <= 0) {
         try {
-          await api.submitMarathonScore(nextScore);
+          await saveMarathonProgress({ finalScore: nextScore, answeredQuestion: currentQuestion, selectedLabel: label });
         } catch {
           // Keep local result visible.
         }
@@ -97,6 +138,7 @@ export default function Marathon() {
   const handleNext = async () => {
     const nextQuestion = await loadNextQuestion(seenIds);
     if (!nextQuestion) {
+      await saveMarathonProgress({ finalScore: score, answeredQuestion: queue[currentIndex], selectedLabel: selectedAnswer || queue[currentIndex]?.correct_answer });
       setPhase('dead');
       return;
     }
