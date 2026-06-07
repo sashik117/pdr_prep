@@ -932,7 +932,7 @@ async def websocket_bridge(websocket: WebSocket, token: str = Query(default=""))
 
 
 def _prepare_import_question(item: dict[str, Any]) -> dict[str, Any]:
-    raw_options = item.get("options") or item.get("Р Р†Р В°РЎР‚РЎвЂ“Р В°Р Р…РЎвЂљР С‘") or []
+    raw_options = item.get("options") or item.get("варіанти") or item.get("Р Р†Р В°РЎР‚РЎвЂ“Р В°Р Р…РЎвЂљР С‘") or []
     options: list[str] = []
     for option in raw_options:
         if isinstance(option, dict):
@@ -942,18 +942,18 @@ def _prepare_import_question(item: dict[str, Any]) -> dict[str, Any]:
         if text:
             options.append(text)
 
-    images = item.get("images") or item.get("Р С”Р В°РЎР‚РЎвЂљР С‘Р Р…Р С”Р С‘") or []
+    images = item.get("images") or item.get("картинки") or item.get("Р С”Р В°РЎР‚РЎвЂљР С‘Р Р…Р С”Р С‘") or []
     if not images and item.get("image_url"):
         images = [item.get("image_url")]
 
-    correct_ans = item.get("correct_ans") or item.get("Р С—РЎР‚Р В°Р Р†Р С‘Р В»РЎРЉР Р…Р В°_Р Р†РЎвЂ“Р Т‘Р С—Р С•Р Р†РЎвЂ“Р Т‘РЎРЉ")
+    correct_ans = item.get("correct_ans") or item.get("правильна_відповідь") or item.get("Р С—РЎР‚Р В°Р Р†Р С‘Р В»РЎРЉР Р…Р В°_Р Р†РЎвЂ“Р Т‘Р С—Р С•Р Р†РЎвЂ“Р Т‘РЎРЉ")
     correct_answer = str(item.get("correct_answer") or "").strip().upper()
     if not correct_ans and correct_answer:
         labels = ["A", "B", "C", "D", "E", "F"]
         if correct_answer in labels:
             correct_ans = labels.index(correct_answer) + 1
 
-    raw_category = item.get("category") or item.get("Р С”Р В°РЎвЂљР ВµР С–Р С•РЎР‚РЎвЂ“РЎРЏ")
+    raw_category = item.get("category") or item.get("категорія") or item.get("Р С”Р В°РЎвЂљР ВµР С–Р С•РЎР‚РЎвЂ“РЎРЏ")
     if not raw_category:
         raw_categories = item.get("Р С”Р В°РЎвЂљР ВµР С–Р С•РЎР‚РЎвЂ“РЎвЂ”") or []
         if isinstance(raw_categories, list) and raw_categories:
@@ -961,17 +961,17 @@ def _prepare_import_question(item: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "id": int(item["id"]),
-        "section": str(item.get("section") or item.get("Р РЋР ВµР В·Р Т‘РЎвЂ“Р В»") or item.get("Р РЋР С•Р В·Р Т‘РЎвЂ“Р В»") or item.get("Р РЋР В·Р С•Р Т‘РЎвЂ“Р В»") or item.get("Р РЋР Т‘Р С•Р В·Р Т‘РЎвЂ“Р В»") or item.get("Р РЋРЎР‚Р С•Р В·Р Т‘РЎвЂ“Р В»") or item.get("РЎР‚Р С•Р В·Р Т‘РЎвЂ“Р В»") or ""),
-        "section_name": _clean_text(item.get("section_name") or item.get("Р Р…Р В°Р В·Р Р†Р В°_РЎР‚Р С•Р В·Р Т‘РЎвЂ“Р В»РЎС“")),
-        "num_in_section": item.get("num_in_section") or item.get("Р Р…Р С•Р СР ВµРЎР‚_Р Р†_РЎР‚Р С•Р В·Р Т‘РЎвЂ“Р В»РЎвЂ“"),
+        "section": str(item.get("section") or item.get("розділ") or item.get("Р РЋР ВµР В·Р Т‘РЎвЂ“Р В»") or item.get("Р РЋР С•Р В·Р Т‘РЎвЂ“Р В»") or item.get("Р РЋР В·Р С•Р Т‘РЎвЂ“Р В»") or item.get("Р РЋР Т‘Р С•Р В·Р Т‘РЎвЂ“Р В»") or item.get("Р РЋРЎР‚Р С•Р В·Р Т‘РЎвЂ“Р В»") or item.get("РЎР‚Р С•Р В·Р Т‘РЎвЂ“Р В»") or ""),
+        "section_name": _clean_text(item.get("section_name") or item.get("назва_розділу") or item.get("Р Р…Р В°Р В·Р Р†Р В°_РЎР‚Р С•Р В·Р Т‘РЎвЂ“Р В»РЎС“")),
+        "num_in_section": item.get("num_in_section") or item.get("номер_в_розділі") or item.get("Р Р…Р С•Р СР ВµРЎР‚_Р Р†_РЎР‚Р С•Р В·Р Т‘РЎвЂ“Р В»РЎвЂ“"),
         "category": _normalize_category(raw_category),
-        "difficulty": _clean_text(item.get("difficulty") or item.get("РЎРѓР С”Р В»Р В°Р Т‘Р Р…РЎвЂ“РЎРѓРЎвЂљРЎРЉ")) or "medium",
-        "explanation": _clean_text(item.get("explanation") or item.get("Р С—Р С•РЎРЏРЎРѓР Р…Р ВµР Р…Р Р…РЎРЏ")),
-        "question_text": _clean_text(item.get("question_text") or item.get("РЎвЂљР ВµР С”РЎРѓРЎвЂљ_Р С—Р С‘РЎвЂљР В°Р Р…Р Р…РЎРЏ")),
+        "difficulty": _clean_text(item.get("difficulty") or item.get("складність") or item.get("РЎРѓР С”Р В»Р В°Р Т‘Р Р…РЎвЂ“РЎРѓРЎвЂљРЎРЉ")) or "medium",
+        "explanation": _clean_text(item.get("explanation") or item.get("пояснення") or item.get("Р С—Р С•РЎРЏРЎРѓР Р…Р ВµР Р…Р Р…РЎРЏ")),
+        "question_text": _clean_text(item.get("question_text") or item.get("текст_питання") or item.get("РЎвЂљР ВµР С”РЎРѓРЎвЂљ_Р С—Р С‘РЎвЂљР В°Р Р…Р Р…РЎРЏ")),
         "options": options,
         "correct_ans": int(correct_ans or 0),
         "images": [str(image) for image in images if str(image).strip()],
-        "page": item.get("page") or item.get("РЎРѓРЎвЂљР С•РЎР‚РЎвЂ“Р Р…Р С”Р В°"),
+        "page": item.get("page") or item.get("сторінка") or item.get("РЎРѓРЎвЂљР С•РЎР‚РЎвЂ“Р Р…Р С”Р В°"),
     }
 
 

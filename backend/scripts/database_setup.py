@@ -186,6 +186,35 @@ def import_questions(conn: psycopg.Connection, questions: list[dict[str, Any]]) 
     return inserted
 
 
+def sync_question_images(conn: psycopg.Connection, questions: list[dict[str, Any]]) -> int:
+    clean = [question for question in prepare_questions(questions) if question.get("images")]
+    if not clean:
+        return 0
+
+    updated = 0
+    with conn.cursor() as cursor:
+        for start in range(0, len(clean), BATCH_SIZE):
+            batch = clean[start : start + BATCH_SIZE]
+            cursor.executemany(
+                """
+                UPDATE questions
+                SET images = %s::jsonb
+                WHERE id = %s
+                """,
+                [
+                    (
+                        json.dumps(row["images"], ensure_ascii=False),
+                        row["id"],
+                    )
+                    for row in batch
+                ],
+            )
+            conn.commit()
+            updated += len(batch)
+            print(f"Synced question images {updated}/{len(clean)}", flush=True)
+    return updated
+
+
 def main() -> None:
     if not DATABASE_URL:
         raise SystemExit("DATABASE_URL not found in .env")

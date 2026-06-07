@@ -7,7 +7,7 @@ from pathlib import Path
 
 import psycopg
 
-from database_setup import DATABASE_URL, QUESTIONS_FILE, ensure_schema, flatten_questions, import_questions, prepare_questions
+from database_setup import DATABASE_URL, QUESTIONS_FILE, ensure_schema, flatten_questions, import_questions, prepare_questions, sync_question_images
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 THEORY_SEED_FILE = BASE_DIR / "data" / "theory" / "theory_seed.json"
@@ -205,6 +205,7 @@ def main() -> None:
         ensure_schema(conn)
         question_count = conn.execute("SELECT COUNT(*) FROM questions").fetchone()[0]
         if question_count >= expected_count:
+            sync_question_images(conn, questions)
             import_theory_seed(conn)
             ensure_ticket_metadata(conn)
             ensure_question_theory_links(conn)
