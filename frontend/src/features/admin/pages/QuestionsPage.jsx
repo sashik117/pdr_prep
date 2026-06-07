@@ -21,6 +21,7 @@ export default function QuestionsPage() {
   const initialQuestionId = Number(searchParams.get('question') || 0) || null;
   const [search, setSearch] = useState(() => searchParams.get('search') || '');
   const [section, setSection] = useState(() => searchParams.get('section') || 'all');
+  const [imageFilter, setImageFilter] = useState(() => searchParams.get('images') || 'all');
   const [selectedQuestionId, setSelectedQuestionId] = useState(initialQuestionId);
   const [editorOpen, setEditorOpen] = useState(Boolean(initialQuestionId));
   const [previewImage, setPreviewImage] = useState(null);
@@ -28,12 +29,18 @@ export default function QuestionsPage() {
   const [inlineStatusMessage, setInlineStatusMessage] = useState('');
   const [drafts, setDrafts] = useState({});
   const [createDraft, setCreateDraft] = useState(null);
-  const questionListLimit = section === 'all' && !search.trim() ? 120 : 1000;
+  const questionListLimit = section === 'all' && !search.trim() && imageFilter === 'all' ? 120 : 1000;
+  const hasImagesFilter = imageFilter === 'with' ? true : imageFilter === 'without' ? false : undefined;
 
   const sectionsQuery = useQuery({ queryKey: ['admin-question-sections'], queryFn: () => api.getAdminQuestionSections() });
   const questionsQuery = useQuery({
-    queryKey: ['admin-questions', section, search, questionListLimit],
-    queryFn: () => api.searchAdminQuestions({ search, section: section === 'all' ? '' : section, limit: questionListLimit }),
+    queryKey: ['admin-questions', section, search, imageFilter, questionListLimit],
+    queryFn: () => api.searchAdminQuestions({
+      search,
+      section: section === 'all' ? '' : section,
+      has_images: hasImagesFilter,
+      limit: questionListLimit,
+    }),
   });
 
   const sections = sectionsQuery.data || [];
@@ -59,11 +66,13 @@ export default function QuestionsPage() {
       else next.delete('section');
       if (search.trim()) next.set('search', search.trim());
       else next.delete('search');
+      if (imageFilter && imageFilter !== 'all') next.set('images', imageFilter);
+      else next.delete('images');
       if (selectedQuestionId && editorOpen && !isCreating) next.set('question', String(selectedQuestionId));
       else next.delete('question');
       return next;
     }, { replace: true });
-  }, [section, search, selectedQuestionId, editorOpen, isCreating, setSearchParams]);
+  }, [section, search, imageFilter, selectedQuestionId, editorOpen, isCreating, setSearchParams]);
 
   const questionMutation = useMutation({
     mutationFn: ({ questionId, payload }) => api.updateAdminQuestion(questionId, payload),
@@ -109,12 +118,12 @@ export default function QuestionsPage() {
       const createdSection = String(created?.section || section || 'all');
       setSearch('');
       setSection(createdSection);
-      queryClient.setQueryData(['admin-questions', createdSection, '', 1000], (current = []) => {
+      queryClient.setQueryData(['admin-questions', createdSection, '', 'all', 1000], (current = []) => {
         const list = Array.isArray(current) ? current : [];
         return [created, ...list.filter((item) => item.id !== created.id)];
       });
       await queryClient.invalidateQueries({ queryKey: ['admin-question-sections'] });
-      await queryClient.invalidateQueries({ queryKey: ['admin-questions', createdSection, '', 1000] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-questions', createdSection, ''] });
       setCreateDraft(null);
       setSelectedQuestionId(created.id);
       setEditorOpen(true);
@@ -276,7 +285,7 @@ export default function QuestionsPage() {
                 Додати питання
               </Button>
             </div>
-            <div className="grid gap-3 md:grid-cols-[1fr_260px]">
+            <div className="grid gap-3 md:grid-cols-[1fr_260px_190px]">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input className="pl-9" placeholder="Пошук по тексту питання або поясненню" value={search} onChange={(event) => setSearch(event.target.value)} />
@@ -292,6 +301,16 @@ export default function QuestionsPage() {
                       {item.section}. {item.section_name || 'Без назви'} ({item.count})
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+              <Select value={imageFilter} onValueChange={setImageFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Фото" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Усі фото</SelectItem>
+                  <SelectItem value="with">З фото</SelectItem>
+                  <SelectItem value="without">Без фото</SelectItem>
                 </SelectContent>
               </Select>
             </div>

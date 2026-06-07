@@ -17,15 +17,26 @@ class AdminQuestionRepository:
     def _row(row: Any) -> Optional[dict[str, Any]]:
         return dict(row) if row else None
 
-    def search_questions(self, *, search: str, section: str, limit: int) -> list[dict[str, Any]]:
+    def search_questions(self, *, search: str, section: str, limit: int, has_images: Optional[bool] = None) -> list[dict[str, Any]]:
         rows = self.conn.execute(
             f"""
             SELECT {ADMIN_QUESTION_COLUMNS}
             FROM questions
             WHERE (%s = '' OR section = %s OR section_name = %s)
               AND (
+                   %s::boolean IS NULL
+                OR (
+                     %s::boolean = TRUE
+                 AND jsonb_array_length(CASE WHEN jsonb_typeof(images) = 'array' THEN images ELSE '[]'::jsonb END) > 0
+                )
+                OR (
+                     %s::boolean = FALSE
+                 AND jsonb_array_length(CASE WHEN jsonb_typeof(images) = 'array' THEN images ELSE '[]'::jsonb END) = 0
+                )
+              )
+              AND (
                    %s = ''
-               OR question_text ILIKE %s
+                OR question_text ILIKE %s
                OR section_name ILIKE %s
                OR explanation ILIKE %s
               )
@@ -36,6 +47,9 @@ class AdminQuestionRepository:
                 section,
                 section,
                 section,
+                has_images,
+                has_images,
+                has_images,
                 search,
                 f"%{search}%",
                 f"%{search}%",

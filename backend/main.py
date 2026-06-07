@@ -1987,12 +1987,14 @@ def admin_update_user_achievements(user_id: int, req: AdminAchievementUpdateRequ
 def admin_search_questions(
     search: str = Query(default=""),
     section: str = Query(default=""),
+    has_images: Optional[bool] = Query(default=None),
     limit: int = Query(default=40, ge=1, le=1000),
     admin=Depends(require_admin),
 ):
     return search_admin_questions_use_case(
         search=search,
         section=section,
+        has_images=has_images,
         limit=limit,
         present_question=_sanitize_question_row,
     )

@@ -19,6 +19,7 @@ def search_admin_questions(
     search: str,
     section: str,
     limit: int,
+    has_images: bool | None = None,
     present_question: QuestionPresenter,
 ) -> list[dict[str, Any]]:
     with db() as conn:
@@ -26,6 +27,7 @@ def search_admin_questions(
             search=search.strip(),
             section=section.strip(),
             limit=limit,
+            has_images=has_images,
         )
     return [present_question(row) for row in rows]
 
