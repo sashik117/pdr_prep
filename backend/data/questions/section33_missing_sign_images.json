@@ -1,0 +1,175 @@
+[
+  {
+    "question_id": "1008",
+    "num_in_section": "9",
+    "text": "Що з переліченого заборонено водіям на зображеній дорозі?",
+    "existing_images": [
+      "/images/questions/section-33-dorozhni-znaky/q-1008-01-img_00481.jpeg"
+    ]
+  },
+  {
+    "question_id": "1024",
+    "num_in_section": "26",
+    "text": "Зображений дорожній знак вказує:",
+    "existing_images": []
+  },
+  {
+    "question_id": "1048",
+    "num_in_section": "50",
+    "text": "Який із зображених знаків забороняє стоянку тільки в парні числа місяця?",
+    "existing_images": []
+  },
+  {
+    "question_id": "1080",
+    "num_in_section": "83",
+    "text": "У якому напрямку Вам дозволено рух у зображеній ситуації?",
+    "existing_images": [
+      "/images/questions/section-33-dorozhni-znaky/q-1080-01-img_00512.jpeg"
+    ]
+  },
+  {
+    "question_id": "1082",
+    "num_in_section": "85",
+    "text": "Який із зображених дорожніх знаків інформує про напрямок руху до зазначених на ньому пам'яток?",
+    "existing_images": []
+  },
+  {
+    "question_id": "1098",
+    "num_in_section": "101",
+    "text": "Зображений дорожній знак інформує:",
+    "existing_images": []
+  },
+  {
+    "question_id": "1113",
+    "num_in_section": "116",
+    "text": "Яка з табличок встановлюється із зображеним дорожнім знаком?",
+    "existing_images": [
+      "/images/questions/section-33-dorozhni-znaky/q-1113-01-img_00521.jpeg"
+    ]
+  },
+  {
+    "question_id": "1118",
+    "num_in_section": "121",
+    "text": "Яка із зображених табличок вказує, що дозволено залишати транспортні засоби лише з непрацюючим двигуном?",
+    "existing_images": []
+  },
+  {
+    "question_id": "1132",
+    "num_in_section": "135",
+    "text": "Про що інформує зображений дорожній знак?",
+    "existing_images": []
+  },
+  {
+    "question_id": "1141",
+    "num_in_section": "144",
+    "text": "Який із зображених дорожніх знаків показує напрямок об'їзду закритої для руху ділянки проїзної частини на дорозі з розді",
+    "existing_images": [
+      "/images/questions/section-33-dorozhni-znaky/q-1141-01-img_00530.jpeg"
+    ]
+  },
+  {
+    "question_id": "1159",
+    "num_in_section": "162",
+    "text": "Зображеним дорожнім знаком позначаються:",
+    "existing_images": []
+  },
+  {
+    "question_id": "1165",
+    "num_in_section": "168",
+    "text": "Який із зображених дорожніх знаків не обмежує швидкість руху транспортних засобів на ділянці дороги, на якій його встано",
+    "existing_images": []
+  },
+  {
+    "question_id": "1174",
+    "num_in_section": "177",
+    "text": "Який із зображених дорожніх знаків встановлюється перед ділянкою дороги, на якій можлива поява дітей з території дитячог",
+    "existing_images": []
+  },
+  {
+    "question_id": "1192",
+    "num_in_section": "196",
+    "text": "Зображений дорожній знак діє:",
+    "existing_images": []
+  },
+  {
+    "question_id": "1219",
+    "num_in_section": "225",
+    "text": "Який із перелічених дорожніх знаків вказує водію про наближення до небезпечного повороту дороги?",
+    "existing_images": []
+  },
+  {
+    "question_id": "1223",
+    "num_in_section": "229",
+    "text": "Який із вказаних дорожніх знаків встановлюється перед ділянкою дороги з двома небезпечними поворотами, розташованими оди",
+    "existing_images": []
+  },
+  {
+    "question_id": "1228",
+    "num_in_section": "234",
+    "text": "Який із зображених дорожніх знаків встановлюється перед перетином дороги з трамвайною колією на перехресті з обмеженою о",
+    "existing_images": []
+  },
+  {
+    "question_id": "1250",
+    "num_in_section": "256",
+    "text": "Чи дозволено Вам виконати розворот на зображеному перехресті?",
+    "existing_images": [
+      "/images/questions/section-33-dorozhni-znaky/q-1250-01-img_00542.jpeg"
+    ]
+  },
+  {
+    "question_id": "1253",
+    "num_in_section": "259",
+    "text": "Чи дозволено Вам повернути ліворуч у зображеній ситуації?",
+    "existing_images": [
+      "/images/questions/section-33-dorozhni-znaky/q-1253-01-img_00545.jpeg"
+    ]
+  },
+  {
+    "question_id": "1289",
+    "num_in_section": "298",
+    "text": "Хто з водіїв має перевагу під час зустрічного роз'їзду в даній ситуації?",
+    "existing_images": [
+      "/images/questions/section-33-dorozhni-znaky/q-1289-01-img_00560.jpeg",
+      "/images/questions/section-33-dorozhni-znaky/q-1289-02-img_00561.jpeg"
+    ]
+  },
+  {
+    "question_id": "1292",
+    "num_in_section": "302",
+    "text": "Як ви повинні діяти в даній ситуації при обмеженому зустрічному роз'їзді?",
+    "existing_images": [
+      "/images/questions/section-33-dorozhni-znaky/q-1292-01-img_00562.jpeg"
+    ]
+  },
+  {
+    "question_id": "1304",
+    "num_in_section": "314",
+    "text": "У якому з випадків водіям транспортних засобів дозволено в'їзд у зону, позначену даними дорожніми знаками?",
+    "existing_images": [
+      "/images/questions/section-33-dorozhni-znaky/q-1304-01-img_00567.jpeg"
+    ]
+  },
+  {
+    "question_id": "1313",
+    "num_in_section": "325",
+    "text": "У якому напрямку дозволено рух велосипедистові на даному перехресті?",
+    "existing_images": [
+      "/images/questions/section-33-dorozhni-znaky/q-1313-01-img_00573.jpeg"
+    ]
+  },
+  {
+    "question_id": "1319",
+    "num_in_section": "332",
+    "text": "Хто з учасників дорожнього руху порушує Правила дорожнього руху в даній ситуації за умови, що водій таксі везе пасажира,",
+    "existing_images": [
+      "/images/questions/section-33-dorozhni-znaky/q-1319-01-img_00578.jpeg"
+    ]
+  },
+  {
+    "question_id": "1341",
+    "num_in_section": "354",
+    "text": "Зображена табличка застосовується для:",
+    "existing_images": []
+  }
+]

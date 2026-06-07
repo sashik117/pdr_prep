@@ -2922,616 +2922,2244 @@
     "target": "/images/questions/section-31-tekhnichnyi-stan-transportnykh-zasobiv-ta-ikh-obladnannia/q-994-01-img_00477.jpeg"
   },
   {
+    "question_id": "1000",
+    "section": "33",
+    "num_in_section": "1",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_001.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1000-01-sign_33_001.jpeg"
+  },
+  {
     "question_id": "1001",
     "section": "33",
-    "source": "img_00478.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1001-01-img_00478.jpeg"
+    "num_in_section": "2",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_002.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1001-01-sign_33_002.jpeg"
+  },
+  {
+    "question_id": "1002",
+    "section": "33",
+    "num_in_section": "3",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_003.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1002-01-sign_33_003.jpeg"
   },
   {
     "question_id": "1003",
     "section": "33",
-    "source": "img_00479.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1003-01-img_00479.jpeg"
+    "num_in_section": "4",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_004.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1003-01-sign_33_004.jpeg"
+  },
+  {
+    "question_id": "1004",
+    "section": "33",
+    "num_in_section": "5",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_005.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1004-01-sign_33_005.jpeg"
   },
   {
     "question_id": "1005",
     "section": "33",
-    "source": "img_00480.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1005-01-img_00480.jpeg"
+    "num_in_section": "6",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_006.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1005-01-sign_33_006.jpeg"
   },
   {
-    "question_id": "1008",
+    "question_id": "1006",
     "section": "33",
-    "source": "img_00481.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1008-01-img_00481.jpeg"
+    "num_in_section": "7",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_007.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1006-01-sign_33_007.jpeg"
+  },
+  {
+    "question_id": "1007",
+    "section": "33",
+    "num_in_section": "8",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_008.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1007-01-sign_33_008.jpeg"
+  },
+  {
+    "question_id": "1009",
+    "section": "33",
+    "num_in_section": "10",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_010.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1009-01-sign_33_010.jpeg"
+  },
+  {
+    "question_id": "1010",
+    "section": "33",
+    "num_in_section": "11",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_011.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1010-01-sign_33_011.jpeg"
+  },
+  {
+    "question_id": "1011",
+    "section": "33",
+    "num_in_section": "12",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_012.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1011-01-sign_33_012.jpeg"
   },
   {
     "question_id": "1012",
     "section": "33",
-    "source": "img_00482.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1012-01-img_00482.jpeg"
+    "num_in_section": "13",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_013.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1012-01-sign_33_013.jpeg"
   },
   {
     "question_id": "1013",
     "section": "33",
-    "source": "img_00483.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1013-01-img_00483.jpeg"
+    "num_in_section": "14",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_014.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1013-01-sign_33_014.jpeg"
+  },
+  {
+    "question_id": "1014",
+    "section": "33",
+    "num_in_section": "15",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_015.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1014-01-sign_33_015.jpeg"
+  },
+  {
+    "question_id": "1015",
+    "section": "33",
+    "num_in_section": "16",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_016.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1015-01-sign_33_016.jpeg"
+  },
+  {
+    "question_id": "1016",
+    "section": "33",
+    "num_in_section": "17",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_017.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1016-01-sign_33_017.jpeg"
   },
   {
     "question_id": "1017",
     "section": "33",
-    "source": "img_00484.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1017-01-img_00484.jpeg"
+    "num_in_section": "18",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_018.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1017-01-sign_33_018.jpeg"
+  },
+  {
+    "question_id": "1018",
+    "section": "33",
+    "num_in_section": "19",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_019.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1018-01-sign_33_019.jpeg"
   },
   {
     "question_id": "1019",
     "section": "33",
-    "source": "img_00485.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1019-01-img_00485.jpeg"
+    "num_in_section": "20",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_020.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1019-01-sign_33_020.jpeg"
+  },
+  {
+    "question_id": "1020",
+    "section": "33",
+    "num_in_section": "22",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_022.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1020-01-sign_33_022.jpeg"
+  },
+  {
+    "question_id": "1021",
+    "section": "33",
+    "num_in_section": "23",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_023.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1021-01-sign_33_023.jpeg"
+  },
+  {
+    "question_id": "1022",
+    "section": "33",
+    "num_in_section": "24",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_024.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1022-01-sign_33_024.jpeg"
+  },
+  {
+    "question_id": "1023",
+    "section": "33",
+    "num_in_section": "25",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_025.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1023-01-sign_33_025.jpeg"
+  },
+  {
+    "question_id": "1025",
+    "section": "33",
+    "num_in_section": "27",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_027.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1025-01-sign_33_027.jpeg"
+  },
+  {
+    "question_id": "1026",
+    "section": "33",
+    "num_in_section": "28",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_028.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1026-01-sign_33_028.jpeg"
+  },
+  {
+    "question_id": "1027",
+    "section": "33",
+    "num_in_section": "29",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_029.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1027-01-sign_33_029.jpeg"
+  },
+  {
+    "question_id": "1028",
+    "section": "33",
+    "num_in_section": "30",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_030.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1028-01-sign_33_030.jpeg"
+  },
+  {
+    "question_id": "1029",
+    "section": "33",
+    "num_in_section": "31",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_031.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1029-01-sign_33_031.jpeg"
+  },
+  {
+    "question_id": "1030",
+    "section": "33",
+    "num_in_section": "32",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_032.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1030-01-sign_33_032.jpeg"
   },
   {
     "question_id": "1031",
     "section": "33",
-    "source": "img_00486.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1031-01-img_00486.jpeg"
+    "num_in_section": "33",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_033.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1031-01-sign_33_033.jpeg"
   },
   {
     "question_id": "1032",
     "section": "33",
-    "source": "img_00487.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1032-01-img_00487.jpeg"
+    "num_in_section": "34",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_034.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1032-01-sign_33_034.jpeg"
   },
   {
     "question_id": "1033",
     "section": "33",
-    "source": "img_00488.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1033-01-img_00488.jpeg"
+    "num_in_section": "35",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_035.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1033-01-sign_33_035.jpeg"
   },
   {
     "question_id": "1034",
     "section": "33",
-    "source": "img_00489.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1034-01-img_00489.jpeg"
+    "num_in_section": "36",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_036.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1034-01-sign_33_036.jpeg"
+  },
+  {
+    "question_id": "1035",
+    "section": "33",
+    "num_in_section": "37",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_037.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1035-01-sign_33_037.jpeg"
+  },
+  {
+    "question_id": "1036",
+    "section": "33",
+    "num_in_section": "38",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_038.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1036-01-sign_33_038.jpeg"
+  },
+  {
+    "question_id": "1037",
+    "section": "33",
+    "num_in_section": "39",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_039.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1037-01-sign_33_039.jpeg"
   },
   {
     "question_id": "1038",
     "section": "33",
-    "source": "img_00490.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1038-01-img_00490.jpeg"
+    "num_in_section": "40",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_040.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1038-01-sign_33_040.jpeg"
   },
   {
     "question_id": "1039",
     "section": "33",
-    "source": "img_00491.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1039-01-img_00491.jpeg"
+    "num_in_section": "41",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_041.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1039-01-sign_33_041.jpeg"
+  },
+  {
+    "question_id": "1040",
+    "section": "33",
+    "num_in_section": "42",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_042.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1040-01-sign_33_042.jpeg"
+  },
+  {
+    "question_id": "1041",
+    "section": "33",
+    "num_in_section": "43",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_043.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1041-01-sign_33_043.jpeg"
+  },
+  {
+    "question_id": "1042",
+    "section": "33",
+    "num_in_section": "44",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_044.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1042-01-sign_33_044.jpeg"
   },
   {
     "question_id": "1043",
     "section": "33",
-    "source": "img_00492.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1043-01-img_00492.jpeg"
+    "num_in_section": "45",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_045.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1043-01-sign_33_045.jpeg"
+  },
+  {
+    "question_id": "1044",
+    "section": "33",
+    "num_in_section": "46",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_046.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1044-01-sign_33_046.jpeg"
   },
   {
     "question_id": "1045",
     "section": "33",
-    "source": "img_00493.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1045-01-img_00493.jpeg"
+    "num_in_section": "47",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_047.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1045-01-sign_33_047.jpeg"
   },
   {
     "question_id": "1046",
     "section": "33",
-    "source": "img_00494.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1046-01-img_00494.jpeg"
+    "num_in_section": "48",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_048.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1046-01-sign_33_048.jpeg"
+  },
+  {
+    "question_id": "1047",
+    "section": "33",
+    "num_in_section": "49",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_049.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1047-01-sign_33_049.jpeg"
+  },
+  {
+    "question_id": "1049",
+    "section": "33",
+    "num_in_section": "51",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_051.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1049-01-sign_33_051.jpeg"
   },
   {
     "question_id": "1050",
     "section": "33",
-    "source": "img_00495.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1050-01-img_00495.jpeg"
+    "num_in_section": "52",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_052.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1050-01-sign_33_052.jpeg"
+  },
+  {
+    "question_id": "1051",
+    "section": "33",
+    "num_in_section": "53",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_053.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1051-01-sign_33_053.jpeg"
   },
   {
     "question_id": "1052",
     "section": "33",
-    "source": "img_00496.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1052-01-img_00496.jpeg"
+    "num_in_section": "54",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_054.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1052-01-sign_33_054.jpeg"
+  },
+  {
+    "question_id": "1053",
+    "section": "33",
+    "num_in_section": "55",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_055.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1053-01-sign_33_055.jpeg"
   },
   {
     "question_id": "1054",
     "section": "33",
-    "source": "img_00497.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1054-01-img_00497.jpeg"
+    "num_in_section": "56",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_056.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1054-01-sign_33_056.jpeg"
   },
   {
     "question_id": "1055",
     "section": "33",
-    "source": "img_00498.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1055-01-img_00498.jpeg"
+    "num_in_section": "57",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_057.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1055-01-sign_33_057.jpeg"
   },
   {
     "question_id": "1056",
     "section": "33",
-    "source": "img_00499.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1056-01-img_00499.jpeg"
+    "num_in_section": "58",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_058.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1056-01-sign_33_058.jpeg"
   },
   {
     "question_id": "1057",
     "section": "33",
-    "source": "img_00500.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1057-01-img_00500.jpeg"
+    "num_in_section": "59",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_059.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1057-01-sign_33_059.jpeg"
   },
   {
     "question_id": "1058",
     "section": "33",
-    "source": "img_00501.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1058-01-img_00501.jpeg"
+    "num_in_section": "60",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_060.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1058-01-sign_33_060.jpeg"
   },
   {
     "question_id": "1059",
     "section": "33",
-    "source": "img_00502.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1059-01-img_00502.jpeg"
+    "num_in_section": "61",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_061.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1059-01-sign_33_061.jpeg"
   },
   {
     "question_id": "1060",
     "section": "33",
-    "source": "img_00503.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1060-01-img_00503.jpeg"
+    "num_in_section": "62",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_062.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1060-01-sign_33_062.jpeg"
+  },
+  {
+    "question_id": "1061",
+    "section": "33",
+    "num_in_section": "63",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_063.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1061-01-sign_33_063.jpeg"
+  },
+  {
+    "question_id": "1062",
+    "section": "33",
+    "num_in_section": "64",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_064.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1062-01-sign_33_064.jpeg"
   },
   {
     "question_id": "1063",
     "section": "33",
-    "source": "img_00504.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1063-01-img_00504.jpeg"
+    "num_in_section": "65",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_065.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1063-01-sign_33_065.jpeg"
   },
   {
     "question_id": "1064",
     "section": "33",
-    "source": "img_00505.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1064-01-img_00505.jpeg"
+    "num_in_section": "66",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_066.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1064-01-sign_33_066.jpeg"
+  },
+  {
+    "question_id": "1065",
+    "section": "33",
+    "num_in_section": "67",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_067.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1065-01-sign_33_067.jpeg"
   },
   {
     "question_id": "1066",
     "section": "33",
-    "source": "img_00506.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1066-01-img_00506.jpeg"
+    "num_in_section": "68",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_068.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1066-01-sign_33_068.jpeg"
+  },
+  {
+    "question_id": "1067",
+    "section": "33",
+    "num_in_section": "69",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_069.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1067-01-sign_33_069.jpeg"
   },
   {
     "question_id": "1068",
     "section": "33",
-    "source": "img_00507.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1068-01-img_00507.jpeg"
+    "num_in_section": "70",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_070.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1068-01-sign_33_070.jpeg"
   },
   {
     "question_id": "1069",
     "section": "33",
-    "source": "img_00508.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1069-01-img_00508.jpeg"
+    "num_in_section": "71",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_071.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1069-01-sign_33_071.jpeg"
+  },
+  {
+    "question_id": "1070",
+    "section": "33",
+    "num_in_section": "72",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_072.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1070-01-sign_33_072.jpeg"
+  },
+  {
+    "question_id": "1071",
+    "section": "33",
+    "num_in_section": "73",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_073.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1071-01-sign_33_073.jpeg"
   },
   {
     "question_id": "1072",
     "section": "33",
-    "source": "img_00509.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1072-01-img_00509.jpeg"
+    "num_in_section": "74",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_074.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1072-01-sign_33_074.jpeg"
   },
   {
     "question_id": "1073",
     "section": "33",
-    "source": "img_00510.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1073-01-img_00510.jpeg"
+    "num_in_section": "75",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_075.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1073-01-sign_33_075.jpeg"
+  },
+  {
+    "question_id": "1074",
+    "section": "33",
+    "num_in_section": "76",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_076.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1074-01-sign_33_076.jpeg"
+  },
+  {
+    "question_id": "1075",
+    "section": "33",
+    "num_in_section": "77",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_077.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1075-01-sign_33_077.jpeg"
+  },
+  {
+    "question_id": "1076",
+    "section": "33",
+    "num_in_section": "78",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_078.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1076-01-sign_33_078.jpeg"
+  },
+  {
+    "question_id": "1077",
+    "section": "33",
+    "num_in_section": "80",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_080.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1077-01-sign_33_080.jpeg"
+  },
+  {
+    "question_id": "1078",
+    "section": "33",
+    "num_in_section": "81",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_081.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1078-01-sign_33_081.jpeg"
   },
   {
     "question_id": "1079",
     "section": "33",
-    "source": "img_00511.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1079-01-img_00511.jpeg"
-  },
-  {
-    "question_id": "1080",
-    "section": "33",
-    "source": "img_00512.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1080-01-img_00512.jpeg"
+    "num_in_section": "82",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_082.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1079-01-sign_33_082.jpeg"
   },
   {
     "question_id": "1081",
     "section": "33",
-    "source": "img_00513.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1081-01-img_00513.jpeg"
+    "num_in_section": "84",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_084.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1081-01-sign_33_084.jpeg"
+  },
+  {
+    "question_id": "1083",
+    "section": "33",
+    "num_in_section": "86",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_086.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1083-01-sign_33_086.jpeg"
   },
   {
     "question_id": "1084",
     "section": "33",
-    "source": "img_00514.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1084-01-img_00514.jpeg"
+    "num_in_section": "87",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_087.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1084-01-sign_33_087.jpeg"
+  },
+  {
+    "question_id": "1085",
+    "section": "33",
+    "num_in_section": "88",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_088.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1085-01-sign_33_088.jpeg"
+  },
+  {
+    "question_id": "1086",
+    "section": "33",
+    "num_in_section": "89",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_089.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1086-01-sign_33_089.jpeg"
+  },
+  {
+    "question_id": "1087",
+    "section": "33",
+    "num_in_section": "90",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_090.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1087-01-sign_33_090.jpeg"
+  },
+  {
+    "question_id": "1088",
+    "section": "33",
+    "num_in_section": "91",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_091.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1088-01-sign_33_091.jpeg"
   },
   {
     "question_id": "1089",
     "section": "33",
-    "source": "img_00515.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1089-01-img_00515.jpeg"
+    "num_in_section": "92",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_092.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1089-01-sign_33_092.jpeg"
+  },
+  {
+    "question_id": "1090",
+    "section": "33",
+    "num_in_section": "93",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_093.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1090-01-sign_33_093.jpeg"
   },
   {
     "question_id": "1091",
     "section": "33",
-    "source": "img_00516.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1091-01-img_00516.jpeg"
+    "num_in_section": "94",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_094.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1091-01-sign_33_094.jpeg"
+  },
+  {
+    "question_id": "1092",
+    "section": "33",
+    "num_in_section": "95",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_095.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1092-01-sign_33_095.jpeg"
   },
   {
     "question_id": "1093",
     "section": "33",
-    "source": "img_00517.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1093-01-img_00517.jpeg"
+    "num_in_section": "96",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_096.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1093-01-sign_33_096.jpeg"
+  },
+  {
+    "question_id": "1094",
+    "section": "33",
+    "num_in_section": "97",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_097.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1094-01-sign_33_097.jpeg"
+  },
+  {
+    "question_id": "1095",
+    "section": "33",
+    "num_in_section": "98",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_098.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1095-01-sign_33_098.jpeg"
+  },
+  {
+    "question_id": "1096",
+    "section": "33",
+    "num_in_section": "99",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_099.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1096-01-sign_33_099.jpeg"
+  },
+  {
+    "question_id": "1097",
+    "section": "33",
+    "num_in_section": "100",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_100.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1097-01-sign_33_100.jpeg"
+  },
+  {
+    "question_id": "1099",
+    "section": "33",
+    "num_in_section": "102",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_102.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1099-01-sign_33_102.jpeg"
+  },
+  {
+    "question_id": "1100",
+    "section": "33",
+    "num_in_section": "103",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_103.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1100-01-sign_33_103.jpeg"
+  },
+  {
+    "question_id": "1101",
+    "section": "33",
+    "num_in_section": "104",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_104.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1101-01-sign_33_104.jpeg"
+  },
+  {
+    "question_id": "1102",
+    "section": "33",
+    "num_in_section": "105",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_105.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1102-01-sign_33_105.jpeg"
   },
   {
     "question_id": "1103",
     "section": "33",
-    "source": "img_00518.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1103-01-img_00518.jpeg"
+    "num_in_section": "106",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_106.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1103-01-sign_33_106.jpeg"
+  },
+  {
+    "question_id": "1104",
+    "section": "33",
+    "num_in_section": "107",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_107.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1104-01-sign_33_107.jpeg"
+  },
+  {
+    "question_id": "1105",
+    "section": "33",
+    "num_in_section": "108",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_108.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1105-01-sign_33_108.jpeg"
+  },
+  {
+    "question_id": "1106",
+    "section": "33",
+    "num_in_section": "109",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_109.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1106-01-sign_33_109.jpeg"
+  },
+  {
+    "question_id": "1107",
+    "section": "33",
+    "num_in_section": "110",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_110.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1107-01-sign_33_110.jpeg"
+  },
+  {
+    "question_id": "1108",
+    "section": "33",
+    "num_in_section": "111",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_111.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1108-01-sign_33_111.jpeg"
+  },
+  {
+    "question_id": "1109",
+    "section": "33",
+    "num_in_section": "112",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_112.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1109-01-sign_33_112.jpeg"
+  },
+  {
+    "question_id": "1110",
+    "section": "33",
+    "num_in_section": "113",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_113.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1110-01-sign_33_113.jpeg"
   },
   {
     "question_id": "1111",
     "section": "33",
-    "source": "img_00519.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1111-01-img_00519.jpeg"
+    "num_in_section": "114",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_114.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1111-01-sign_33_114.jpeg"
   },
   {
     "question_id": "1112",
     "section": "33",
-    "source": "img_00520.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1112-01-img_00520.jpeg"
+    "num_in_section": "115",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_115.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1112-01-sign_33_115.jpeg"
   },
   {
-    "question_id": "1113",
+    "question_id": "1114",
     "section": "33",
-    "source": "img_00521.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1113-01-img_00521.jpeg"
+    "num_in_section": "117",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_117.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1114-01-sign_33_117.jpeg"
+  },
+  {
+    "question_id": "1115",
+    "section": "33",
+    "num_in_section": "118",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_118.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1115-01-sign_33_118.jpeg"
+  },
+  {
+    "question_id": "1116",
+    "section": "33",
+    "num_in_section": "119",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_119.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1116-01-sign_33_119.jpeg"
+  },
+  {
+    "question_id": "1117",
+    "section": "33",
+    "num_in_section": "120",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_120.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1117-01-sign_33_120.jpeg"
+  },
+  {
+    "question_id": "1119",
+    "section": "33",
+    "num_in_section": "122",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_122.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1119-01-sign_33_122.jpeg"
   },
   {
     "question_id": "1120",
     "section": "33",
-    "source": "img_00522.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1120-01-img_00522.jpeg"
+    "num_in_section": "123",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_123.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1120-01-sign_33_123.jpeg"
+  },
+  {
+    "question_id": "1121",
+    "section": "33",
+    "num_in_section": "124",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_124.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1121-01-sign_33_124.jpeg"
   },
   {
     "question_id": "1122",
     "section": "33",
-    "source": "img_00523.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1122-01-img_00523.jpeg"
+    "num_in_section": "125",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_125.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1122-01-sign_33_125.jpeg"
+  },
+  {
+    "question_id": "1123",
+    "section": "33",
+    "num_in_section": "126",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_126.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1123-01-sign_33_126.jpeg"
+  },
+  {
+    "question_id": "1124",
+    "section": "33",
+    "num_in_section": "127",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_127.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1124-01-sign_33_127.jpeg"
+  },
+  {
+    "question_id": "1125",
+    "section": "33",
+    "num_in_section": "128",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_128.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1125-01-sign_33_128.jpeg"
   },
   {
     "question_id": "1126",
     "section": "33",
-    "source": "img_00524.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1126-01-img_00524.jpeg"
+    "num_in_section": "129",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_129.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1126-01-sign_33_129.jpeg"
+  },
+  {
+    "question_id": "1127",
+    "section": "33",
+    "num_in_section": "130",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_130.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1127-01-sign_33_130.jpeg"
   },
   {
     "question_id": "1128",
     "section": "33",
-    "source": "img_00525.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1128-01-img_00525.jpeg"
+    "num_in_section": "131",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_131.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1128-01-sign_33_131.jpeg"
   },
   {
     "question_id": "1129",
     "section": "33",
-    "source": "img_00526.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1129-01-img_00526.jpeg"
+    "num_in_section": "132",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_132.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1129-01-sign_33_132.jpeg"
+  },
+  {
+    "question_id": "1130",
+    "section": "33",
+    "num_in_section": "133",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_133.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1130-01-sign_33_133.jpeg"
   },
   {
     "question_id": "1131",
     "section": "33",
-    "source": "img_00527.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1131-01-img_00527.jpeg"
+    "num_in_section": "134",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_134.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1131-01-sign_33_134.jpeg"
   },
   {
     "question_id": "1133",
     "section": "33",
-    "source": "img_00528.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1133-01-img_00528.jpeg"
+    "num_in_section": "136",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_136.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1133-01-sign_33_136.jpeg"
+  },
+  {
+    "question_id": "1134",
+    "section": "33",
+    "num_in_section": "137",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_137.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1134-01-sign_33_137.jpeg"
+  },
+  {
+    "question_id": "1135",
+    "section": "33",
+    "num_in_section": "138",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_138.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1135-01-sign_33_138.jpeg"
+  },
+  {
+    "question_id": "1136",
+    "section": "33",
+    "num_in_section": "139",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_139.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1136-01-sign_33_139.jpeg"
+  },
+  {
+    "question_id": "1137",
+    "section": "33",
+    "num_in_section": "140",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_140.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1137-01-sign_33_140.jpeg"
+  },
+  {
+    "question_id": "1138",
+    "section": "33",
+    "num_in_section": "141",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_141.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1138-01-sign_33_141.jpeg"
   },
   {
     "question_id": "1139",
     "section": "33",
-    "source": "img_00529.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1139-01-img_00529.jpeg"
+    "num_in_section": "142",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_142.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1139-01-sign_33_142.jpeg"
   },
   {
-    "question_id": "1141",
+    "question_id": "1140",
     "section": "33",
-    "source": "img_00530.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1141-01-img_00530.jpeg"
+    "num_in_section": "143",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_143.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1140-01-sign_33_143.jpeg"
+  },
+  {
+    "question_id": "1142",
+    "section": "33",
+    "num_in_section": "145",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_145.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1142-01-sign_33_145.jpeg"
+  },
+  {
+    "question_id": "1143",
+    "section": "33",
+    "num_in_section": "146",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_146.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1143-01-sign_33_146.jpeg"
   },
   {
     "question_id": "1144",
     "section": "33",
-    "source": "img_00531.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1144-01-img_00531.jpeg"
+    "num_in_section": "147",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_147.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1144-01-sign_33_147.jpeg"
+  },
+  {
+    "question_id": "1145",
+    "section": "33",
+    "num_in_section": "148",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_148.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1145-01-sign_33_148.jpeg"
+  },
+  {
+    "question_id": "1146",
+    "section": "33",
+    "num_in_section": "149",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_149.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1146-01-sign_33_149.jpeg"
   },
   {
     "question_id": "1147",
     "section": "33",
-    "source": "img_00532.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1147-01-img_00532.jpeg"
+    "num_in_section": "150",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_150.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1147-01-sign_33_150.jpeg"
+  },
+  {
+    "question_id": "1148",
+    "section": "33",
+    "num_in_section": "151",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_151.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1148-01-sign_33_151.jpeg"
+  },
+  {
+    "question_id": "1149",
+    "section": "33",
+    "num_in_section": "152",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_152.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1149-01-sign_33_152.jpeg"
+  },
+  {
+    "question_id": "1150",
+    "section": "33",
+    "num_in_section": "153",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_153.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1150-01-sign_33_153.jpeg"
   },
   {
     "question_id": "1151",
     "section": "33",
-    "source": "img_00533.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1151-01-img_00533.jpeg"
+    "num_in_section": "154",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_154.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1151-01-sign_33_154.jpeg"
+  },
+  {
+    "question_id": "1152",
+    "section": "33",
+    "num_in_section": "155",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_155.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1152-01-sign_33_155.jpeg"
   },
   {
     "question_id": "1153",
     "section": "33",
-    "source": "img_00534.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1153-01-img_00534.jpeg"
+    "num_in_section": "156",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_156.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1153-01-sign_33_156.jpeg"
+  },
+  {
+    "question_id": "1154",
+    "section": "33",
+    "num_in_section": "157",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_157.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1154-01-sign_33_157.jpeg"
+  },
+  {
+    "question_id": "1155",
+    "section": "33",
+    "num_in_section": "158",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_158.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1155-01-sign_33_158.jpeg"
+  },
+  {
+    "question_id": "1156",
+    "section": "33",
+    "num_in_section": "159",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_159.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1156-01-sign_33_159.jpeg"
+  },
+  {
+    "question_id": "1157",
+    "section": "33",
+    "num_in_section": "160",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_160.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1157-01-sign_33_160.jpeg"
+  },
+  {
+    "question_id": "1158",
+    "section": "33",
+    "num_in_section": "161",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_161.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1158-01-sign_33_161.jpeg"
+  },
+  {
+    "question_id": "1160",
+    "section": "33",
+    "num_in_section": "163",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_163.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1160-01-sign_33_163.jpeg"
+  },
+  {
+    "question_id": "1161",
+    "section": "33",
+    "num_in_section": "164",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_164.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1161-01-sign_33_164.jpeg"
+  },
+  {
+    "question_id": "1162",
+    "section": "33",
+    "num_in_section": "165",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_165.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1162-01-sign_33_165.jpeg"
+  },
+  {
+    "question_id": "1163",
+    "section": "33",
+    "num_in_section": "166",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_166.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1163-01-sign_33_166.jpeg"
+  },
+  {
+    "question_id": "1164",
+    "section": "33",
+    "num_in_section": "167",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_167.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1164-01-sign_33_167.jpeg"
+  },
+  {
+    "question_id": "1166",
+    "section": "33",
+    "num_in_section": "169",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_169.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1166-01-sign_33_169.jpeg"
+  },
+  {
+    "question_id": "1167",
+    "section": "33",
+    "num_in_section": "170",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_170.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1167-01-sign_33_170.jpeg"
+  },
+  {
+    "question_id": "1168",
+    "section": "33",
+    "num_in_section": "171",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_171.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1168-01-sign_33_171.jpeg"
+  },
+  {
+    "question_id": "1169",
+    "section": "33",
+    "num_in_section": "172",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_172.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1169-01-sign_33_172.jpeg"
+  },
+  {
+    "question_id": "1170",
+    "section": "33",
+    "num_in_section": "173",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_173.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1170-01-sign_33_173.jpeg"
+  },
+  {
+    "question_id": "1171",
+    "section": "33",
+    "num_in_section": "174",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_174.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1171-01-sign_33_174.jpeg"
+  },
+  {
+    "question_id": "1172",
+    "section": "33",
+    "num_in_section": "175",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_175.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1172-01-sign_33_175.jpeg"
+  },
+  {
+    "question_id": "1173",
+    "section": "33",
+    "num_in_section": "176",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_176.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1173-01-sign_33_176.jpeg"
+  },
+  {
+    "question_id": "1175",
+    "section": "33",
+    "num_in_section": "178",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_178.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1175-01-sign_33_178.jpeg"
+  },
+  {
+    "question_id": "1176",
+    "section": "33",
+    "num_in_section": "179",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_179.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1176-01-sign_33_179.jpeg"
+  },
+  {
+    "question_id": "1177",
+    "section": "33",
+    "num_in_section": "180",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_180.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1177-01-sign_33_180.jpeg"
+  },
+  {
+    "question_id": "1178",
+    "section": "33",
+    "num_in_section": "181",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_181.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1178-01-sign_33_181.jpeg"
+  },
+  {
+    "question_id": "1179",
+    "section": "33",
+    "num_in_section": "183",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_183.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1179-01-sign_33_183.jpeg"
+  },
+  {
+    "question_id": "1180",
+    "section": "33",
+    "num_in_section": "184",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_184.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1180-01-sign_33_184.jpeg"
+  },
+  {
+    "question_id": "1181",
+    "section": "33",
+    "num_in_section": "185",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_185.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1181-01-sign_33_185.jpeg"
+  },
+  {
+    "question_id": "1182",
+    "section": "33",
+    "num_in_section": "186",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_186.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1182-01-sign_33_186.jpeg"
+  },
+  {
+    "question_id": "1183",
+    "section": "33",
+    "num_in_section": "187",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_187.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1183-01-sign_33_187.jpeg"
+  },
+  {
+    "question_id": "1184",
+    "section": "33",
+    "num_in_section": "188",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_188.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1184-01-sign_33_188.jpeg"
+  },
+  {
+    "question_id": "1185",
+    "section": "33",
+    "num_in_section": "189",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_189.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1185-01-sign_33_189.jpeg"
+  },
+  {
+    "question_id": "1186",
+    "section": "33",
+    "num_in_section": "190",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_190.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1186-01-sign_33_190.jpeg"
+  },
+  {
+    "question_id": "1187",
+    "section": "33",
+    "num_in_section": "191",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_191.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1187-01-sign_33_191.jpeg"
+  },
+  {
+    "question_id": "1188",
+    "section": "33",
+    "num_in_section": "192",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_192.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1188-01-sign_33_192.jpeg"
+  },
+  {
+    "question_id": "1189",
+    "section": "33",
+    "num_in_section": "193",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_193.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1189-01-sign_33_193.jpeg"
+  },
+  {
+    "question_id": "1190",
+    "section": "33",
+    "num_in_section": "194",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_194.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1190-01-sign_33_194.jpeg"
+  },
+  {
+    "question_id": "1191",
+    "section": "33",
+    "num_in_section": "195",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_195.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1191-01-sign_33_195.jpeg"
+  },
+  {
+    "question_id": "1193",
+    "section": "33",
+    "num_in_section": "198",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_198.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1193-01-sign_33_198.jpeg"
+  },
+  {
+    "question_id": "1194",
+    "section": "33",
+    "num_in_section": "199",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_199.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1194-01-sign_33_199.jpeg"
+  },
+  {
+    "question_id": "1195",
+    "section": "33",
+    "num_in_section": "200",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_200.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1195-01-sign_33_200.jpeg"
+  },
+  {
+    "question_id": "1196",
+    "section": "33",
+    "num_in_section": "201",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_201.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1196-01-sign_33_201.jpeg"
+  },
+  {
+    "question_id": "1197",
+    "section": "33",
+    "num_in_section": "202",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_202.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1197-01-sign_33_202.jpeg"
+  },
+  {
+    "question_id": "1198",
+    "section": "33",
+    "num_in_section": "203",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_203.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1198-01-sign_33_203.jpeg"
+  },
+  {
+    "question_id": "1199",
+    "section": "33",
+    "num_in_section": "204",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_204.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1199-01-sign_33_204.jpeg"
+  },
+  {
+    "question_id": "1200",
+    "section": "33",
+    "num_in_section": "205",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_205.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1200-01-sign_33_205.jpeg"
+  },
+  {
+    "question_id": "1201",
+    "section": "33",
+    "num_in_section": "206",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_206.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1201-01-sign_33_206.jpeg"
+  },
+  {
+    "question_id": "1202",
+    "section": "33",
+    "num_in_section": "207",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_207.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1202-01-sign_33_207.jpeg"
+  },
+  {
+    "question_id": "1203",
+    "section": "33",
+    "num_in_section": "208",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_208.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1203-01-sign_33_208.jpeg"
   },
   {
     "question_id": "1204",
     "section": "33",
-    "source": "img_00535.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1204-01-img_00535.jpeg"
+    "num_in_section": "209",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_209.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1204-01-sign_33_209.jpeg"
   },
   {
     "question_id": "1205",
     "section": "33",
-    "source": "img_00536.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1205-01-img_00536.jpeg"
+    "num_in_section": "210",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_210.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1205-01-sign_33_210.jpeg"
+  },
+  {
+    "question_id": "1206",
+    "section": "33",
+    "num_in_section": "211",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_211.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1206-01-sign_33_211.jpeg"
+  },
+  {
+    "question_id": "1207",
+    "section": "33",
+    "num_in_section": "212",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_212.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1207-01-sign_33_212.jpeg"
+  },
+  {
+    "question_id": "1208",
+    "section": "33",
+    "num_in_section": "213",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_213.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1208-01-sign_33_213.jpeg"
+  },
+  {
+    "question_id": "1209",
+    "section": "33",
+    "num_in_section": "214",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_214.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1209-01-sign_33_214.jpeg"
+  },
+  {
+    "question_id": "1210",
+    "section": "33",
+    "num_in_section": "215",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_215.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1210-01-sign_33_215.jpeg"
+  },
+  {
+    "question_id": "1211",
+    "section": "33",
+    "num_in_section": "216",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_216.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1211-01-sign_33_216.jpeg"
+  },
+  {
+    "question_id": "1212",
+    "section": "33",
+    "num_in_section": "217",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_217.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1212-01-sign_33_217.jpeg"
+  },
+  {
+    "question_id": "1213",
+    "section": "33",
+    "num_in_section": "218",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_218.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1213-01-sign_33_218.jpeg"
+  },
+  {
+    "question_id": "1214",
+    "section": "33",
+    "num_in_section": "220",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_220.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1214-01-sign_33_220.jpeg"
+  },
+  {
+    "question_id": "1215",
+    "section": "33",
+    "num_in_section": "221",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_221.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1215-01-sign_33_221.jpeg"
+  },
+  {
+    "question_id": "1216",
+    "section": "33",
+    "num_in_section": "222",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_222.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1216-01-sign_33_222.jpeg"
+  },
+  {
+    "question_id": "1217",
+    "section": "33",
+    "num_in_section": "223",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_223.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1217-01-sign_33_223.jpeg"
+  },
+  {
+    "question_id": "1218",
+    "section": "33",
+    "num_in_section": "224",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_224.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1218-01-sign_33_224.jpeg"
+  },
+  {
+    "question_id": "1220",
+    "section": "33",
+    "num_in_section": "226",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_226.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1220-01-sign_33_226.jpeg"
+  },
+  {
+    "question_id": "1221",
+    "section": "33",
+    "num_in_section": "227",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_227.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1221-01-sign_33_227.jpeg"
   },
   {
     "question_id": "1222",
     "section": "33",
-    "source": "img_00537.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1222-01-img_00537.jpeg"
+    "num_in_section": "228",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_228.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1222-01-sign_33_228.jpeg"
+  },
+  {
+    "question_id": "1224",
+    "section": "33",
+    "num_in_section": "230",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_230.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1224-01-sign_33_230.jpeg"
+  },
+  {
+    "question_id": "1225",
+    "section": "33",
+    "num_in_section": "231",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_231.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1225-01-sign_33_231.jpeg"
+  },
+  {
+    "question_id": "1226",
+    "section": "33",
+    "num_in_section": "232",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_232.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1226-01-sign_33_232.jpeg"
+  },
+  {
+    "question_id": "1227",
+    "section": "33",
+    "num_in_section": "233",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_233.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1227-01-sign_33_233.jpeg"
+  },
+  {
+    "question_id": "1229",
+    "section": "33",
+    "num_in_section": "235",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_235.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1229-01-sign_33_235.jpeg"
+  },
+  {
+    "question_id": "1230",
+    "section": "33",
+    "num_in_section": "236",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_236.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1230-01-sign_33_236.jpeg"
+  },
+  {
+    "question_id": "1231",
+    "section": "33",
+    "num_in_section": "237",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_237.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1231-01-sign_33_237.jpeg"
+  },
+  {
+    "question_id": "1232",
+    "section": "33",
+    "num_in_section": "238",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_238.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1232-01-sign_33_238.jpeg"
   },
   {
     "question_id": "1233",
     "section": "33",
-    "source": "img_00538.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1233-01-img_00538.jpeg"
+    "num_in_section": "239",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_239.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1233-01-sign_33_239.jpeg"
+  },
+  {
+    "question_id": "1234",
+    "section": "33",
+    "num_in_section": "240",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_240.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1234-01-sign_33_240.jpeg"
+  },
+  {
+    "question_id": "1235",
+    "section": "33",
+    "num_in_section": "241",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_241.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1235-01-sign_33_241.jpeg"
+  },
+  {
+    "question_id": "1236",
+    "section": "33",
+    "num_in_section": "242",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_242.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1236-01-sign_33_242.jpeg"
+  },
+  {
+    "question_id": "1237",
+    "section": "33",
+    "num_in_section": "243",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_243.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1237-01-sign_33_243.jpeg"
+  },
+  {
+    "question_id": "1238",
+    "section": "33",
+    "num_in_section": "244",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_244.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1238-01-sign_33_244.jpeg"
+  },
+  {
+    "question_id": "1239",
+    "section": "33",
+    "num_in_section": "245",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_245.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1239-01-sign_33_245.jpeg"
+  },
+  {
+    "question_id": "1240",
+    "section": "33",
+    "num_in_section": "246",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_246.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1240-01-sign_33_246.jpeg"
+  },
+  {
+    "question_id": "1241",
+    "section": "33",
+    "num_in_section": "247",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_247.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1241-01-sign_33_247.jpeg"
+  },
+  {
+    "question_id": "1242",
+    "section": "33",
+    "num_in_section": "248",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_248.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1242-01-sign_33_248.jpeg"
+  },
+  {
+    "question_id": "1243",
+    "section": "33",
+    "num_in_section": "249",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_249.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1243-01-sign_33_249.jpeg"
+  },
+  {
+    "question_id": "1244",
+    "section": "33",
+    "num_in_section": "250",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_250.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1244-01-sign_33_250.jpeg"
+  },
+  {
+    "question_id": "1245",
+    "section": "33",
+    "num_in_section": "251",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_251.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1245-01-sign_33_251.jpeg"
   },
   {
     "question_id": "1246",
     "section": "33",
-    "source": "img_00539.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1246-01-img_00539.jpeg"
+    "num_in_section": "252",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_252.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1246-01-sign_33_252.jpeg"
+  },
+  {
+    "question_id": "1247",
+    "section": "33",
+    "num_in_section": "253",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_253.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1247-01-sign_33_253.jpeg"
   },
   {
     "question_id": "1248",
     "section": "33",
-    "source": "img_00540.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1248-01-img_00540.jpeg"
+    "num_in_section": "254",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_254.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1248-01-sign_33_254.jpeg"
   },
   {
     "question_id": "1249",
     "section": "33",
-    "source": "img_00541.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1249-01-img_00541.jpeg"
-  },
-  {
-    "question_id": "1250",
-    "section": "33",
-    "source": "img_00542.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1250-01-img_00542.jpeg"
+    "num_in_section": "255",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_255.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1249-01-sign_33_255.jpeg"
   },
   {
     "question_id": "1251",
     "section": "33",
-    "source": "img_00543.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1251-01-img_00543.jpeg"
+    "num_in_section": "257",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_257.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1251-01-sign_33_257.jpeg"
   },
   {
     "question_id": "1252",
     "section": "33",
-    "source": "img_00544.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1252-01-img_00544.jpeg"
-  },
-  {
-    "question_id": "1253",
-    "section": "33",
-    "source": "img_00545.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1253-01-img_00545.jpeg"
+    "num_in_section": "258",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_258.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1252-01-sign_33_258.jpeg"
   },
   {
     "question_id": "1254",
     "section": "33",
-    "source": "img_00546.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1254-01-img_00546.jpeg"
+    "num_in_section": "260",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_260.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1254-01-sign_33_260.jpeg"
+  },
+  {
+    "question_id": "1255",
+    "section": "33",
+    "num_in_section": "261",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_261.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1255-01-sign_33_261.jpeg"
+  },
+  {
+    "question_id": "1256",
+    "section": "33",
+    "num_in_section": "262",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_262.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1256-01-sign_33_262.jpeg"
   },
   {
     "question_id": "1257",
     "section": "33",
-    "source": "img_00547.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1257-01-img_00547.jpeg"
+    "num_in_section": "263",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_263.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1257-01-sign_33_263.jpeg"
+  },
+  {
+    "question_id": "1258",
+    "section": "33",
+    "num_in_section": "264",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_264.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1258-01-sign_33_264.jpeg"
+  },
+  {
+    "question_id": "1259",
+    "section": "33",
+    "num_in_section": "265",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_265.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1259-01-sign_33_265.jpeg"
+  },
+  {
+    "question_id": "1260",
+    "section": "33",
+    "num_in_section": "266",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_266.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1260-01-sign_33_266.jpeg"
   },
   {
     "question_id": "1261",
     "section": "33",
-    "source": "img_00548.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1261-01-img_00548.jpeg"
+    "num_in_section": "267",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_267.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1261-01-sign_33_267.jpeg"
+  },
+  {
+    "question_id": "1262",
+    "section": "33",
+    "num_in_section": "268",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_268.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1262-01-sign_33_268.jpeg"
   },
   {
     "question_id": "1263",
     "section": "33",
-    "source": "img_00549.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1263-01-img_00549.jpeg"
+    "num_in_section": "269",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_269.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1263-01-sign_33_269.jpeg"
   },
   {
     "question_id": "1264",
     "section": "33",
-    "source": "img_00550.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1264-01-img_00550.jpeg"
+    "num_in_section": "270",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_270.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1264-01-sign_33_270.jpeg"
   },
   {
     "question_id": "1265",
     "section": "33",
-    "source": "img_00551.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1265-01-img_00551.jpeg"
+    "num_in_section": "271",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_271.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1265-01-sign_33_271.jpeg"
+  },
+  {
+    "question_id": "1266",
+    "section": "33",
+    "num_in_section": "272",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_272.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1266-01-sign_33_272.jpeg"
+  },
+  {
+    "question_id": "1267",
+    "section": "33",
+    "num_in_section": "273",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_273.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1267-01-sign_33_273.jpeg"
   },
   {
     "question_id": "1268",
     "section": "33",
-    "source": "img_00552.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1268-01-img_00552.jpeg"
+    "num_in_section": "274",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_274.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1268-01-sign_33_274.jpeg"
+  },
+  {
+    "question_id": "1269",
+    "section": "33",
+    "num_in_section": "275",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_275.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1269-01-sign_33_275.jpeg"
+  },
+  {
+    "question_id": "1270",
+    "section": "33",
+    "num_in_section": "277",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_277.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1270-01-sign_33_277.jpeg"
   },
   {
     "question_id": "1271",
     "section": "33",
-    "source": "img_00553.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1271-01-img_00553.jpeg"
+    "num_in_section": "278",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_278.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1271-01-sign_33_278.jpeg"
+  },
+  {
+    "question_id": "1272",
+    "section": "33",
+    "num_in_section": "279",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_279.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1272-01-sign_33_279.jpeg"
+  },
+  {
+    "question_id": "1273",
+    "section": "33",
+    "num_in_section": "280",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_280.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1273-01-sign_33_280.jpeg"
+  },
+  {
+    "question_id": "1274",
+    "section": "33",
+    "num_in_section": "281",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_281.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1274-01-sign_33_281.jpeg"
   },
   {
     "question_id": "1275",
     "section": "33",
-    "source": "img_00554.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1275-01-img_00554.jpeg"
+    "num_in_section": "283",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_283.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1275-01-sign_33_283.jpeg"
+  },
+  {
+    "question_id": "1276",
+    "section": "33",
+    "num_in_section": "284",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_284.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1276-01-sign_33_284.jpeg"
   },
   {
     "question_id": "1277",
     "section": "33",
-    "source": "img_00555.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1277-01-img_00555.jpeg"
+    "num_in_section": "285",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_285.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1277-01-sign_33_285.jpeg"
   },
   {
-    "question_id": "1277",
+    "question_id": "1278",
     "section": "33",
-    "source": "img_00556.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1277-02-img_00556.jpeg"
+    "num_in_section": "287",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_287.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1278-01-sign_33_287.jpeg"
   },
   {
     "question_id": "1279",
     "section": "33",
-    "source": "img_00557.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1279-01-img_00557.jpeg"
+    "num_in_section": "288",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_288.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1279-01-sign_33_288.jpeg"
   },
   {
     "question_id": "1280",
     "section": "33",
-    "source": "img_00558.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1280-01-img_00558.jpeg"
+    "num_in_section": "289",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_289.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1280-01-sign_33_289.jpeg"
+  },
+  {
+    "question_id": "1281",
+    "section": "33",
+    "num_in_section": "290",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_290.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1281-01-sign_33_290.jpeg"
+  },
+  {
+    "question_id": "1282",
+    "section": "33",
+    "num_in_section": "291",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_291.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1282-01-sign_33_291.jpeg"
+  },
+  {
+    "question_id": "1283",
+    "section": "33",
+    "num_in_section": "292",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_292.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1283-01-sign_33_292.jpeg"
+  },
+  {
+    "question_id": "1284",
+    "section": "33",
+    "num_in_section": "293",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_293.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1284-01-sign_33_293.jpeg"
+  },
+  {
+    "question_id": "1285",
+    "section": "33",
+    "num_in_section": "294",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_294.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1285-01-sign_33_294.jpeg"
+  },
+  {
+    "question_id": "1286",
+    "section": "33",
+    "num_in_section": "295",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_295.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1286-01-sign_33_295.jpeg"
+  },
+  {
+    "question_id": "1287",
+    "section": "33",
+    "num_in_section": "296",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_296.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1287-01-sign_33_296.jpeg"
   },
   {
     "question_id": "1288",
     "section": "33",
-    "source": "img_00559.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1288-01-img_00559.jpeg"
+    "num_in_section": "297",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_297.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1288-01-sign_33_297.jpeg"
   },
   {
-    "question_id": "1289",
+    "question_id": "1290",
     "section": "33",
-    "source": "img_00560.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1289-01-img_00560.jpeg"
+    "num_in_section": "300",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_300.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1290-01-sign_33_300.jpeg"
   },
   {
-    "question_id": "1289",
+    "question_id": "1291",
     "section": "33",
-    "source": "img_00561.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1289-02-img_00561.jpeg"
+    "num_in_section": "301",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_301.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1291-01-sign_33_301.jpeg"
   },
   {
-    "question_id": "1292",
+    "question_id": "1293",
     "section": "33",
-    "source": "img_00562.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1292-01-img_00562.jpeg"
+    "num_in_section": "303",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_303.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1293-01-sign_33_303.jpeg"
+  },
+  {
+    "question_id": "1294",
+    "section": "33",
+    "num_in_section": "304",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_304.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1294-01-sign_33_304.jpeg"
   },
   {
     "question_id": "1295",
     "section": "33",
-    "source": "img_00563.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1295-01-img_00563.jpeg"
+    "num_in_section": "305",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_305.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1295-01-sign_33_305.jpeg"
+  },
+  {
+    "question_id": "1296",
+    "section": "33",
+    "num_in_section": "306",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_306.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1296-01-sign_33_306.jpeg"
+  },
+  {
+    "question_id": "1297",
+    "section": "33",
+    "num_in_section": "307",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_307.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1297-01-sign_33_307.jpeg"
   },
   {
     "question_id": "1298",
     "section": "33",
-    "source": "img_00564.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1298-01-img_00564.jpeg"
+    "num_in_section": "308",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_308.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1298-01-sign_33_308.jpeg"
   },
   {
     "question_id": "1299",
     "section": "33",
-    "source": "img_00565.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1299-01-img_00565.jpeg"
+    "num_in_section": "309",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_309.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1299-01-sign_33_309.jpeg"
+  },
+  {
+    "question_id": "1300",
+    "section": "33",
+    "num_in_section": "310",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_310.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1300-01-sign_33_310.jpeg"
+  },
+  {
+    "question_id": "1301",
+    "section": "33",
+    "num_in_section": "311",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_311.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1301-01-sign_33_311.jpeg"
+  },
+  {
+    "question_id": "1302",
+    "section": "33",
+    "num_in_section": "312",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_312.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1302-01-sign_33_312.jpeg"
   },
   {
     "question_id": "1303",
     "section": "33",
-    "source": "img_00566.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1303-01-img_00566.jpeg"
-  },
-  {
-    "question_id": "1304",
-    "section": "33",
-    "source": "img_00567.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1304-01-img_00567.jpeg"
+    "num_in_section": "313",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_313.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1303-01-sign_33_313.jpeg"
   },
   {
     "question_id": "1305",
     "section": "33",
-    "source": "img_00568.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1305-01-img_00568.jpeg"
+    "num_in_section": "315",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_315.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1305-01-sign_33_315.jpeg"
   },
   {
     "question_id": "1306",
     "section": "33",
-    "source": "img_00569.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1306-01-img_00569.jpeg"
+    "num_in_section": "317",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_317.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1306-01-sign_33_317.jpeg"
   },
   {
     "question_id": "1307",
     "section": "33",
-    "source": "img_00570.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1307-01-img_00570.jpeg"
+    "num_in_section": "318",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_318.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1307-01-sign_33_318.jpeg"
+  },
+  {
+    "question_id": "1308",
+    "section": "33",
+    "num_in_section": "319",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_319.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1308-01-sign_33_319.jpeg"
+  },
+  {
+    "question_id": "1309",
+    "section": "33",
+    "num_in_section": "320",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_320.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1309-01-sign_33_320.jpeg"
   },
   {
     "question_id": "1310",
     "section": "33",
-    "source": "img_00571.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1310-01-img_00571.jpeg"
+    "num_in_section": "321",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_321.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1310-01-sign_33_321.jpeg"
+  },
+  {
+    "question_id": "1311",
+    "section": "33",
+    "num_in_section": "323",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_323.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1311-01-sign_33_323.jpeg"
   },
   {
     "question_id": "1312",
     "section": "33",
-    "source": "img_00572.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1312-01-img_00572.jpeg"
-  },
-  {
-    "question_id": "1313",
-    "section": "33",
-    "source": "img_00573.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1313-01-img_00573.jpeg"
+    "num_in_section": "324",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_324.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1312-01-sign_33_324.jpeg"
   },
   {
     "question_id": "1314",
     "section": "33",
-    "source": "img_00574.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1314-01-img_00574.jpeg"
+    "num_in_section": "326",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_326.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1314-01-sign_33_326.jpeg"
   },
   {
     "question_id": "1315",
     "section": "33",
-    "source": "img_00575.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1315-01-img_00575.jpeg"
-  },
-  {
-    "question_id": "1315",
-    "section": "33",
-    "source": "img_00576.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1315-02-img_00576.jpeg"
+    "num_in_section": "327",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_327.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1315-01-sign_33_327.jpeg"
   },
   {
     "question_id": "1316",
     "section": "33",
-    "source": "img_00577.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1316-01-img_00577.jpeg"
+    "num_in_section": "329",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_329.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1316-01-sign_33_329.jpeg"
   },
   {
-    "question_id": "1319",
+    "question_id": "1317",
     "section": "33",
-    "source": "img_00578.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1319-01-img_00578.jpeg"
+    "num_in_section": "330",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_330.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1317-01-sign_33_330.jpeg"
+  },
+  {
+    "question_id": "1318",
+    "section": "33",
+    "num_in_section": "331",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_331.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1318-01-sign_33_331.jpeg"
+  },
+  {
+    "question_id": "1320",
+    "section": "33",
+    "num_in_section": "333",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_333.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1320-01-sign_33_333.jpeg"
+  },
+  {
+    "question_id": "1321",
+    "section": "33",
+    "num_in_section": "334",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_334.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1321-01-sign_33_334.jpeg"
+  },
+  {
+    "question_id": "1322",
+    "section": "33",
+    "num_in_section": "335",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_335.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1322-01-sign_33_335.jpeg"
+  },
+  {
+    "question_id": "1323",
+    "section": "33",
+    "num_in_section": "336",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_336.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1323-01-sign_33_336.jpeg"
+  },
+  {
+    "question_id": "1324",
+    "section": "33",
+    "num_in_section": "337",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_337.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1324-01-sign_33_337.jpeg"
+  },
+  {
+    "question_id": "1325",
+    "section": "33",
+    "num_in_section": "338",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_338.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1325-01-sign_33_338.jpeg"
+  },
+  {
+    "question_id": "1326",
+    "section": "33",
+    "num_in_section": "339",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_339.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1326-01-sign_33_339.jpeg"
+  },
+  {
+    "question_id": "1327",
+    "section": "33",
+    "num_in_section": "340",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_340.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1327-01-sign_33_340.jpeg"
+  },
+  {
+    "question_id": "1328",
+    "section": "33",
+    "num_in_section": "341",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_341.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1328-01-sign_33_341.jpeg"
+  },
+  {
+    "question_id": "1329",
+    "section": "33",
+    "num_in_section": "342",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_342.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1329-01-sign_33_342.jpeg"
+  },
+  {
+    "question_id": "1330",
+    "section": "33",
+    "num_in_section": "343",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_343.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1330-01-sign_33_343.jpeg"
+  },
+  {
+    "question_id": "1331",
+    "section": "33",
+    "num_in_section": "344",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_344.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1331-01-sign_33_344.jpeg"
+  },
+  {
+    "question_id": "1332",
+    "section": "33",
+    "num_in_section": "345",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_345.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1332-01-sign_33_345.jpeg"
+  },
+  {
+    "question_id": "1333",
+    "section": "33",
+    "num_in_section": "346",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_346.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1333-01-sign_33_346.jpeg"
+  },
+  {
+    "question_id": "1334",
+    "section": "33",
+    "num_in_section": "347",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_347.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1334-01-sign_33_347.jpeg"
+  },
+  {
+    "question_id": "1335",
+    "section": "33",
+    "num_in_section": "348",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_348.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1335-01-sign_33_348.jpeg"
+  },
+  {
+    "question_id": "1336",
+    "section": "33",
+    "num_in_section": "349",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_349.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1336-01-sign_33_349.jpeg"
+  },
+  {
+    "question_id": "1337",
+    "section": "33",
+    "num_in_section": "350",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_350.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1337-01-sign_33_350.jpeg"
+  },
+  {
+    "question_id": "1338",
+    "section": "33",
+    "num_in_section": "351",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_351.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1338-01-sign_33_351.jpeg"
+  },
+  {
+    "question_id": "1339",
+    "section": "33",
+    "num_in_section": "352",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_352.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1339-01-sign_33_352.jpeg"
+  },
+  {
+    "question_id": "1340",
+    "section": "33",
+    "num_in_section": "353",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_353.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1340-01-sign_33_353.jpeg"
+  },
+  {
+    "question_id": "1342",
+    "section": "33",
+    "num_in_section": "355",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_355.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1342-01-sign_33_355.jpeg"
+  },
+  {
+    "question_id": "1343",
+    "section": "33",
+    "num_in_section": "356",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_356.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1343-01-sign_33_356.jpeg"
   },
   {
     "question_id": "1344",
     "section": "33",
-    "source": "img_00579.jpeg",
-    "target": "/images/questions/section-33-dorozhni-znaky/q-1344-01-img_00579.jpeg"
+    "num_in_section": "357",
+    "source": "D:\\Apps\\pdr_parsing\\update\\extracted_signs\\sign_33_357.jpeg",
+    "target": "/images/questions/section-33-dorozhni-znaky/q-1344-01-sign_33_357.jpeg"
   },
   {
     "question_id": "1345",
