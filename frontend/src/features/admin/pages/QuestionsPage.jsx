@@ -515,12 +515,12 @@ export default function QuestionsPage() {
 }
 
 function QuestionImageThumb({ src, alt }) {
-  const imageSrc = resolveQuestionImageUrl(src);
-  if (!imageSrc) return null;
+  const imageCandidates = getQuestionImageUrlCandidates(src);
+  if (!imageCandidates.length) return null;
 
   return (
     <span className="inline-flex h-12 w-16 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-950">
-      <img src={imageSrc} alt={alt} className="h-full w-full object-contain" loading="lazy" />
+      <QuestionImageElement candidates={imageCandidates} alt={alt} className="h-full w-full object-contain" />
     </span>
   );
 }
@@ -540,17 +540,17 @@ function QuestionImagesPreview({ images = [], questionId, onPreview }) {
       <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Перегляд зображень</p>
       <div className="grid gap-3 sm:grid-cols-2">
         {cleanImages.map((image, index) => {
-          const imageSrc = resolveQuestionImageUrl(image);
+          const imageCandidates = getQuestionImageUrlCandidates(image);
           const pathInfo = describeQuestionImagePath(image);
           return (
             <button
               type="button"
               key={`${questionId}-${image}-${index}`}
-              onClick={() => imageSrc && onPreview?.(imageSrc)}
+              onClick={() => imageCandidates.length && onPreview?.(imageCandidates[0])}
               className="group overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3 transition hover:border-blue-300 hover:bg-blue-50/50 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-sky-500/50 dark:hover:bg-sky-950/30"
             >
               <img
-                src={imageSrc || ''}
+                src={imageCandidates[0] || ''}
                 alt={`Ілюстрація питання ${questionId}, ${index + 1}`}
                 className="h-40 w-full rounded-lg bg-white object-contain dark:bg-slate-900"
                 loading="lazy"
@@ -580,6 +580,61 @@ function buildQuestionPayload(draft, imagesOverride = null) {
     images: imagesOverride || textToLines(draft.imagesText),
     correct_ans: Number(draft.correct_ans || 1),
   };
+}
+
+const ADMIN_QUESTION_IMAGE_VERSION = '20260607-edsr';
+
+function withQuestionImageCache(url) {
+  if (!url || /^data:/i.test(url)) return url;
+  return `${url}${url.includes('?') ? '&' : '?'}v=${ADMIN_QUESTION_IMAGE_VERSION}`;
+}
+
+function addUniqueUrl(list, value) {
+  const resolved = resolveQuestionImageUrl(value);
+  if (resolved && !list.includes(resolved)) list.push(resolved);
+}
+
+function getQuestionImageUrlCandidates(value) {
+  const source = String(value || '').trim();
+  if (!source) return [];
+
+  const candidates = [];
+  const isSection33QuestionImage = source.includes('/section-33-dorozhni-znaky/');
+  const isEnhanced = /-edsr\.png(?:$|\?)/i.test(source);
+
+  if (isSection33QuestionImage && !isEnhanced) {
+    addUniqueUrl(candidates, source.replace(/\.(jpe?g|png|webp)$/i, '-edsr.png'));
+  }
+
+  addUniqueUrl(candidates, source);
+
+  if (isEnhanced) {
+    addUniqueUrl(candidates, source.replace(/-edsr\.png(?:$|\?)/i, '.jpeg'));
+  }
+
+  return candidates.map(withQuestionImageCache);
+}
+
+function QuestionImageElement({ candidates = [], alt, className }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const srcList = candidates.filter(Boolean);
+  const srcKey = srcList.join('|');
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [srcKey]);
+
+  if (!srcList.length) return null;
+
+  return (
+    <img
+      src={srcList[Math.min(activeIndex, srcList.length - 1)]}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      onError={() => setActiveIndex((current) => (current + 1 < srcList.length ? current + 1 : current))}
+    />
+  );
 }
 
 function resolveQuestionImageUrl(value) {
