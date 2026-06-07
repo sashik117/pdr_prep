@@ -153,6 +153,7 @@ from services.profile_service import (
     update_profile as update_profile_use_case,
 )
 from services.payment_service import (
+    activate_admin_premium_order as activate_admin_premium_order_use_case,
     activate_mock_payment as activate_mock_payment_use_case,
     create_premium_checkout as create_premium_checkout_use_case,
     get_payment_status as get_payment_status_use_case,
@@ -1355,6 +1356,15 @@ def admin_update_premium_features(req: PremiumFeaturesUpdateRequest, admin=Depen
 @app.get("/api/admin/premium/orders", include_in_schema=False)
 def admin_premium_orders(limit: int = Query(default=60, ge=1, le=200), admin=Depends(require_admin)):
     return list_admin_premium_orders_use_case(limit=limit)
+
+
+@app.post("/admin/premium/orders/{order_id}/activate")
+@app.post("/api/admin/premium/orders/{order_id}/activate", include_in_schema=False)
+def admin_activate_premium_order(order_id: int, admin=Depends(require_admin)):
+    try:
+        return activate_admin_premium_order_use_case(order_id, get_plan=_get_premium_plan)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.post("/payment/checkout")

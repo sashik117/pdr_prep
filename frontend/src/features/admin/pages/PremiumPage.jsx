@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Clock3, Crown, Play, Save, Sparkles, Square, WalletCards } from 'lucide-react';
+import { CheckCircle2, Clock3, Crown, Play, Save, Sparkles, Square, WalletCards } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +25,10 @@ const defaultDraft = {
   promo_prices: { 1: 159, 3: 469, 6: 950, 12: 1900 },
   regular_prices: { 1: 300, 3: 900, 6: 1800, 12: 3600 },
 };
+
+function isPaidOrder(order) {
+  return order?.status === 'paid' || order?.status === 'activated';
+}
 
 export default function PremiumPage() {
   const queryClient = useQueryClient();
@@ -53,16 +57,21 @@ export default function PremiumPage() {
     }
   }, [featuresQuery.data]);
 
-  const invalidatePromo = async () => {
+  const invalidatePremiumData = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['admin-promo-status'] }),
       queryClient.invalidateQueries({ queryKey: ['admin-premium-orders'] }),
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
     ]);
   };
 
-  const saveMutation = useMutation({ mutationFn: (payload) => api.updatePromoConfig(payload), onSuccess: invalidatePromo });
-  const startMutation = useMutation({ mutationFn: (payload) => api.startPromo(payload), onSuccess: invalidatePromo });
-  const stopMutation = useMutation({ mutationFn: () => api.stopPromo(), onSuccess: invalidatePromo });
+  const saveMutation = useMutation({ mutationFn: (payload) => api.updatePromoConfig(payload), onSuccess: invalidatePremiumData });
+  const startMutation = useMutation({ mutationFn: (payload) => api.startPromo(payload), onSuccess: invalidatePremiumData });
+  const stopMutation = useMutation({ mutationFn: () => api.stopPromo(), onSuccess: invalidatePremiumData });
+  const activateOrderMutation = useMutation({
+    mutationFn: (orderId) => api.activateAdminPremiumOrder(orderId),
+    onSuccess: invalidatePremiumData,
+  });
   const saveFeaturesMutation = useMutation({
     mutationFn: (features) => api.updateAdminPremiumFeatures(features),
     onSuccess: async (payload) => {
@@ -74,9 +83,10 @@ export default function PremiumPage() {
   const users = usersQuery.data || [];
   const orders = ordersQuery.data || [];
   const premiumUsers = users.filter((user) => user.is_premium).length;
-  const paidOrders = orders.filter((order) => order.status === 'paid' || order.status === 'activated').length;
+  const paidOrders = orders.filter(isPaidOrder).length;
+  const pendingOrders = orders.filter((order) => !isPaidOrder(order)).length;
   const totalRevenue = orders
-    .filter((order) => order.status === 'paid' || order.status === 'activated')
+    .filter(isPaidOrder)
     .reduce((sum, order) => sum + Number(order.amount || 0), 0) / 100;
   const secondsLeft = promoQuery.data?.seconds_left;
   const hoursLeft = secondsLeft === null || secondsLeft === undefined ? null : Math.floor(Number(secondsLeft || 0) / 3600);
@@ -106,14 +116,14 @@ export default function PremiumPage() {
       <AdminPageHeader
         eyebrow="Premium"
         title="Premium-доступ, ціни та акції"
-        description="Керуйте тарифами, акційними цінами, тривалістю промо, фічами Premium і останніми замовленнями користувачів."
+        description="Керуйте тарифами, акційними цінами, фічами Premium і заявками користувачів на оплату через mono Банку."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={Crown} label="Premium-користувачі" value={premiumUsers} hint={`${users.length} акаунтів усього`} tone="amber" />
         <StatCard icon={Clock3} label="Акція" value={promoQuery.data?.is_active ? 'Активна' : 'Вимкнена'} hint={statusText} tone={promoQuery.data?.is_active ? 'green' : 'slate'} />
         <StatCard icon={WalletCards} label="Оплачені замовлення" value={paidOrders} hint={`${Math.round(totalRevenue)} грн у списку`} tone="blue" />
-        <StatCard icon={Sparkles} label="Premium-фічі" value={featuresDraft.filter((item) => item.is_enabled).length} hint={`${featuresDraft.length} фіч у конфігу`} tone="violet" />
+        <StatCard icon={Sparkles} label="Очікують підтвердження" value={pendingOrders} hint="Оплата через mono Банку" tone="violet" />
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[0.7fr_1.3fr]">
@@ -133,9 +143,9 @@ export default function PremiumPage() {
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {promoQuery.data?.is_active
                   ? promoQuery.data?.never_ends
-                    ? 'Акція працює без автоматичного завершення, доки ви не зупините її вручну.'
+                    ? 'Акція працює без автоматичного завершення, доки Ви не зупините її вручну.'
                     : `До завершення залишилось приблизно ${hoursLeft || 0} год.`
-                  : 'Акція не показується користувачам, поки ви її не запустите.'}
+                  : 'Акція не показується користувачам, поки Ви її не запустите.'}
               </p>
             </div>
 
@@ -154,7 +164,7 @@ export default function PremiumPage() {
             <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950/60">
               <div>
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">Без дати завершення</p>
-                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Акція буде йти безперервно, доки ви її не зупините.</p>
+                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Акція йде безперервно, доки Ви її не зупините.</p>
               </div>
               <Switch checked={draft.never_ends} onCheckedChange={(value) => setDraft((current) => ({ ...current, never_ends: value }))} />
             </div>
@@ -241,24 +251,39 @@ export default function PremiumPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {ordersQuery.isLoading ? <LoadingState /> : null}
-            {orders.slice(0, 12).map((order) => (
-              <div key={order.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/60">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">{resolveUserName(order)}</p>
-                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">{order.email || 'без email'}</p>
+            {orders.slice(0, 12).map((order) => {
+              const paid = isPaidOrder(order);
+              return (
+                <div key={order.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/60">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">{resolveUserName(order)}</p>
+                      <p className="truncate text-xs text-slate-500 dark:text-slate-400">{order.email || 'без email'}</p>
+                    </div>
+                    <Badge className={paid ? 'bg-emerald-600' : 'bg-amber-600'}>
+                      {paid ? 'оплачено' : 'очікує'}
+                    </Badge>
                   </div>
-                  <Badge className={order.status === 'paid' || order.status === 'activated' ? 'bg-emerald-600' : 'bg-slate-600'}>
-                    {order.status}
-                  </Badge>
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-slate-500 dark:text-slate-400">
+                    <span>Тариф: {planLabels[order.plan_code] || order.plan_code}</span>
+                    <span className="text-right">{Math.round(Number(order.amount || 0) / 100)} {order.currency || 'UAH'}</span>
+                    <span>Провайдер: {order.provider || 'manual'}</span>
+                    <span className="text-right">Створено: {formatAdminDate(order.created_at)}</span>
+                  </div>
+                  {!paid ? (
+                    <Button
+                      size="sm"
+                      className="mt-3 w-full rounded-lg bg-emerald-600 hover:bg-emerald-700"
+                      disabled={activateOrderMutation.isPending}
+                      onClick={() => activateOrderMutation.mutate(order.id)}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Активувати Premium
+                    </Button>
+                  ) : null}
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-slate-500 dark:text-slate-400">
-                  <span>Тариф: {planLabels[order.plan_code] || order.plan_code}</span>
-                  <span className="text-right">{Math.round(Number(order.amount || 0) / 100)} {order.currency || 'UAH'}</span>
-                  <span className="col-span-2">Створено: {formatAdminDate(order.created_at)}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {!ordersQuery.isLoading && !orders.length ? (
               <p className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500 dark:border-slate-800">
                 Замовлень Premium поки немає.

@@ -60,6 +60,8 @@ LIQPAY_PUBLIC_KEY = os.getenv("LIQPAY_PUBLIC_KEY", "")
 LIQPAY_PRIVATE_KEY = os.getenv("LIQPAY_PRIVATE_KEY", "")
 PAYMENT_MODE = os.getenv("PAYMENT_MODE", "mock" if not LIQPAY_PUBLIC_KEY or not LIQPAY_PRIVATE_KEY else "liqpay").strip().lower()
 ALLOW_MOCK_PAYMENTS = os.getenv("ALLOW_MOCK_PAYMENTS", "false").strip().lower() in {"1", "true", "yes"}
+MONO_JAR_URL = (os.getenv("MONO_JAR_URL") or os.getenv("VITE_MONO_JAR_URL") or "").strip()
+MONO_JAR_CARD = "".join((os.getenv("MONO_JAR_CARD") or os.getenv("VITE_MONO_JAR_CARD") or "").split())
 
 UPLOAD_DIR = BASE_DIR / "uploads" / "avatars"
 FRONTEND_DIST_DIR = BASE_DIR.parent / "frontend" / "dist"

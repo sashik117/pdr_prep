@@ -119,6 +119,13 @@ class PaymentRepository:
         ).fetchone()
         return self._row(row)
 
+    def get_order_by_id(self, order_id: int) -> Optional[dict[str, Any]]:
+        row = self.conn.execute(
+            "SELECT * FROM premium_orders WHERE id = %s",
+            (order_id,),
+        ).fetchone()
+        return self._row(row)
+
     def get_user(self, user_id: int) -> Optional[dict[str, Any]]:
         return self._row(self.conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone())
 

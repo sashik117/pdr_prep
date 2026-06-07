@@ -166,6 +166,23 @@ export default function PricingPage() {
         return;
       }
 
+      if (result?.provider === 'mono_manual') {
+        const checkoutUrl = result.checkout_url || result.jar_url || monoJarUrl;
+        if (checkoutUrl) {
+          toast({
+            title: 'Заявку на Premium створено',
+            description: 'Ми вже записали Ваш профіль, тариф і суму. Після оплати адміністратор підтвердить доступ.',
+          });
+          window.location.assign(checkoutUrl);
+          return;
+        }
+        toast({
+          title: 'Заявку створено',
+          description: 'Посилання на mono Банку ще не додано. Напишіть, будь ласка, у підтримку.',
+        });
+        return;
+      }
+
       toast({
         title: 'Не вдалося підготувати оплату',
         description: 'Спробуйте ще раз або повторіть спробу трохи пізніше.',

@@ -444,6 +444,10 @@ export const api = {
       body: JSON.stringify({ features }),
     }),
   getAdminPremiumOrders: (limit = 60) => request(`/admin/premium/orders?limit=${encodeURIComponent(limit)}`),
+  activateAdminPremiumOrder: (orderId) =>
+    request(`/admin/premium/orders/${encodeURIComponent(orderId)}/activate`, {
+      method: 'POST',
+    }),
   getAdminUserAudit: (userId) => request(`/admin/users/${userId}/audit`),
   updateAdminUser: (userId, payload) =>
     request(`/admin/users/${userId}`, {

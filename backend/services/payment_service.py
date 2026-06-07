@@ -10,6 +10,8 @@ from core.config import (
     IS_PRODUCTION,
     LIQPAY_PRIVATE_KEY,
     LIQPAY_PUBLIC_KEY,
+    MONO_JAR_CARD,
+    MONO_JAR_URL,
     PAYMENT_MODE,
 )
 from core.database import db
@@ -37,6 +39,8 @@ def _resolve_provider() -> str:
                 "Оплата LiqPay ще не налаштована. Додайте ключі LiqPay у змінні середовища.",
             )
         return "liqpay"
+    if PAYMENT_MODE in {"mono", "mono_manual", "monobank", "jar"}:
+        return "mono_manual"
     if PAYMENT_MODE == "mock" and (not IS_PRODUCTION or ALLOW_MOCK_PAYMENTS):
         return "mock"
     raise ServiceError(
@@ -64,7 +68,19 @@ def create_premium_checkout(
     provider = _resolve_provider()
     order_uuid = f"premium_{user['id']}_{uuid4().hex[:16]}"
     result_url = _checkout_return_url(req.return_url, order_uuid)
-    checkout_url = LIQPAY_CHECKOUT_URL if provider == "liqpay" else None
+    checkout_url = LIQPAY_CHECKOUT_URL if provider == "liqpay" else (MONO_JAR_URL or None)
+    provider_payload: dict[str, Any] = {}
+    if provider == "mono_manual":
+        provider_payload = {
+            "jar_url": MONO_JAR_URL,
+            "jar_card": MONO_JAR_CARD,
+            "order_id": order_uuid,
+            "user_id": int(user["id"]),
+            "user_email": user.get("email"),
+            "amount": int(plan["amount"]),
+            "currency": plan["currency"],
+            "manual_confirmation": True,
+        }
 
     with db() as conn:
         repo = PaymentRepository(conn)
@@ -74,7 +90,7 @@ def create_premium_checkout(
             provider=provider,
             provider_order_id=order_uuid,
             checkout_url=checkout_url,
-            provider_payload_json=dump_json({}),
+            provider_payload_json=dump_json(provider_payload),
         )
         response_payload: dict[str, Any] = {
             "provider": provider,
@@ -106,6 +122,22 @@ def create_premium_checkout(
             )
             return response_payload
 
+        if provider == "mono_manual":
+            conn.commit()
+            response_payload.update(
+                {
+                    "checkout_url": checkout_url,
+                    "jar_url": MONO_JAR_URL,
+                    "jar_card": MONO_JAR_CARD,
+                    "manual_confirmation": True,
+                    "payment_note": (
+                        f"DrivePrep Premium, {plan['months']} міс., "
+                        f"{user.get('email') or 'email профілю'}, order {order_uuid}"
+                    ),
+                }
+            )
+            return response_payload
+
         conn.commit()
         response_payload["mock_checkout"] = True
         return response_payload
@@ -114,6 +146,32 @@ def create_premium_checkout(
 def list_admin_premium_orders(*, limit: int) -> list[dict[str, Any]]:
     with db() as conn:
         return PaymentRepository(conn).list_admin_orders(limit=limit)
+
+
+def activate_admin_premium_order(
+    order_id: int,
+    *,
+    get_plan: PlanResolver,
+) -> dict[str, Any]:
+    with db() as conn:
+        repo = PaymentRepository(conn)
+        order = repo.get_order_by_id(order_id)
+        if not order:
+            raise ServiceError(404, "Замовлення не знайдено")
+        if order["status"] in {"paid", "activated"}:
+            refreshed_user = repo.get_user(int(order["user_id"]))
+            return {"status": order["status"], "order": order, "user": refreshed_user}
+
+        plan = get_plan(order["plan_code"])
+        activated = repo.activate_order(
+            order=order,
+            plan_months=int(plan["months"]),
+            provider_payment_id=f"manual_{uuid4().hex[:12]}",
+        )
+        conn.commit()
+        refreshed_user = repo.get_user(int(order["user_id"]))
+
+    return {"status": "paid", "order": activated, "user": refreshed_user}
 
 
 def get_payment_status(order_id: str, user: dict[str, Any]) -> dict[str, Any]:
