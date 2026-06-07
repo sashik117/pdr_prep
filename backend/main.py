@@ -79,6 +79,7 @@ from domain.questions import (
 )
 from parsers.theory_sources import THEORY_SOURCE_MAP
 from repositories.auth_repository import AuthRepository
+from repositories.question_repository import section_number_sql
 from repositories.stars_repository import StarsRepository
 from schemas.requests import (
     AdminAchievementUpdateRequest,
@@ -1680,7 +1681,7 @@ def get_progress_stats(user=Depends(get_current_user)):
             resolve_streak=_streak_snapshot,
             available_stars=_available_stars,
             build_frame_shop=_frame_shop_payload,
-            section_order_sql=_section_order_sql,
+            section_order_sql=section_number_sql,
         )
     except Exception as exc:
         print(f"[PROGRESS STATS ERROR] {type(exc).__name__}: {exc}", flush=True)
