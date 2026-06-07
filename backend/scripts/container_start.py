@@ -35,6 +35,23 @@ def main() -> None:
             raise SystemExit(1)
     else:
         print("[container-start] Database bootstrap skipped for this web machine.", flush=True)
+        sync_question_media = os.getenv("RUN_QUESTION_IMAGE_SYNC", "true").strip().lower() in {"1", "true", "yes"}
+        if sync_question_media:
+            print("[container-start] Syncing bundled question image paths...", flush=True)
+            try:
+                import json
+
+                import psycopg
+                from database_setup import DATABASE_URL, QUESTIONS_FILE, flatten_questions, sync_question_images
+
+                raw_data = json.loads(QUESTIONS_FILE.read_text(encoding="utf-8"))
+                questions = flatten_questions(raw_data)
+                with psycopg.connect(DATABASE_URL) as conn:
+                    sync_question_images(conn, questions)
+            except Exception:
+                print("[container-start] Question image sync failed:", flush=True)
+                traceback.print_exc()
+                raise SystemExit(1)
 
     port = os.getenv("PORT", "8000")
     print(f"[container-start] Starting API on port {port}...", flush=True)
