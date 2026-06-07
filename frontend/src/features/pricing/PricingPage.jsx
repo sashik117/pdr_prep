@@ -5,12 +5,15 @@ import {
   CheckCircle2,
   Clock3,
   Crown,
+  ExternalLink,
   Flame,
+  MessageCircle,
   PlayCircle,
   ShieldCheck,
   Sparkles,
   Swords,
   Ticket,
+  WalletCards,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -59,6 +62,12 @@ const comparisonRows = [
   ['Детальний аналіз помилок', '—', 'Так'],
   ['Без реклами', '—', 'Так'],
 ];
+
+const monoJarUrl = (import.meta.env.VITE_MONO_JAR_URL || '').trim();
+const monoJarDescription = (
+  import.meta.env.VITE_MONO_JAR_DESCRIPTION ||
+  'DrivePrep Premium. У коментарі вкажіть email профілю та тариф: 1, 3, 6 або 12 місяців.'
+).trim();
 
 function submitLiqPayCheckout(payload) {
   const form = document.createElement('form');
@@ -413,6 +422,65 @@ export default function PricingPage() {
           );
         })}
       </div>
+
+      {!isPremium ? (
+        <Card className="overflow-hidden rounded-[1.9rem] border-emerald-200/80 bg-gradient-to-br from-emerald-50 via-white to-sky-50 shadow-[0_18px_55px_rgba(15,23,42,0.06)] dark:border-emerald-500/20 dark:from-emerald-950/24 dark:via-slate-950 dark:to-sky-950/18">
+          <CardContent className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 shadow-sm ring-1 ring-emerald-100 dark:bg-slate-950/75 dark:text-emerald-200 dark:ring-emerald-500/20">
+                <WalletCards className="h-4 w-4" />
+                Ручна оплата
+              </div>
+              <div>
+                <h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
+                  Premium через mono Банку
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  Якщо автоматична оплата тимчасово недоступна, Ви можете оплатити доступ через mono Банку. Після
+                  переказу напишіть у підтримку email профілю, обраний тариф і час платежу. Ми перевіримо оплату та
+                  вручну активуємо Premium для Вашого акаунта.
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-white/90 bg-white/86 p-4 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-800 dark:bg-slate-950/78">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                Опис для платежу
+              </p>
+              <p className="mt-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                {monoJarDescription}
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {!isAuthenticated ? (
+                  <Button asChild className="rounded-xl bg-sky-600 hover:bg-sky-700">
+                    <Link to="/auth?tab=register&redirect=%2Fpricing">Створити профіль</Link>
+                  </Button>
+                ) : monoJarUrl ? (
+                  <Button asChild className="rounded-xl bg-emerald-600 hover:bg-emerald-700">
+                    <a href={monoJarUrl} target="_blank" rel="noreferrer">
+                      Відкрити mono Банку
+                      <ExternalLink className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                ) : (
+                  <Button disabled className="rounded-xl">
+                    Посилання ще не додано
+                  </Button>
+                )}
+                <Button asChild variant="outline" className="rounded-xl bg-white/70 dark:bg-slate-950/40">
+                  <Link to="/support">
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    Написати в підтримку
+                  </Link>
+                </Button>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                Ручна оплата не активує Premium миттєво. Доступ відкривається після перевірки платежу адміністратором.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className="surface-glass border-white/85 shadow-[0_16px_45px_rgba(15,23,42,0.05)]">
         <CardHeader>
