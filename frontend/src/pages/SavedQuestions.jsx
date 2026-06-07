@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, BookmarkCheck, FileCheck2 } from 'lucide-react';
+import { ArrowLeft, BookmarkCheck, Eye, FileCheck2, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import api from '@/api/apiClient';
 import { normalizeQuestion } from '@/api/questionsApi';
@@ -11,10 +11,13 @@ import { getSavedQuestionIds, isQuestionSaved, toggleSavedQuestion } from '@/lib
 import { useAuth } from '@/lib/AuthContext';
 import LoginPrompt from '@/components/auth/LoginPrompt';
 
+const MIN_SAVED_QUESTIONS_TO_TRAIN = 5;
+
 export default function SavedQuestions() {
   const navigate = useNavigate();
   const { user, isLoadingAuth } = useAuth();
   const [savedIds, setSavedIds] = useState(() => getSavedQuestionIds());
+  const [revealedAnswers, setRevealedAnswers] = useState({});
   const idsKey = savedIds.join(',');
 
   useEffect(() => {
@@ -39,6 +42,12 @@ export default function SavedQuestions() {
   });
 
   const questions = useMemo(() => questionsQuery.data || [], [questionsQuery.data]);
+  const canStartSavedTest = questions.length >= MIN_SAVED_QUESTIONS_TO_TRAIN;
+  const startSavedTest = () => {
+    if (!canStartSavedTest) return;
+    const ids = questions.map((question) => question.id).filter(Boolean).join(',');
+    navigate(`/test?mode=saved&ids=${encodeURIComponent(ids)}&count=${questions.length}`);
+  };
 
   if (isLoadingAuth) return null;
 
@@ -86,6 +95,20 @@ export default function SavedQuestions() {
         <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
           Тут зібрані питання, до яких Ви захотіли повернутися. Приберіть закладку, коли матеріал уже зрозумілий.
         </p>
+        <div className="mt-5 flex flex-col gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-900/70 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium text-slate-900 dark:text-white">Тренування по збережених</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+              {canStartSavedTest
+                ? `${questions.length} питань готові для проходження.`
+                : `Потрібно щонайменше ${MIN_SAVED_QUESTIONS_TO_TRAIN} збережених питань.`}
+            </p>
+          </div>
+          <Button className="rounded-lg" disabled={!canStartSavedTest || questionsQuery.isLoading} onClick={startSavedTest}>
+            <PlayCircle className="mr-2 h-4 w-4" />
+            Пройти збережені
+          </Button>
+        </div>
       </section>
 
       {questionsQuery.isLoading ? (
@@ -94,16 +117,37 @@ export default function SavedQuestions() {
         <div className="space-y-4">
           {questions.map((question, index) => (
             <div key={question.id} className="rounded-xl border border-slate-200 bg-card p-4 dark:border-slate-800 sm:p-5">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  Збережене питання {index + 1} з {questions.length}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full rounded-lg sm:w-auto"
+                  onClick={() => setRevealedAnswers((current) => ({ ...current, [question.id]: !current[question.id] }))}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  {revealedAnswers[question.id] ? 'Сховати відповідь' : 'Переглянути правильну відповідь'}
+                </Button>
+              </div>
               <QuestionCard
                 question={question}
                 index={index}
                 totalQuestions={questions.length}
-                selectedAnswer={undefined}
+                selectedAnswer={revealedAnswers[question.id] ? question.correct_answer : undefined}
                 onSelectAnswer={() => {}}
+                revealAnswer={Boolean(revealedAnswers[question.id])}
                 isFavorite={isQuestionSaved(question.id)}
                 onToggleFavorite={() => {
                   toggleSavedQuestion(question.id, user);
                   setSavedIds(getSavedQuestionIds());
+                  setRevealedAnswers((current) => {
+                    const next = { ...current };
+                    delete next[question.id];
+                    return next;
+                  });
                 }}
               />
             </div>

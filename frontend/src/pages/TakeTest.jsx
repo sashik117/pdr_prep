@@ -37,6 +37,7 @@ const MODE_CONFIG = {
   section: { count: 20, label: 'Тест за розділом', time: 1200 },
   daily: { count: 15, label: 'Виклик дня', time: 900 },
   srs: { count: 20, label: 'Інтервальне повторення', time: 1200 },
+  saved: { count: 20, label: 'Збережені запитання', time: 1200 },
   ticket: { count: 20, label: 'Екзаменаційний білет', time: 1200 },
 };
 
@@ -97,7 +98,7 @@ export default function TakeTest() {
   const requestedIds = useMemo(() => idsParam.split(',').map((value) => value.trim()).filter(Boolean), [idsParam]);
   const requestedCount = Math.max(0, Math.min(200, Number(params.get('count') || 0) || 0));
   const config = MODE_CONFIG[/** @type {keyof typeof MODE_CONFIG} */ (mode)] || MODE_CONFIG.quick;
-  const requiresAuth = mode === 'difficult';
+  const requiresAuth = mode === 'difficult' || mode === 'saved';
   const premiumOnly = mode === 'mvs' || mode === 'ticket';
   const guestLocked = false;
   const effectiveQuestionCount = requestedCount || requestedIds.length || config.count;
@@ -507,6 +508,7 @@ export default function TakeTest() {
     if (mode === 'difficult') return '/mistakes';
     if (mode === 'top') return '/mistakes';
     if (mode === 'srs') return '/repetition';
+    if (mode === 'saved') return '/saved-questions';
     return '/tests';
   }, [category, mode]);
 
@@ -612,8 +614,10 @@ export default function TakeTest() {
   if (!user && requiresAuth) {
     return (
       <LoginPrompt
-        title="Режим із персональними помилками"
-        description="Увійдіть, щоб тренувати саме ті теми, де вже були неправильні відповіді."
+        title={mode === 'saved' ? 'Збережені запитання доступні після входу' : 'Режим із персональними помилками'}
+        description={mode === 'saved'
+          ? 'Увійдіть, щоб пройти власний список питань для повторення.'
+          : 'Увійдіть, щоб тренувати саме ті теми, де вже були неправильні відповіді.'}
       />
     );
   }
