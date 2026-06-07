@@ -50,6 +50,7 @@ backend/uploads/handbook/*
 backend/logs/*
 !backend/logs/.gitkeep
 backend/runtime/
+backend/scripts/models/*.pb
 
 # Local browser/test artifacts
 .codex-screens/
