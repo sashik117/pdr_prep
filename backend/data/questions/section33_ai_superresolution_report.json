@@ -1,7 +1,0 @@
-{
-  "processed": 172,
-  "skipped_existing": 0,
-  "replaced_references": 172,
-  "max_long_edge": 200,
-  "model": "opencv-fsrcnn-x4"
-}
