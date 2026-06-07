@@ -18,6 +18,7 @@ export default function TheoryPage() {
   const [category, setCategory] = useState('all');
   const [selectedSectionId, setSelectedSectionId] = useState(null);
   const [drafts, setDrafts] = useState({});
+  const [mediaStatusMessage, setMediaStatusMessage] = useState('');
 
   const summaryQuery = useQuery({ queryKey: ['admin-theory-summary'], queryFn: () => api.getAdminTheorySummary() });
   const parseStatusQuery = useQuery({
@@ -71,6 +72,7 @@ export default function TheoryPage() {
       if (!uploaded?.url || !selectedSection || !draft) return;
       const imageHtml = `<p><img src="${uploaded.url}" alt="${escapeHtml(draft.title || selectedSection.title || 'Зображення теорії')}" loading="lazy" /></p>`;
       updateDraft('content_html', `${draft.content_html || ''}\n${imageHtml}`.trim());
+      setMediaStatusMessage(`Фото додано: ${uploaded.storage_path || describeTheoryImagePath(uploaded.url).storage}`);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['admin-theory-sections', category, search] }),
         queryClient.invalidateQueries({ queryKey: ['admin-theory-summary'] }),
@@ -281,6 +283,7 @@ export default function TheoryPage() {
                       <p className="text-sm font-semibold text-slate-900 dark:text-white">Додати зображення до розділу</p>
                       <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-300">
                         Файл завантажиться на сервер, додасться в медіа розділу і вставиться в HTML матеріалу.
+                        Якщо шлях починається з `/media/admin/`, файл збережений у БД `admin_media_files`, а не в окремій папці.
                       </p>
                     </div>
                     <label className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
@@ -303,6 +306,9 @@ export default function TheoryPage() {
                     <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">
                       {imageUploadMutation.error instanceof Error ? imageUploadMutation.error.message : 'Не вдалося завантажити файл'}
                     </p>
+                  ) : null}
+                  {mediaStatusMessage ? (
+                    <p className="mt-2 text-xs font-medium text-emerald-600 dark:text-emerald-300">{mediaStatusMessage}</p>
                   ) : null}
                 </div>
 
@@ -389,6 +395,7 @@ function TheoryImagesPreview({ images = [], title }) {
       <div className="grid gap-3 sm:grid-cols-2">
         {cleanImages.slice(0, 8).map((image, index) => {
           const imageSrc = resolveApiUrl(image);
+          const pathInfo = describeTheoryImagePath(image);
           return (
             <a
               key={`${image}-${index}`}
@@ -398,7 +405,12 @@ function TheoryImagesPreview({ images = [], title }) {
               className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3 transition hover:border-blue-300 hover:bg-blue-50/50 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-sky-500/50"
             >
               <img src={imageSrc || ''} alt={`${title || 'Теорія'} ${index + 1}`} className="h-36 w-full rounded-lg bg-white object-contain dark:bg-slate-900" loading="lazy" />
-              <span className="mt-2 block truncate text-xs text-slate-500 dark:text-slate-300">{image}</span>
+              <span className="mt-2 block truncate font-mono text-xs text-slate-500 dark:text-slate-300" title={pathInfo.publicPath}>
+                {pathInfo.publicPath}
+              </span>
+              <span className="mt-1 block truncate text-[11px] text-slate-400 dark:text-slate-500" title={pathInfo.storage}>
+                {pathInfo.storage}
+              </span>
             </a>
           );
         })}
@@ -413,4 +425,43 @@ function escapeHtml(value) {
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;');
+}
+
+function describeTheoryImagePath(value) {
+  const source = String(value || '').trim();
+  if (!source) return { publicPath: '—', storage: 'Без зображення' };
+
+  const adminMatch = source.match(/^\/media\/admin\/(\d+)\/(.+)$/);
+  if (adminMatch) {
+    return {
+      publicPath: source,
+      storage: `БД: admin_media_files #${adminMatch[1]}`,
+    };
+  }
+
+  if (source.startsWith('/uploads/')) {
+    return {
+      publicPath: source,
+      storage: `Файл: backend${source}`,
+    };
+  }
+
+  if (source.startsWith('/images/')) {
+    return {
+      publicPath: source,
+      storage: `Файл: backend/public${source}`,
+    };
+  }
+
+  if (source.startsWith('/')) {
+    return {
+      publicPath: source,
+      storage: 'Публічний шлях backend/frontend',
+    };
+  }
+
+  return {
+    publicPath: source,
+    storage: 'Зовнішній або старий локальний шлях',
+  };
 }

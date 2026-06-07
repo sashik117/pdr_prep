@@ -87,15 +87,16 @@ export default function QuestionsPage() {
       const currentImages = textToLines(draft.imagesText);
       const nextImages = [...currentImages, uploaded.url];
       updateDraft('imagesText', nextImages.join('\n'));
+      const uploadedPath = uploaded.storage_path || describeQuestionImagePath(uploaded.url).storage;
       if (selectedQuestion) {
         await api.updateAdminQuestion(selectedQuestion.id, buildQuestionPayload(draft, nextImages));
         setStatusMessage('');
-        setInlineStatusMessage('Фото додано');
+        setInlineStatusMessage(`Фото додано: ${uploadedPath}`);
         await queryClient.invalidateQueries({ queryKey: ['admin-questions', section, search] });
         await queryClient.invalidateQueries({ queryKey: ['admin-question-sections'] });
       } else {
         setStatusMessage('');
-        setInlineStatusMessage('Фото додано. Збережіть питання');
+        setInlineStatusMessage(`Фото додано: ${uploadedPath}. Збережіть питання`);
       }
     },
   });
@@ -323,7 +324,12 @@ export default function QuestionsPage() {
                           {Array.isArray(question.images) && question.images.length ? (
                             <div className="mt-2 flex items-center gap-2">
                               <QuestionImageThumb src={question.images[0]} alt={`Ілюстрація питання ${question.id}`} />
-                              <p className="text-xs text-slate-500">{question.images.length} зображення</p>
+                              <div className="min-w-0">
+                                <p className="text-xs text-slate-500">{question.images.length} зображення</p>
+                                <p className="max-w-[280px] truncate font-mono text-[11px] text-slate-400" title={question.images[0]}>
+                                  {question.images[0]}
+                                </p>
+                              </div>
                             </div>
                           ) : null}
                         </TableCell>
@@ -403,6 +409,9 @@ export default function QuestionsPage() {
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Файли зображень</span>
                   <Textarea rows={3} value={draft.imagesText} onChange={(event) => updateDraft('imagesText', event.target.value)} />
+                  <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    Тут зберігаються публічні шляхи. `/images/questions/...` лежить у репозиторії в `backend/public/images`, а `/media/admin/...` збережено прямо в БД у таблиці `admin_media_files`, тому окремої папки на диску для нього немає.
+                  </p>
                   <div
                     role="button"
                     tabIndex={0}
@@ -532,6 +541,7 @@ function QuestionImagesPreview({ images = [], questionId, onPreview }) {
       <div className="grid gap-3 sm:grid-cols-2">
         {cleanImages.map((image, index) => {
           const imageSrc = resolveQuestionImageUrl(image);
+          const pathInfo = describeQuestionImagePath(image);
           return (
             <button
               type="button"
@@ -545,7 +555,12 @@ function QuestionImagesPreview({ images = [], questionId, onPreview }) {
                 className="h-40 w-full rounded-lg bg-white object-contain dark:bg-slate-900"
                 loading="lazy"
               />
-              <span className="mt-2 block truncate text-xs text-slate-500 dark:text-slate-300">{image}</span>
+              <span className="mt-2 block truncate text-left font-mono text-xs text-slate-500 dark:text-slate-300" title={pathInfo.publicPath}>
+                {pathInfo.publicPath}
+              </span>
+              <span className="mt-1 block truncate text-left text-[11px] text-slate-400 dark:text-slate-500" title={pathInfo.storage}>
+                {pathInfo.storage}
+              </span>
             </button>
           );
         })}
@@ -572,4 +587,43 @@ function resolveQuestionImageUrl(value) {
   if (!source) return null;
   if (/^https?:\/\//i.test(source) || source.startsWith('/')) return resolveApiUrl(source);
   return resolveApiUrl(`/images/questions_img/${source}`);
+}
+
+function describeQuestionImagePath(value) {
+  const source = String(value || '').trim();
+  if (!source) return { publicPath: '—', storage: 'Без зображення' };
+
+  const adminMatch = source.match(/^\/media\/admin\/(\d+)\/(.+)$/);
+  if (adminMatch) {
+    return {
+      publicPath: source,
+      storage: `БД: admin_media_files #${adminMatch[1]}`,
+    };
+  }
+
+  if (source.startsWith('/images/questions/')) {
+    return {
+      publicPath: source,
+      storage: `Файл: backend/public${source}`,
+    };
+  }
+
+  if (source.startsWith('/images/questions_img/')) {
+    return {
+      publicPath: source,
+      storage: `Файл: frontend/public${source}`,
+    };
+  }
+
+  if (source.startsWith('/')) {
+    return {
+      publicPath: source,
+      storage: 'Публічний шлях backend/frontend',
+    };
+  }
+
+  return {
+    publicPath: source,
+    storage: `Старий формат: /images/questions_img/${source}`,
+  };
 }

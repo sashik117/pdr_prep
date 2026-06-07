@@ -263,7 +263,7 @@ def _is_frontend_navigation(request: Request) -> bool:
         return False
 
     path = request.url.path
-    if path in {"/health", "/api/health"} or path.startswith(("/api/", "/assets/", "/images/", "/uploads/", "/ws")):
+    if path in {"/health", "/api/health"} or path.startswith(("/api/", "/assets/", "/images/", "/media/", "/uploads/", "/ws")):
         return False
 
     accept = request.headers.get("accept", "")
@@ -1169,7 +1169,7 @@ def _ensure_admin_media_table(conn) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_admin_media_files_scope ON admin_media_files(scope)")
 
 
-def _save_admin_media_upload(file: UploadFile, *, scope: str, admin: Optional[dict[str, Any]] = None) -> dict[str, str]:
+def _save_admin_media_upload(file: UploadFile, *, scope: str, admin: Optional[dict[str, Any]] = None) -> dict[str, Any]:
     allowed_exts = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".svg"}
     ext = Path(file.filename or "").suffix.lower()
     content_type = (file.content_type or "").lower()
@@ -1211,7 +1211,15 @@ def _save_admin_media_upload(file: UploadFile, *, scope: str, admin: Optional[di
 
     saved_id = int(row["id"])
     url = f"/media/admin/{saved_id}/{filename}"
-    return {"url": url, "filename": filename}
+    return {
+        "id": saved_id,
+        "url": url,
+        "filename": filename,
+        "scope": safe_scope,
+        "storage": "database",
+        "storage_path": f"db://admin_media_files/{saved_id}",
+        "database_table": "admin_media_files",
+    }
 
 
 @app.get("/media/admin/{media_id}/{filename}")
@@ -1260,7 +1268,7 @@ def admin_upload_media(
                 (section_id, saved["url"], sort_order),
             )
             conn.commit()
-    return {"url": saved["url"], "filename": saved["filename"]}
+    return saved
 
 
 @app.get("/promo/status")
