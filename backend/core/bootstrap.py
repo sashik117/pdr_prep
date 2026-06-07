@@ -119,6 +119,7 @@ def ensure_runtime_migrations() -> None:
         """,
         "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_username ON users (LOWER(username))",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMP",
         "ALTER TABLE questions ADD COLUMN IF NOT EXISTS section_name TEXT",
         "ALTER TABLE questions ADD COLUMN IF NOT EXISTS num_in_section INT",
         "ALTER TABLE questions ADD COLUMN IF NOT EXISTS ticket_number INT",

@@ -101,6 +101,7 @@ export default function UsersPage() {
         streak_days: selectedUser.streak_days || 0,
         manual_star_adjustment: selectedUser.manual_star_adjustment || 0,
         is_premium: Boolean(selectedUser.is_premium),
+        premium_months: 1,
         is_blocked: Boolean(selectedUser.is_blocked),
       }
     : null;
@@ -131,6 +132,7 @@ export default function UsersPage() {
         streak_days: clampNumber(draft.streak_days),
         manual_star_adjustment: clampNumber(draft.manual_star_adjustment),
         is_premium: Boolean(draft.is_premium),
+        premium_months: clampNumber(draft.premium_months || 0),
         is_blocked: Boolean(draft.is_blocked),
       },
     });
@@ -246,6 +248,17 @@ export default function UsersPage() {
                         <Crown className="mr-2 h-4 w-4" />
                         {draft.is_premium ? 'Premium активний' : 'Видати Premium'}
                       </Button>
+                      <label className="flex min-w-[150px] items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300">
+                        <span>Міс.</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="120"
+                          value={draft.premium_months ?? 1}
+                          onChange={(event) => updateDraft('premium_months', Number(event.target.value || 0))}
+                          className="h-8 w-20"
+                        />
+                      </label>
                       <Button
                         variant={draft.is_blocked ? 'destructive' : 'outline'}
                         size="sm"

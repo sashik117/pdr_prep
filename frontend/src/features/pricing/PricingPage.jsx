@@ -23,6 +23,7 @@ import { useAuth } from '@/lib/AuthContext';
 import api from '@/api/apiClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -132,6 +133,7 @@ export default function PricingPage() {
   const { user, isAuthenticated, navigateToLogin, checkUserAuth } = useAuth();
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [selectedPlanCode, setSelectedPlanCode] = useState(null);
   const isPremium = Boolean(user?.is_premium);
 
   const promoStatusQuery = useQuery({
@@ -200,6 +202,7 @@ export default function PricingPage() {
 
   const promoStatus = promoStatusQuery.data || defaultPromoStatus;
   const plans = promoStatus.plans?.length ? promoStatus.plans : defaultPromoStatus.plans;
+  const selectedPlan = selectedPlanCode ? plans.find((plan) => String(plan.code) === String(selectedPlanCode)) : null;
 
   useEffect(() => {
     setSecondsLeft(Number(promoStatus.seconds_left || 0));
@@ -258,6 +261,12 @@ export default function PricingPage() {
       navigateToLogin('/pricing');
       return;
     }
+    setSelectedPlanCode(planCode);
+    setAcceptedTerms(false);
+  };
+
+  const handleConfirmPayment = () => {
+    if (!selectedPlanCode) return;
     if (!acceptedTerms) {
       toast({
         title: 'Потрібна згода з умовами',
@@ -266,6 +275,8 @@ export default function PricingPage() {
       });
       return;
     }
+    const planCode = selectedPlanCode;
+    setSelectedPlanCode(null);
     checkoutMutation.mutate(planCode);
   };
 
@@ -377,28 +388,6 @@ export default function PricingPage() {
         </Card>
       </div>
 
-      {!isPremium ? (
-        <Card className="border-sky-100 bg-sky-50/70 shadow-none dark:border-sky-500/20 dark:bg-sky-950/20">
-          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <label className="flex items-start gap-3 text-sm leading-6 text-slate-700 dark:text-slate-200">
-              <input
-                type="checkbox"
-                checked={acceptedTerms}
-                onChange={(event) => setAcceptedTerms(event.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
-              />
-              <span>
-                Я ознайомився/ознайомилася з{' '}
-                <Link to="/terms" className="font-medium text-primary underline-offset-4 hover:underline">
-                  угодою підписника
-                </Link>{' '}
-                та розумію умови Premium-доступу.
-              </span>
-            </label>
-          </CardContent>
-        </Card>
-      ) : null}
-
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {plans.map((plan, index) => {
           const discount = calculateDiscount(plan.current_price, plan.original_price);
@@ -477,9 +466,9 @@ export default function PricingPage() {
                   Premium через mono Банку
                 </h2>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  Якщо автоматична оплата тимчасово недоступна, Ви можете оплатити доступ через mono Банку. Після
-                  переказу напишіть у підтримку email профілю, обраний тариф і час платежу. Ми перевіримо оплату та
-                  вручну активуємо Premium для Вашого акаунта.
+                  Оберіть тариф вище, підтвердьте угоду підписника, і сайт створить заявку з Вашим профілем, сумою та
+                  тарифом. Після цього відкриється mono Банка, а доступ активується адміністратором після перевірки
+                  платежу.
                 </p>
               </div>
             </div>
@@ -515,11 +504,9 @@ export default function PricingPage() {
                     <Link to="/auth?tab=register&redirect=%2Fpricing">Створити профіль</Link>
                   </Button>
                 ) : monoJarUrl ? (
-                  <Button asChild className="rounded-xl bg-emerald-600 hover:bg-emerald-700">
-                    <a href={monoJarUrl} target="_blank" rel="noreferrer">
-                      Відкрити mono Банку
-                      <ExternalLink className="ml-2 h-4 w-4" />
-                    </a>
+                  <Button disabled className="rounded-xl">
+                    Оберіть тариф вище
+                    <ExternalLink className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
                   <Button disabled className="rounded-xl">
@@ -608,6 +595,61 @@ export default function PricingPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={Boolean(selectedPlan)} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedPlanCode(null);
+          setAcceptedTerms(false);
+        }
+      }}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] rounded-2xl border-white/80 bg-white p-0 text-slate-950 shadow-2xl dark:border-slate-800 dark:bg-slate-950 dark:text-white sm:max-w-lg">
+          <div className="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+            <DialogTitle className="text-xl font-semibold tracking-[-0.03em]">Підтвердження Premium</DialogTitle>
+            <DialogDescription className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+              Перевірте тариф і підтвердьте умови перед переходом до оплати.
+            </DialogDescription>
+          </div>
+          <div className="space-y-4 px-5 py-5">
+            <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/70">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Обраний тариф</p>
+              <div className="mt-2 flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-2xl font-semibold text-slate-950 dark:text-white">
+                    {selectedPlan?.months === 1 ? '1 місяць' : `${selectedPlan?.months || ''} місяців`}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Заявка буде записана на Ваш профіль: {user?.email}</p>
+                </div>
+                <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-300">{formatPrice(selectedPlan?.current_price || 0)}</p>
+              </div>
+            </div>
+
+            <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-200">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(event) => setAcceptedTerms(event.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+              />
+              <span>
+                Я ознайомився/ознайомилася з{' '}
+                <Link to="/terms" className="font-medium text-primary underline-offset-4 hover:underline">
+                  угодою підписника
+                </Link>{' '}
+                та розумію, що Premium через mono Банку активується після підтвердження оплати адміністратором.
+              </span>
+            </label>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button variant="outline" className="rounded-xl" onClick={() => setSelectedPlanCode(null)}>
+                Скасувати
+              </Button>
+              <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700" disabled={checkoutMutation.isPending} onClick={handleConfirmPayment}>
+                {checkoutMutation.isPending ? 'Готуємо заявку...' : 'Перейти до оплати'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -114,6 +114,14 @@ def update_admin_user(
                 values[key] = max(0, int(value))
         if req.is_premium is not None:
             values["is_premium"] = bool(req.is_premium)
+            if not req.is_premium:
+                values["premium_expires_at"] = None
+            elif req.premium_months is not None:
+                values["premium_expires_at"] = (
+                    datetime.utcnow() + timedelta(days=31 * int(req.premium_months))
+                    if int(req.premium_months) > 0
+                    else None
+                )
         if req.is_blocked is not None:
             values["is_blocked"] = bool(req.is_blocked)
         updated = repo.update_user(user_id=user_id, values=values) if values else target

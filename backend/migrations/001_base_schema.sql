@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS users (
     total_answers   INT NOT NULL DEFAULT 0,
     marathon_best   INT NOT NULL DEFAULT 0,
     is_premium      BOOLEAN NOT NULL DEFAULT FALSE,
+    premium_expires_at TIMESTAMP,
     created_at      TIMESTAMP NOT NULL DEFAULT NOW()
 );
 

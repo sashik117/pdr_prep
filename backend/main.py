@@ -695,6 +695,10 @@ def _user_public(user: dict[str, Any]) -> dict[str, Any]:
     featured_achievements = _coerce_json_list(user.get("featured_achievements"))
     purchased_frames = _purchased_frames(user)
     streak = _streak_snapshot(user)
+    premium_expires_at = user.get("premium_expires_at")
+    premium_is_active = bool(user.get("is_premium", False))
+    if premium_expires_at and isinstance(premium_expires_at, datetime) and premium_expires_at < datetime.utcnow():
+        premium_is_active = False
     username_change_count = int(user.get("username_change_count") or 0)
     username_last_changed_at = user.get("username_last_changed_at")
     username_change_available_at = None
@@ -721,7 +725,8 @@ def _user_public(user: dict[str, Any]) -> dict[str, Any]:
         "font_size": int(user.get("font_size") or 16),
         "sound_enabled": bool(user.get("sound_enabled", True)),
         "push_enabled": bool(user.get("push_enabled", False)),
-        "is_premium": bool(user.get("is_premium", False)),
+        "is_premium": premium_is_active,
+        "premium_expires_at": premium_expires_at.isoformat() if isinstance(premium_expires_at, datetime) else premium_expires_at,
         "is_admin": _is_admin_email(user.get("email")),
         "is_blocked": bool(user.get("is_blocked", False)),
         "featured_achievements": [str(item) for item in featured_achievements if item],
@@ -869,7 +874,11 @@ def get_current_user(authorization: Optional[str] = Header(default=None)) -> dic
         raise HTTPException(401, "РќРµРІР°Р»С–РґРЅРёР№ С‚РѕРєРµРЅ") from exc
 
     try:
-        return get_session_user_use_case(user_id, is_admin_email=_is_admin_email)
+        user = get_session_user_use_case(user_id, is_admin_email=_is_admin_email)
+        premium_expires_at = user.get("premium_expires_at")
+        if premium_expires_at and isinstance(premium_expires_at, datetime) and premium_expires_at < datetime.utcnow():
+            user["is_premium"] = False
+        return user
     except ServiceError as exc:
         raise HTTPException(exc.status_code, exc.message) from exc
 

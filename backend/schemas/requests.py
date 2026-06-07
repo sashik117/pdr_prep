@@ -140,6 +140,7 @@ class AdminSupportReplyRequest(BaseModel):
 class AdminUserUpdateRequest(BaseModel):
     is_blocked: Optional[bool] = None
     is_premium: Optional[bool] = None
+    premium_months: Optional[int] = Field(default=None, ge=0, le=120)
     total_tests: Optional[int] = None
     total_correct: Optional[int] = None
     total_answers: Optional[int] = None

@@ -5,7 +5,6 @@ from typing import Any, Optional
 from uuid import uuid4
 
 from core.config import (
-    ALLOW_MOCK_PAYMENTS,
     FRONTEND_URL,
     IS_PRODUCTION,
     LIQPAY_PRIVATE_KEY,
@@ -41,7 +40,7 @@ def _resolve_provider() -> str:
         return "liqpay"
     if PAYMENT_MODE in {"mono", "mono_manual", "monobank", "jar"}:
         return "mono_manual"
-    if PAYMENT_MODE == "mock" and (not IS_PRODUCTION or ALLOW_MOCK_PAYMENTS):
+    if PAYMENT_MODE == "mock" and not IS_PRODUCTION:
         return "mock"
     raise ServiceError(
         503,
@@ -194,7 +193,7 @@ def activate_mock_payment(
     get_plan: PlanResolver,
     present_user: UserPresenter,
 ) -> dict[str, Any]:
-    if IS_PRODUCTION and not ALLOW_MOCK_PAYMENTS:
+    if IS_PRODUCTION:
         raise ServiceError(403, "Mock-активація вимкнена у production-режимі")
     if PAYMENT_MODE == "liqpay" and LIQPAY_PUBLIC_KEY and LIQPAY_PRIVATE_KEY:
         raise ServiceError(403, "Mock-активація вимкнена у production-режимі")

@@ -153,10 +153,11 @@ class PaymentRepository:
         self.conn.execute(
             """
             UPDATE users
-            SET is_premium = TRUE
+            SET is_premium = TRUE,
+                premium_expires_at = %s
             WHERE id = %s
             """,
-            (order["user_id"],),
+            (expires_at, order["user_id"]),
         )
         updated = self.conn.execute("SELECT * FROM premium_orders WHERE id = %s", (order["id"],)).fetchone()
         return dict(updated) if updated else {}
