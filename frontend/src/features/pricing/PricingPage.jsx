@@ -4,6 +4,8 @@ import {
   BarChart3,
   CheckCircle2,
   Clock3,
+  Copy,
+  CreditCard,
   Crown,
   ExternalLink,
   Flame,
@@ -64,10 +66,15 @@ const comparisonRows = [
 ];
 
 const monoJarUrl = (import.meta.env.VITE_MONO_JAR_URL || '').trim();
+const monoJarCard = (import.meta.env.VITE_MONO_JAR_CARD || '').replace(/\s+/g, '').trim();
 const monoJarDescription = (
   import.meta.env.VITE_MONO_JAR_DESCRIPTION ||
-  'DrivePrep Premium. У коментарі вкажіть email профілю та тариф: 1, 3, 6 або 12 місяців.'
+  'DrivePrep преміум. У коментарі вкажіть email профілю та тариф: 1, 3, 6 або 12 місяців.'
 ).trim();
+
+function formatCardNumber(cardNumber) {
+  return String(cardNumber || '').replace(/(\d{4})(?=\d)/g, '$1 ');
+}
 
 function submitLiqPayCheckout(payload) {
   const form = document.createElement('form');
@@ -243,6 +250,23 @@ export default function PricingPage() {
       return;
     }
     checkoutMutation.mutate(planCode);
+  };
+
+  const handleCopyMonoCard = async () => {
+    if (!monoJarCard) return;
+    try {
+      await navigator.clipboard.writeText(monoJarCard);
+      toast({
+        title: 'Номер картки скопійовано',
+        description: 'Можна вставити його в mono або інший банківський застосунок.',
+      });
+    } catch {
+      toast({
+        title: 'Не вдалося скопіювати номер',
+        description: 'Скопіюйте номер картки вручну зі сторінки.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const featureList = useMemo(
@@ -450,6 +474,24 @@ export default function PricingPage() {
               <p className="mt-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 dark:bg-slate-900 dark:text-slate-200">
                 {monoJarDescription}
               </p>
+              {monoJarCard ? (
+                <button
+                  type="button"
+                  onClick={handleCopyMonoCard}
+                  className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50/70 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-950/20"
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <CreditCard className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
+                    <span className="min-w-0">
+                      <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                        Номер картки Банки
+                      </span>
+                      <span className="mt-0.5 block font-medium tabular-nums">{formatCardNumber(monoJarCard)}</span>
+                    </span>
+                  </span>
+                  <Copy className="h-4 w-4 shrink-0 text-slate-400" />
+                </button>
+              ) : null}
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {!isAuthenticated ? (
                   <Button asChild className="rounded-xl bg-sky-600 hover:bg-sky-700">
