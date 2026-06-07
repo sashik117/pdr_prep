@@ -25,7 +25,7 @@ function normalizeEmbedUrl(value) {
         const embed = new URL(`https://www.youtube-nocookie.com/embed/${videoId}`);
         embed.searchParams.set('rel', '0');
         embed.searchParams.set('modestbranding', '1');
-        embed.searchParams.set('controls', '1');
+        embed.searchParams.set('controls', '0');
         embed.searchParams.set('showinfo', '0');
         embed.searchParams.set('fs', '0');
         embed.searchParams.set('iv_load_policy', '3');
@@ -39,7 +39,7 @@ function normalizeEmbedUrl(value) {
       url.searchParams.delete('origin');
       url.searchParams.set('rel', '0');
       url.searchParams.set('modestbranding', '1');
-      url.searchParams.set('controls', '1');
+      url.searchParams.set('controls', '0');
       url.searchParams.set('showinfo', '0');
       url.searchParams.set('fs', '0');
       url.searchParams.set('iv_load_policy', '3');
@@ -62,23 +62,23 @@ export default function TheoryVideoPanel({ title, embedUrl = '', videoUrl = '' }
   const safeEmbedUrl = normalizeEmbedUrl(embedUrl || videoUrl);
 
   return (
-    <div className="overflow-hidden rounded-lg bg-card shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-      <div className="flex items-center gap-2 bg-sky-50/70 px-4 py-3 text-sm font-medium text-slate-900 dark:bg-sky-950/20 dark:text-white sm:px-5">
+    <div className="overflow-hidden rounded-xl bg-card p-2 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 sm:p-3">
+      <div className="hidden">
         <PlayCircle className="h-4 w-4 text-primary" />
         Відео до теми
       </div>
 
-      <div className="p-3 sm:p-5">
+      <div>
         {safeEmbedUrl ? (
-          <div className="relative overflow-hidden rounded-lg bg-slate-950 shadow-sm">
+          <div className="relative aspect-video overflow-hidden rounded-lg bg-slate-950 shadow-sm">
             {loaded ? (
               <>
-                <div className="pointer-events-auto absolute left-0 top-0 z-10 h-[86px] w-full bg-transparent" />
-                <div className="pointer-events-auto absolute bottom-0 right-0 z-10 h-[58px] w-[132px] bg-transparent" />
+                <div className="pointer-events-auto absolute left-0 top-0 z-10 h-[22%] w-full bg-transparent" />
+                <div className="pointer-events-auto absolute bottom-0 right-0 z-10 h-[18%] w-[34%] bg-transparent" />
                 <iframe
                   src={safeEmbedUrl}
                   title={`Відео: ${title}`}
-                  className="aspect-video w-full bg-slate-950"
+                  className="absolute left-0 top-[-82px] h-[calc(100%+146px)] w-full border-0 bg-slate-950 sm:top-[-96px] sm:h-[calc(100%+172px)]"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   loading="lazy"
                   referrerPolicy="strict-origin-when-cross-origin"

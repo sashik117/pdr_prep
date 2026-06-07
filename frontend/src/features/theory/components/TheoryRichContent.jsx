@@ -80,7 +80,7 @@ function normalizeTheoryIframeSrc(value) {
     const embed = new URL(`https://www.youtube-nocookie.com/embed/${videoId}`);
     embed.searchParams.set('rel', '0');
     embed.searchParams.set('modestbranding', '1');
-    embed.searchParams.set('controls', '1');
+    embed.searchParams.set('controls', '0');
     embed.searchParams.set('showinfo', '0');
     embed.searchParams.set('fs', '0');
     embed.searchParams.set('iv_load_policy', '3');
@@ -286,9 +286,9 @@ export default function TheoryRichContent({ html, className }) {
         '[&_img[data-media-kind="marking"]]:mx-1 [&_img[data-media-kind="marking"]]:my-0 [&_img[data-media-kind="marking"]]:inline-block [&_img[data-media-kind="marking"]]:h-7 [&_img[data-media-kind="marking"]]:w-auto [&_img[data-media-kind="marking"]]:max-w-[5.5rem] [&_img[data-media-kind="marking"]]:rounded-md [&_img[data-media-kind="marking"]]:p-0.5 [&_img[data-media-kind="marking"]]:align-middle [&_img[data-media-kind="marking"]]:object-contain',
         '[&_iframe]:my-5 [&_iframe]:overflow-hidden [&_iframe]:rounded-xl [&_iframe]:border [&_iframe]:border-slate-200 [&_iframe]:bg-black dark:[&_iframe]:border-slate-700',
         '[&_[data-youtube-player=true]]:relative [&_[data-youtube-player=true]]:my-5 [&_[data-youtube-player=true]]:aspect-video [&_[data-youtube-player=true]]:overflow-hidden [&_[data-youtube-player=true]]:rounded-xl [&_[data-youtube-player=true]]:bg-black',
-        '[&_[data-youtube-player=true]_iframe]:my-0 [&_[data-youtube-player=true]_iframe]:h-full [&_[data-youtube-player=true]_iframe]:w-full',
-        '[&_[data-youtube-shield=top]]:pointer-events-auto [&_[data-youtube-shield=top]]:absolute [&_[data-youtube-shield=top]]:left-0 [&_[data-youtube-shield=top]]:top-0 [&_[data-youtube-shield=top]]:z-10 [&_[data-youtube-shield=top]]:h-[86px] [&_[data-youtube-shield=top]]:w-full',
-        '[&_[data-youtube-shield=logo]]:pointer-events-auto [&_[data-youtube-shield=logo]]:absolute [&_[data-youtube-shield=logo]]:bottom-0 [&_[data-youtube-shield=logo]]:right-0 [&_[data-youtube-shield=logo]]:z-10 [&_[data-youtube-shield=logo]]:h-[58px] [&_[data-youtube-shield=logo]]:w-[132px]',
+        '[&_[data-youtube-player=true]_iframe]:!absolute [&_[data-youtube-player=true]_iframe]:!left-0 [&_[data-youtube-player=true]_iframe]:!top-[-82px] [&_[data-youtube-player=true]_iframe]:!my-0 [&_[data-youtube-player=true]_iframe]:!h-[calc(100%+146px)] [&_[data-youtube-player=true]_iframe]:!w-full [&_[data-youtube-player=true]_iframe]:!rounded-none [&_[data-youtube-player=true]_iframe]:!border-0 sm:[&_[data-youtube-player=true]_iframe]:!top-[-96px] sm:[&_[data-youtube-player=true]_iframe]:!h-[calc(100%+172px)]',
+        '[&_[data-youtube-shield=top]]:pointer-events-auto [&_[data-youtube-shield=top]]:absolute [&_[data-youtube-shield=top]]:left-0 [&_[data-youtube-shield=top]]:top-0 [&_[data-youtube-shield=top]]:z-10 [&_[data-youtube-shield=top]]:h-[22%] [&_[data-youtube-shield=top]]:w-full',
+        '[&_[data-youtube-shield=logo]]:pointer-events-auto [&_[data-youtube-shield=logo]]:absolute [&_[data-youtube-shield=logo]]:bottom-0 [&_[data-youtube-shield=logo]]:right-0 [&_[data-youtube-shield=logo]]:z-10 [&_[data-youtube-shield=logo]]:h-[18%] [&_[data-youtube-shield=logo]]:w-[34%]',
         '[&_[data-table-scroll="true"]]:my-6 [&_[data-table-scroll="true"]]:overflow-x-auto [&_[data-table-scroll="true"]]:rounded-lg [&_[data-table-scroll="true"]]:ring-1 [&_[data-table-scroll="true"]]:ring-slate-200 dark:[&_[data-table-scroll="true"]]:ring-slate-800',
         '[&_table]:w-full [&_table]:min-w-[620px] [&_table]:border-separate [&_table]:border-spacing-0 [&_table]:bg-white [&_table]:text-sm dark:[&_table]:bg-slate-950',
         '[&_td]:border-b [&_td]:border-slate-200 [&_td]:px-3 [&_td]:py-3 [&_td]:align-top [&_td]:leading-6 dark:[&_td]:border-slate-800',
