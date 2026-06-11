@@ -67,8 +67,8 @@ const comparisonRows = [
   ['Без реклами', '—', 'Так'],
 ];
 
-const monoJarUrl = (import.meta.env.VITE_MONO_JAR_URL || '').trim();
-const monoJarCard = (import.meta.env.VITE_MONO_JAR_CARD || '').replace(/\s+/g, '').trim();
+const monoJarUrl = (import.meta.env.VITE_MONO_JAR_URL || 'https://send.monobank.ua/jar/6ZbdN2qmww').trim();
+const monoJarCard = (import.meta.env.VITE_MONO_JAR_CARD || '4874100039599223').replace(/\s+/g, '').trim();
 const monoJarDescription = (
   import.meta.env.VITE_MONO_JAR_DESCRIPTION ||
   'DrivePrep преміум. У коментарі вкажіть email профілю та тариф: 1, 3, 6 або 12 місяців.'
@@ -147,13 +147,18 @@ export default function PricingPage() {
 
   const checkoutMutation = useMutation({
     mutationFn: async (planCode) => {
-      const result = await api.createPremiumCheckout(planCode, `${window.location.origin}/pricing?checkout=success`);
-      if (result.provider === 'mock') {
-        return api.mockActivatePremium(result.order_id);
-      }
-      return result;
+      return api.createPremiumCheckout(planCode, `${window.location.origin}/pricing?checkout=success`);
     },
     onSuccess: async (result) => {
+      if (result?.provider === 'mock' || result?.mock_checkout) {
+        toast({
+          title: 'Оплату не налаштовано',
+          description: 'Premium не активовано. Створіть mono-заявку або підтвердьте доступ в адмінці.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       if (result?.status === 'paid') {
         await checkUserAuth();
         toast({

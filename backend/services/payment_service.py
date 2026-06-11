@@ -39,9 +39,14 @@ def _resolve_provider() -> str:
             )
         return "liqpay"
     if PAYMENT_MODE in {"mono", "mono_manual", "monobank", "jar"}:
+        if not MONO_JAR_URL:
+            raise ServiceError(503, "Посилання на mono Банку ще не налаштоване.")
         return "mono_manual"
-    if PAYMENT_MODE == "mock" and not IS_PRODUCTION:
-        return "mock"
+    if PAYMENT_MODE == "mock":
+        if MONO_JAR_URL:
+            return "mono_manual"
+        if not IS_PRODUCTION:
+            return "mock"
     raise ServiceError(
         503,
         "Оплата тимчасово недоступна. Будь ласка, спробуйте трохи пізніше.",

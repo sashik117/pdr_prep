@@ -113,6 +113,9 @@ export default function AppLayout() {
         const healthResponse = await fetch(healthUrl, { method: 'GET', cache: 'no-store' });
         const nextOnline = healthResponse.ok;
         setIsOnline(nextOnline);
+        if (nextOnline && isAuthenticated) {
+          void checkUserAuth();
+        }
 
         if (!networkBootRef.current && previousOnlineRef.current !== null && previousOnlineRef.current !== nextOnline) {
           if (nextOnline) {
@@ -169,7 +172,7 @@ export default function AppLayout() {
       window.removeEventListener('offline', handleOffline);
       window.clearInterval(interval);
     };
-  }, [isAuthenticated, queryClient, toast]);
+  }, [checkUserAuth, isAuthenticated, queryClient, toast]);
 
   useEffect(() => {
     if (!isAuthenticated) return undefined;
