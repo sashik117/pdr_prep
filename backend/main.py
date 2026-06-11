@@ -10,7 +10,7 @@ import threading
 import base64
 import hashlib
 import hmac
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from html import escape as html_escape
 from pathlib import Path
 from typing import Any, Optional
@@ -763,25 +763,35 @@ def _sanitize_question_row(row: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def _naive_utc(value: Any) -> Any:
+    if isinstance(value, datetime) and value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
+
+
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 def _user_public(user: dict[str, Any]) -> dict[str, Any]:
     username = (user.get("username") or "").strip().lower() or None
     full_name = " ".join(part for part in [user.get("name"), user.get("surname")] if part)
     featured_achievements = _coerce_json_list(user.get("featured_achievements"))
     purchased_frames = _purchased_frames(user)
     streak = _streak_snapshot(user)
-    premium_expires_at = user.get("premium_expires_at")
+    premium_expires_at = _naive_utc(user.get("premium_expires_at"))
     premium_is_active = bool(user.get("is_premium", False))
-    if premium_expires_at and isinstance(premium_expires_at, datetime) and premium_expires_at < datetime.utcnow():
+    if premium_expires_at and isinstance(premium_expires_at, datetime) and premium_expires_at < _now_utc():
         premium_is_active = False
     premium_enabled = _premium_enabled()
     has_premium_access = premium_is_active or not premium_enabled
     username_change_count = int(user.get("username_change_count") or 0)
-    username_last_changed_at = user.get("username_last_changed_at")
+    username_last_changed_at = _naive_utc(user.get("username_last_changed_at"))
     username_change_available_at = None
     username_change_blocked = False
     if username_change_count >= 2 and username_last_changed_at:
         unlock_at = username_last_changed_at + timedelta(days=7)
-        username_change_blocked = datetime.now() < unlock_at
+        username_change_blocked = _now_utc() < unlock_at
         username_change_available_at = unlock_at.isoformat()
     return {
         "id": user["id"],
@@ -953,8 +963,8 @@ def get_current_user(authorization: Optional[str] = Header(default=None)) -> dic
 
     try:
         user = get_session_user_use_case(user_id, is_admin_email=_is_admin_email)
-        premium_expires_at = user.get("premium_expires_at")
-        if premium_expires_at and isinstance(premium_expires_at, datetime) and premium_expires_at < datetime.utcnow():
+        premium_expires_at = _naive_utc(user.get("premium_expires_at"))
+        if premium_expires_at and isinstance(premium_expires_at, datetime) and premium_expires_at < _now_utc():
             user["is_premium"] = False
         user["has_premium_access"] = bool(user.get("is_premium", False)) or not _premium_enabled()
         return user

@@ -6,6 +6,7 @@ from typing import Any
 
 import psycopg
 
+from core.bootstrap import ensure_runtime_migrations
 from core.database import db
 from domain.achievements import achievement_copy
 from domain.auth import normalize_username
@@ -20,6 +21,16 @@ JsonListCoercer = Callable[[Any], list[Any]]
 JsonDictCoercer = Callable[[Any], dict[str, Any]]
 AdminEmailChecker = Callable[[str | None], bool]
 PasswordHasher = Callable[[str], str]
+
+_admin_user_schema_ready = False
+
+
+def _ensure_admin_user_schema() -> None:
+    global _admin_user_schema_ready
+    if _admin_user_schema_ready:
+        return
+    ensure_runtime_migrations()
+    _admin_user_schema_ready = True
 
 
 def _normalize_achievement_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -45,6 +56,7 @@ def list_admin_users(
     total_stars: StarsResolver,
     available_stars: StarsResolver,
 ) -> list[dict[str, Any]]:
+    _ensure_admin_user_schema()
     with db() as conn:
         repo = AdminUserRepository(conn)
         rows = repo.list_users()
@@ -71,6 +83,7 @@ def create_admin_user(
     total_stars: StarsResolver,
     available_stars: StarsResolver,
 ) -> dict[str, Any]:
+    _ensure_admin_user_schema()
     name = req.name.strip()
     surname = req.surname.strip()
     username = normalize_username(req.username)
@@ -119,6 +132,7 @@ def get_admin_user_audit(
     coerce_json_list: JsonListCoercer,
     coerce_json_dict: JsonDictCoercer,
 ) -> dict[str, Any]:
+    _ensure_admin_user_schema()
     with db() as conn:
         repo = AdminUserRepository(conn)
         user_row = repo.get_user(user_id=user_id)
@@ -166,6 +180,7 @@ def update_admin_user(
     present_user: UserPresenter,
     is_admin_email: AdminEmailChecker,
 ) -> dict[str, Any]:
+    _ensure_admin_user_schema()
     with db() as conn:
         repo = AdminUserRepository(conn)
         target = repo.get_user(user_id=user_id)
@@ -198,6 +213,7 @@ def update_admin_user(
 
 
 def delete_admin_user(user_id: int, *, is_admin_email: AdminEmailChecker) -> dict[str, str]:
+    _ensure_admin_user_schema()
     with db() as conn:
         repo = AdminUserRepository(conn)
         target = repo.get_user(user_id=user_id)
@@ -211,6 +227,7 @@ def delete_admin_user(user_id: int, *, is_admin_email: AdminEmailChecker) -> dic
 
 
 def create_admin_password_reset(user_id: int, *, code_factory: Callable[[], str]) -> dict[str, Any]:
+    _ensure_admin_user_schema()
     with db() as conn:
         repo = AdminUserRepository(conn)
         target = repo.get_user(user_id=user_id)
@@ -228,6 +245,7 @@ def update_admin_user_achievement(
     *,
     achievement_defs: list[tuple[Any, ...]],
 ) -> list[dict[str, Any]]:
+    _ensure_admin_user_schema()
     achievement_id = req.achievement_id.strip()
     if not achievement_id:
         raise ServiceError(400, "Потрібен achievement_id")
