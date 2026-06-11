@@ -192,7 +192,7 @@ export default function TestSelection() {
         </div>
       </section>
 
-      <section className={cn('space-y-4 rounded-xl border border-slate-200 bg-card p-4 shadow-md dark:border-slate-800 sm:p-5', !isMobileCategoryStep && 'hidden md:block')}>
+      <section className={cn('space-y-3 rounded-xl border border-slate-200 bg-card p-3.5 shadow-md dark:border-slate-800 sm:p-4', !isMobileCategoryStep && 'hidden md:block')}>
         <div className="flex items-center gap-3 md:hidden">
           <Button type="button" variant="ghost" size="icon" className="rounded-full" onClick={() => setMobileModeStep(null)} aria-label="Назад">
             <ArrowLeft className="h-5 w-5" />
@@ -205,7 +205,7 @@ export default function TestSelection() {
 
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Категорія посвідчення</p>
-          <h2 className="mt-1 text-xl font-medium text-slate-950 dark:text-white">Оберіть свою категорію</h2>
+          <h2 className="mt-1 text-lg font-medium text-slate-950 dark:text-white">Оберіть свою категорію</h2>
         </div>
 
         <div className="md:hidden">
@@ -249,24 +249,24 @@ export default function TestSelection() {
           ) : null}
         </div>
 
-        <div className="hidden gap-3 md:grid md:grid-cols-2 xl:grid-cols-3">
+        <div className="hidden gap-2.5 md:grid md:grid-cols-3 xl:grid-cols-6">
           {categoryGroups.map((category) => (
             <button
               key={category.id}
               type="button"
               className={cn(
-                'group rounded-xl border-2 px-3.5 py-3 text-left shadow-sm transition-all hover:shadow-md',
+                'group rounded-xl border-2 px-3 py-2.5 text-left shadow-sm transition-all hover:shadow-md',
                 selectedCategory === category.id
                   ? 'border-primary bg-primary/5 dark:border-sky-500/40 dark:bg-sky-500/10'
                   : 'border-slate-200 bg-transparent hover:border-primary/30 dark:border-slate-700 dark:hover:border-sky-500/30',
               )}
               onClick={() => selectCategory(category.id)}
             >
-              <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary dark:bg-sky-400/10 dark:text-sky-200">
-                <category.icon className="h-[18px] w-[18px]" />
+              <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-sky-400/10 dark:text-sky-200">
+                <category.icon className="h-4 w-4" />
               </div>
               <p className="text-sm font-medium text-slate-950 dark:text-white">{category.label}</p>
-              <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">{category.hint}</p>
+              <p className="mt-1 line-clamp-2 text-xs leading-4 text-slate-600 dark:text-slate-300">{category.hint}</p>
             </button>
           ))}
         </div>

@@ -6,10 +6,8 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Check, ChevronDown, Flame, ListChecks, Star, Target } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
 import api from '@/api/apiClient';
-import { fetchQuestions, normalizeQuestion } from '@/api/questionsApi';
 import { useAuth } from '@/lib/AuthContext';
 import { getFreeDailyTestLimit, getRemainingFreeTests, hasPremiumAccess } from '@/lib/accessLimits';
 import { buildSections, categoryGroups } from '@/lib/testCatalog';
@@ -27,11 +25,49 @@ const priorityWords = [
   'стоянка',
 ];
 
-function difficultyFor(section) {
+function fallbackDifficultyFor(section) {
   const text = `${section.title || ''} ${section.id || ''}`.toLowerCase();
   if (['знаки', 'розміт', 'перехрест', 'обгін', 'регул'].some((word) => text.includes(word))) return 4;
   if (['швидк', 'пішохід', 'зупинка', 'стоянка'].some((word) => text.includes(word))) return 3;
   return 2;
+}
+
+function sectionMetrics(section, row) {
+  const answered = Number(row?.total || row?.attempts || 0);
+  const correct = Number(row?.correct || row?.correct_answers || 0);
+  const explicitWrong = Number(row?.wrong || row?.incorrect || row?.incorrect_answers || 0);
+  const wrong = answered > 0 ? (explicitWrong || Math.max(0, answered - correct)) : 0;
+  const mistakeRate = answered > 0 ? Math.round((wrong / answered) * 100) : null;
+
+  if (answered > 0) {
+    const difficulty =
+      mistakeRate >= 50 ? 5 :
+        mistakeRate >= 35 ? 4 :
+          mistakeRate >= 20 ? 3 :
+            mistakeRate >= 10 ? 2 :
+              1;
+
+    return {
+      answered,
+      correct,
+      wrong,
+      mistakeRate,
+      difficulty,
+      difficultyLabel: `${mistakeRate}% помилок`,
+      priorityScore: 120 + mistakeRate,
+    };
+  }
+
+  const fallbackDifficulty = fallbackDifficultyFor(section);
+  return {
+    answered: 0,
+    correct: 0,
+    wrong: 0,
+    mistakeRate: null,
+    difficulty: fallbackDifficulty,
+    difficultyLabel: fallbackDifficulty >= 4 ? 'Часто трапляється' : fallbackDifficulty === 3 ? 'Варто повторити' : 'Нова тема',
+    priorityScore: fallbackDifficulty * 8,
+  };
 }
 
 function starsFor(level) {
@@ -48,8 +84,6 @@ export default function SectionTests() {
   );
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
-  const [reviewSection, setReviewSection] = useState(null);
-  const [reviewAnswers, setReviewAnswers] = useState({});
   const premiumAccess = hasPremiumAccess(user);
 
   const selectedCategoryMeta = categoryGroups.find((item) => item.id === selectedCategory) || categoryGroups[1];
@@ -71,26 +105,6 @@ export default function SectionTests() {
     queryFn: () => api.getTestResults(),
     enabled: !!user,
     staleTime: 120000,
-  });
-
-  const reviewQuestionsQuery = useQuery({
-    queryKey: ['section-review-questions', selectedCategory, reviewSection?.id],
-    enabled: Boolean(reviewSection?.id),
-    queryFn: async () => {
-      const response = await fetchQuestions({
-        section: reviewSection.id,
-        category: selectedCategory,
-        limit: Math.min(250, Number(reviewSection.count || 100) || 100),
-      });
-      const items = Array.isArray(response)
-        ? response
-        : Array.isArray(response?.items)
-          ? response.items
-          : Array.isArray(response?.questions)
-            ? response.questions
-            : [];
-      return items.map(normalizeQuestion).filter(Boolean);
-    },
   });
 
   const progressBySection = useMemo(() => {
@@ -116,16 +130,21 @@ export default function SectionTests() {
   const sections = useMemo(() => {
     const prepared = buildSections(rawSections).map((section) => {
       const row = progressBySection.get(String(section.id)) || progressBySection.get(String(section.title || '').toLowerCase());
-      const answered = Number(row?.total || 0);
+      const metrics = sectionMetrics(section, row);
+      const answered = metrics.answered;
       const progress = section.count ? Math.min(100, Math.round((answered / section.count) * 100)) : 0;
-      const difficulty = difficultyFor(section);
       const priorityIndex = priorityWords.findIndex((word) => String(section.title || '').toLowerCase().includes(word));
       return {
         ...section,
         answered,
         progress,
-        difficulty,
-        priorityScore: priorityIndex >= 0 ? 100 - priorityIndex * 4 : difficulty * 8,
+        difficulty: metrics.difficulty,
+        difficultyLabel: metrics.difficultyLabel,
+        mistakeRate: metrics.mistakeRate,
+        wrong: metrics.wrong,
+        priorityScore: metrics.answered > 0
+          ? metrics.priorityScore
+          : priorityIndex >= 0 ? 100 - priorityIndex * 4 : metrics.priorityScore,
       };
     });
     return prepared.sort((left, right) => right.priorityScore - left.priorityScore || Number(left.id) - Number(right.id));
@@ -156,13 +175,12 @@ export default function SectionTests() {
   };
 
   const openReview = (section) => {
-    setReviewAnswers({});
-    setReviewSection(section);
-  };
-
-  const closeReview = () => {
-    setReviewSection(null);
-    setReviewAnswers({});
+    const query = new URLSearchParams({
+      category: selectedCategory,
+      title: section.title || 'Питання розділу',
+      count: String(section.count || ''),
+    });
+    navigate(`/section-tests/${encodeURIComponent(section.id)}/questions?${query.toString()}`);
   };
 
   return (
@@ -266,75 +284,6 @@ export default function SectionTests() {
         onReview={openReview}
       />
 
-      <Dialog open={Boolean(reviewSection)} onOpenChange={(open) => (!open ? closeReview() : null)}>
-        <DialogContent className="max-h-[90vh] overflow-hidden rounded-2xl p-0 sm:max-w-4xl">
-          <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-800">
-            <DialogTitle className="text-xl font-semibold text-slate-950 dark:text-white">
-              {reviewSection?.title || 'Питання розділу'}
-            </DialogTitle>
-            <DialogDescription className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Це швидкий перегляд без запису в статистику. Відповіді скинуться після закриття вікна.
-            </DialogDescription>
-          </div>
-          <div className="max-h-[72vh] space-y-4 overflow-y-auto bg-slate-50 p-4 dark:bg-slate-950 sm:p-5">
-            {reviewQuestionsQuery.isLoading ? (
-              <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                Завантажуємо питання...
-              </div>
-            ) : null}
-            {!reviewQuestionsQuery.isLoading && reviewQuestionsQuery.data?.length === 0 ? (
-              <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                У цьому розділі поки немає питань для перегляду.
-              </div>
-            ) : null}
-            {(reviewQuestionsQuery.data || []).map((question, index) => {
-              const selected = reviewAnswers[String(question.id)];
-              return (
-                <div key={question.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Питання {index + 1}</p>
-                    {selected ? (
-                      <Badge className={selected === question.correct_answer ? 'bg-emerald-600' : 'bg-rose-600'}>
-                        {selected === question.correct_answer ? 'Правильно' : 'Неправильно'}
-                      </Badge>
-                    ) : null}
-                  </div>
-                  <p className="text-base font-semibold leading-7 text-slate-950 dark:text-white">{question.text}</p>
-                  {question.image_url ? <img src={question.image_url} alt="Ілюстрація до питання" className="mt-4 max-h-72 w-full rounded-xl object-contain" /> : null}
-                  <div className="mt-4 space-y-2">
-                    {question.options.map((option) => {
-                      const isSelected = selected === option.label;
-                      const isCorrect = question.correct_answer === option.label;
-                      const reveal = Boolean(selected);
-                      return (
-                        <button
-                          key={option.label}
-                          type="button"
-                          disabled={reveal}
-                          onClick={() => setReviewAnswers((current) => ({ ...current, [String(question.id)]: option.label }))}
-                          className={cn(
-                            'flex w-full items-start gap-3 rounded-xl border p-3 text-left text-sm transition',
-                            !reveal && 'border-slate-200 bg-white hover:border-primary/40 hover:bg-primary/5 dark:border-slate-700 dark:bg-slate-950',
-                            reveal && isCorrect && 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-950/30 dark:text-emerald-200',
-                            reveal && isSelected && !isCorrect && 'border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-500/30 dark:bg-rose-950/30 dark:text-rose-200',
-                            reveal && !isSelected && !isCorrect && 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-500',
-                          )}
-                        >
-                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                            {option.label}
-                          </span>
-                          <span className="leading-6">{option.text}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </DialogContent>
-      </Dialog>
-
       <PremiumLimitDialog
         open={limitOpen}
         onOpenChange={setLimitOpen}
@@ -346,18 +295,6 @@ export default function SectionTests() {
         primaryTo={user ? '/pricing' : '/auth?tab=register'}
         intent={user ? 'premium' : 'register'}
       />
-      <Dialog open={false && limitOpen} onOpenChange={setLimitOpen}>
-        <DialogContent className="rounded-xl border-slate-200 bg-card text-slate-950 dark:border-slate-800 dark:text-white">
-          <DialogTitle>Денний ліміт використано</DialogTitle>
-          <DialogDescription>
-            Безкоштовно доступна лише одна спроба на день. Premium відкриває тренування без денних обмежень.
-          </DialogDescription>
-          <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-            <Button className="rounded-lg px-6" onClick={() => navigate('/pricing')}>Перейти до Premium</Button>
-            <Button variant="outline" className="rounded-lg px-6" onClick={() => setLimitOpen(false)}>Повернутися</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </motion.div>
   );
 }
@@ -391,7 +328,7 @@ function SectionGroup({ title, icon: Icon, sections, isLoading, onStart, onRevie
                       <Star key={index} className={cn('h-4 w-4', filled ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-700')} />
                     ))}
                     <span className="ml-2 text-xs font-medium text-amber-600 dark:text-amber-300">
-                      {section.difficulty >= 4 ? 'Складно' : section.difficulty === 3 ? 'Середньо' : 'База'}
+                      {section.difficultyLabel}
                     </span>
                   </div>
                 </div>
@@ -412,11 +349,11 @@ function SectionGroup({ title, icon: Icon, sections, isLoading, onStart, onRevie
                   <span className="text-slate-500 dark:text-slate-400">{section.answered} з {section.count} вивчено</span>
                   <ArrowRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-primary" />
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Button type="button" className="rounded-xl" onClick={() => onStart(section.id)}>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <Button type="button" className="w-full rounded-xl" onClick={() => onStart(section.id)}>
                     Почати
                   </Button>
-                  <Button type="button" variant="outline" className="rounded-xl" onClick={() => onReview?.(section)}>
+                  <Button type="button" variant="outline" className="w-full min-w-0 whitespace-normal rounded-xl px-3 text-sm leading-5" onClick={() => onReview?.(section)}>
                     Переглянути питання
                   </Button>
                 </div>

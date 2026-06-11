@@ -139,6 +139,7 @@ const supportActions = [
   { label: 'Написати в підтримку', to: '/support', icon: MessageCircleHeart, auth: true },
   { label: 'Відкрити відеолекції', to: '/study/video-lectures', icon: PlayCircle },
   { label: 'Переглянути Premium', to: '/pricing', icon: Trophy },
+  { label: 'Переглянути рейтинг', to: '/leaderboard', icon: Star, auth: true },
   { label: 'Перейти в кабінет', to: '/cabinet', icon: Target, auth: true },
 ];
 

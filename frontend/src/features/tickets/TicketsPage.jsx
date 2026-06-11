@@ -125,9 +125,9 @@ export default function TicketsPage() {
               <motion.div key={ticketItem.ticket_number} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.015 }}>
                 <Link to={href} className="block h-full">
                   <Card className="h-full border-2 border-transparent bg-card shadow-md transition-all hover:border-primary/35 hover:shadow-xl dark:border-slate-800 dark:hover:border-sky-500/40">
-                    <CardContent className="flex min-h-[190px] flex-col justify-between gap-4 p-5 pt-6 text-left">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="mt-1 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-200">
+                    <CardContent className="flex min-h-[180px] flex-col items-center justify-center gap-4 p-5 text-center">
+                      <div className="flex w-full items-center justify-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-200">
                           {locked ? <Lock className="h-5 w-5" /> : <Ticket className="h-5 w-5" />}
                         </div>
                         {locked ? (
@@ -143,12 +143,12 @@ export default function TicketsPage() {
                       </div>
                       <div className="min-h-[54px]">
                         <h2 className="text-base font-medium text-slate-950 dark:text-white">Білет {ticketItem.ticket_number}</h2>
-                        <p className="mt-1 inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <p className="mt-1 inline-flex items-center justify-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                           <FileQuestion className="h-4 w-4" />
                           {ticketItem.questions_count} питань
                         </p>
                       </div>
-                      <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-300">
+                      <p className="inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-300">
                         {locked ? 'Відкривається з Premium' : <><PlayCircle className="h-3.5 w-3.5" />Відкрити білет</>}
                       </p>
                     </CardContent>
@@ -160,25 +160,6 @@ export default function TicketsPage() {
         </div>
       )}
 
-      <Card className="border-slate-200 bg-card shadow-md dark:border-slate-800">
-        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-950 dark:text-white">Без Premium доступний один білет для попереднього перегляду.</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Premium відкриває всі білети, проходження в режимі тесту та іспит МВС без денних обмежень.
-            </p>
-          </div>
-          {!isPremium ? (
-            <Link
-              to="/pricing"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-            >
-              <Crown className="h-4 w-4" />
-              Переглянути Premium
-            </Link>
-          ) : null}
-        </CardContent>
-      </Card>
     </div>
   );
 }

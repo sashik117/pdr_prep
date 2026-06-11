@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, CheckCircle2, Crown, FileQuestion, Lock, PlayCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Crown, Eye, EyeOff, FileQuestion, Lock, PlayCircle } from 'lucide-react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import api from '@/api/apiClient';
 import { normalizeQuestion } from '@/api/questionsApi';
@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { categoryGroups } from '@/lib/testCatalog';
 import { canPreviewFreeTicket, hasPremiumAccess, registerFreeTicketPreview } from '@/lib/accessLimits';
 
-function TicketQuestionPreview({ question, index }) {
+function TicketQuestionPreview({ question, index, showAnswers }) {
   const options = question.options || [];
 
   return (
@@ -44,7 +44,7 @@ function TicketQuestionPreview({ question, index }) {
                   key={option.label}
                   className={cn(
                     'flex items-start gap-3 rounded-lg border p-3.5 text-left transition-colors',
-                    isCorrect
+                    showAnswers && isCorrect
                       ? 'border-emerald-400 bg-emerald-50/70 ring-1 ring-emerald-300 dark:border-emerald-500/70 dark:bg-emerald-500/10 dark:ring-emerald-500/30'
                       : 'border-slate-200 bg-background dark:border-slate-800',
                   )}
@@ -52,13 +52,13 @@ function TicketQuestionPreview({ question, index }) {
                   <span
                     className={cn(
                       'flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm font-medium',
-                      isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-300',
+                      showAnswers && isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-300',
                     )}
                   >
                     {option.label}
                   </span>
                   <span className="min-w-0 flex-1 pt-1 text-sm leading-6 text-slate-800 dark:text-slate-100">{option.text}</span>
-                  {isCorrect ? <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" /> : null}
+                  {showAnswers && isCorrect ? <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" /> : null}
                 </div>
               );
             })}
@@ -79,6 +79,7 @@ export default function TicketDetailPage() {
   const categoryMeta = useMemo(() => categoryGroups.find((item) => item.id === category) || categoryGroups[1], [category]);
   const isPremium = hasPremiumAccess(user);
   const lockedPreview = !isPremium && (numericTicket > 1 || !canPreviewFreeTicket(user, numericTicket));
+  const [showAnswers, setShowAnswers] = useState(false);
 
   const ticketQuery = useQuery({
     queryKey: ['ticket', numericTicket, category],
@@ -150,7 +151,7 @@ export default function TicketDetailPage() {
           </div>
           <h1 className="text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white sm:text-3xl">Білет {numericTicket}</h1>
           <p className="text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
-            Білет можна пройти як тест. Нижче залишили попередній перегляд складу білета з варіантами відповідей і позначеною правильною відповіддю.
+            Білет можна пройти як тест або спокійно переглянути питання. Правильні відповіді відкриються тільки після Вашого натискання.
           </p>
         </div>
 
@@ -189,11 +190,11 @@ export default function TicketDetailPage() {
           ['Медицина', 2],
         ].map(([label, count]) => (
           <Card key={label} className="border-slate-200 bg-card shadow-sm dark:border-slate-800">
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-sky-400/10 dark:text-sky-200">
+            <CardContent className="flex min-h-[86px] items-center justify-center gap-3 p-4 text-center">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-sky-400/10 dark:text-sky-200">
                 <FileQuestion className="h-5 w-5" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-slate-950 dark:text-white">{label}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{count} пит.</p>
               </div>
@@ -203,6 +204,14 @@ export default function TicketDetailPage() {
       </div>
 
       <div className="space-y-4">
+        {!ticketQuery.isLoading && questions.length > 0 ? (
+          <div className="flex justify-start">
+            <Button type="button" variant={showAnswers ? 'outline' : 'default'} className="rounded-xl" onClick={() => setShowAnswers((value) => !value)}>
+              {showAnswers ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+              {showAnswers ? 'Сховати відповіді' : 'Переглянути відповіді'}
+            </Button>
+          </div>
+        ) : null}
         {ticketQuery.isLoading ? (
           <div className="rounded-xl border border-slate-200 bg-card p-5 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-300">
             Завантажуємо білет...
@@ -213,7 +222,7 @@ export default function TicketDetailPage() {
           </div>
         ) : (
           questions.map((question, index) => (
-            <TicketQuestionPreview key={question.id} question={question} index={index} />
+            <TicketQuestionPreview key={question.id} question={question} index={index} showAnswers={showAnswers} />
           ))
         )}
       </div>

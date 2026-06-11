@@ -13,6 +13,7 @@ import { useProtectedScreen } from '@/lib/useProtectedScreen';
 const Home = lazy(() => import('@/pages/Home'));
 const TestSelection = lazy(() => import('@/pages/TestSelection'));
 const SectionTests = lazy(() => import('@/pages/SectionTests'));
+const SectionQuestionReview = lazy(() => import('@/pages/SectionQuestionReview'));
 const TakeTest = lazy(() => import('@/pages/TakeTest'));
 const Progress = lazy(() => import('@/pages/Progress'));
 const Achievements = lazy(() => import('@/pages/Achievements'));
@@ -73,6 +74,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/tests" element={<TestSelection />} />
                 <Route path="/section-tests" element={<SectionTests />} />
+                <Route path="/section-tests/:sectionId/questions" element={<SectionQuestionReview />} />
                 <Route path="/test" element={<TakeTest />} />
                 <Route path="/daily" element={<AuthOnlyRoute title="Виклик дня доступний після входу"><DailyChallenge /></AuthOnlyRoute>} />
                 <Route path="/mistakes" element={<AuthOnlyRoute title="Робота над помилками доступна після входу" description="Увійдіть, щоб ми могли знати Ваші помилки й підбирати питання саме для повторення."><MistakesReview /></AuthOnlyRoute>} />
