@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BadgeCheck, Crown, KeyRound, Search, Shield, Star, Trash2, UserRoundCog, Users } from 'lucide-react';
+import { BadgeCheck, Crown, KeyRound, Search, Shield, Star, Trash2, UserPlus, UserRoundCog, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +27,16 @@ export default function UsersPage() {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [drafts, setDrafts] = useState({});
   const [achievementDrafts, setAchievementDrafts] = useState({});
+  const [createUserForm, setCreateUserForm] = useState({
+    name: '',
+    surname: '',
+    username: '',
+    email: '',
+    password: '',
+    is_premium: false,
+    premium_months: 1,
+    is_blocked: false,
+  });
 
   const usersQuery = useQuery({ queryKey: ['admin-users'], queryFn: () => api.getAdminUsers() });
   const auditQuery = useQuery({
@@ -65,6 +75,24 @@ export default function UsersPage() {
         queryClient.invalidateQueries({ queryKey: ['admin-user-audit', selectedUserId] }),
         queryClient.invalidateQueries({ queryKey: ['cabinet-stats'] }),
       ]);
+    },
+  });
+
+  const createUserMutation = useMutation({
+    mutationFn: (payload) => api.createAdminUser(payload),
+    onSuccess: async (createdUser) => {
+      setCreateUserForm({
+        name: '',
+        surname: '',
+        username: '',
+        email: '',
+        password: '',
+        is_premium: false,
+        premium_months: 1,
+        is_blocked: false,
+      });
+      setSelectedUserId(createdUser?.id || null);
+      await queryClient.invalidateQueries({ queryKey: ['admin-users'] });
     },
   });
 
@@ -138,6 +166,21 @@ export default function UsersPage() {
     });
   };
 
+  const updateCreateUserForm = (key, value) => {
+    setCreateUserForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const submitCreateUser = (event) => {
+    event.preventDefault();
+    createUserMutation.mutate({
+      ...createUserForm,
+      username: createUserForm.username.replace(/^@/, '').trim(),
+      email: createUserForm.email.trim(),
+      password: createUserForm.password,
+      premium_months: clampNumber(createUserForm.premium_months || 1),
+    });
+  };
+
   return (
     <div>
       <AdminPageHeader
@@ -146,7 +189,100 @@ export default function UsersPage() {
         description="Пошук, Premium-доступ, блокування, статистика, досягнення та аудит активності користувача."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <Card className="mt-6 border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <UserPlus className="h-5 w-5 text-blue-600" />
+            Додати користувача
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={submitCreateUser} className="grid gap-3 lg:grid-cols-6">
+            <Input
+              className="lg:col-span-1"
+              placeholder="Ім'я"
+              value={createUserForm.name}
+              onChange={(event) => updateCreateUserForm('name', event.target.value)}
+              required
+            />
+            <Input
+              className="lg:col-span-1"
+              placeholder="Прізвище"
+              value={createUserForm.surname}
+              onChange={(event) => updateCreateUserForm('surname', event.target.value)}
+            />
+            <Input
+              className="lg:col-span-1"
+              placeholder="@username"
+              value={createUserForm.username}
+              onChange={(event) => updateCreateUserForm('username', event.target.value.replace(/\s+/g, ''))}
+              required
+            />
+            <Input
+              className="lg:col-span-1"
+              type="email"
+              placeholder="email"
+              value={createUserForm.email}
+              onChange={(event) => updateCreateUserForm('email', event.target.value)}
+              required
+            />
+            <Input
+              className="lg:col-span-1"
+              type="password"
+              placeholder="пароль"
+              value={createUserForm.password}
+              onChange={(event) => updateCreateUserForm('password', event.target.value)}
+              required
+              minLength={6}
+            />
+            <Button type="submit" disabled={createUserMutation.isPending} className="rounded-xl lg:col-span-1">
+              {createUserMutation.isPending ? 'Створення...' : 'Створити'}
+            </Button>
+
+            <div className="flex flex-wrap gap-3 lg:col-span-6">
+              <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={createUserForm.is_premium}
+                  onChange={(event) => updateCreateUserForm('is_premium', event.target.checked)}
+                />
+                Premium
+              </label>
+              {createUserForm.is_premium ? (
+                <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                  Місяців
+                  <Input
+                    type="number"
+                    min="1"
+                    max="120"
+                    className="h-8 w-20"
+                    value={createUserForm.premium_months}
+                    onChange={(event) => updateCreateUserForm('premium_months', Number(event.target.value || 1))}
+                  />
+                </label>
+              ) : null}
+              <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={createUserForm.is_blocked}
+                  onChange={(event) => updateCreateUserForm('is_blocked', event.target.checked)}
+                />
+                Заблокований
+              </label>
+              {createUserMutation.isError ? (
+                <span className="inline-flex items-center text-sm font-medium text-rose-600">
+                  {createUserMutation.error?.message || 'Не вдалося створити користувача'}
+                </span>
+              ) : null}
+              {createUserMutation.isSuccess ? (
+                <span className="inline-flex items-center text-sm font-medium text-emerald-600">Користувача створено</span>
+              ) : null}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={Users} label="Усього" value={users.length} hint="зареєстровані акаунти" tone="blue" />
         <StatCard icon={Crown} label="Premium" value={premiumUsers} hint={`${percent(premiumUsers, users.length)}% від бази`} tone="amber" />
         <StatCard icon={Shield} label="Блокування" value={blockedUsers} hint="потребують уваги" tone="rose" />

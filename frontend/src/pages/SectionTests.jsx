@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
 import api from '@/api/apiClient';
+import { fetchQuestions, normalizeQuestion } from '@/api/questionsApi';
 import { useAuth } from '@/lib/AuthContext';
 import { getFreeDailyTestLimit, getRemainingFreeTests, hasPremiumAccess } from '@/lib/accessLimits';
 import { buildSections, categoryGroups } from '@/lib/testCatalog';
@@ -47,6 +48,8 @@ export default function SectionTests() {
   );
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
+  const [reviewSection, setReviewSection] = useState(null);
+  const [reviewAnswers, setReviewAnswers] = useState({});
   const premiumAccess = hasPremiumAccess(user);
 
   const selectedCategoryMeta = categoryGroups.find((item) => item.id === selectedCategory) || categoryGroups[1];
@@ -68,6 +71,26 @@ export default function SectionTests() {
     queryFn: () => api.getTestResults(),
     enabled: !!user,
     staleTime: 120000,
+  });
+
+  const reviewQuestionsQuery = useQuery({
+    queryKey: ['section-review-questions', selectedCategory, reviewSection?.id],
+    enabled: Boolean(reviewSection?.id),
+    queryFn: async () => {
+      const response = await fetchQuestions({
+        section: reviewSection.id,
+        category: selectedCategory,
+        limit: Math.min(250, Number(reviewSection.count || 100) || 100),
+      });
+      const items = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.items)
+          ? response.items
+          : Array.isArray(response?.questions)
+            ? response.questions
+            : [];
+      return items.map(normalizeQuestion).filter(Boolean);
+    },
   });
 
   const progressBySection = useMemo(() => {
@@ -130,6 +153,16 @@ export default function SectionTests() {
     }
     const query = new URLSearchParams({ mode: 'section', category: selectedCategory, section: sectionId });
     navigate(`/test?${query.toString()}`);
+  };
+
+  const openReview = (section) => {
+    setReviewAnswers({});
+    setReviewSection(section);
+  };
+
+  const closeReview = () => {
+    setReviewSection(null);
+    setReviewAnswers({});
   };
 
   return (
@@ -220,6 +253,7 @@ export default function SectionTests() {
         sections={popularSections}
         isLoading={isLoading}
         onStart={startSection}
+        onReview={openReview}
         highlight
       />
 
@@ -229,7 +263,77 @@ export default function SectionTests() {
         sections={sections}
         isLoading={isLoading}
         onStart={startSection}
+        onReview={openReview}
       />
+
+      <Dialog open={Boolean(reviewSection)} onOpenChange={(open) => (!open ? closeReview() : null)}>
+        <DialogContent className="max-h-[90vh] overflow-hidden rounded-2xl p-0 sm:max-w-4xl">
+          <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+            <DialogTitle className="text-xl font-semibold text-slate-950 dark:text-white">
+              {reviewSection?.title || 'Питання розділу'}
+            </DialogTitle>
+            <DialogDescription className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Це швидкий перегляд без запису в статистику. Відповіді скинуться після закриття вікна.
+            </DialogDescription>
+          </div>
+          <div className="max-h-[72vh] space-y-4 overflow-y-auto bg-slate-50 p-4 dark:bg-slate-950 sm:p-5">
+            {reviewQuestionsQuery.isLoading ? (
+              <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                Завантажуємо питання...
+              </div>
+            ) : null}
+            {!reviewQuestionsQuery.isLoading && reviewQuestionsQuery.data?.length === 0 ? (
+              <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                У цьому розділі поки немає питань для перегляду.
+              </div>
+            ) : null}
+            {(reviewQuestionsQuery.data || []).map((question, index) => {
+              const selected = reviewAnswers[String(question.id)];
+              return (
+                <div key={question.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Питання {index + 1}</p>
+                    {selected ? (
+                      <Badge className={selected === question.correct_answer ? 'bg-emerald-600' : 'bg-rose-600'}>
+                        {selected === question.correct_answer ? 'Правильно' : 'Неправильно'}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <p className="text-base font-semibold leading-7 text-slate-950 dark:text-white">{question.text}</p>
+                  {question.image_url ? <img src={question.image_url} alt="Ілюстрація до питання" className="mt-4 max-h-72 w-full rounded-xl object-contain" /> : null}
+                  <div className="mt-4 space-y-2">
+                    {question.options.map((option) => {
+                      const isSelected = selected === option.label;
+                      const isCorrect = question.correct_answer === option.label;
+                      const reveal = Boolean(selected);
+                      return (
+                        <button
+                          key={option.label}
+                          type="button"
+                          disabled={reveal}
+                          onClick={() => setReviewAnswers((current) => ({ ...current, [String(question.id)]: option.label }))}
+                          className={cn(
+                            'flex w-full items-start gap-3 rounded-xl border p-3 text-left text-sm transition',
+                            !reveal && 'border-slate-200 bg-white hover:border-primary/40 hover:bg-primary/5 dark:border-slate-700 dark:bg-slate-950',
+                            reveal && isCorrect && 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-950/30 dark:text-emerald-200',
+                            reveal && isSelected && !isCorrect && 'border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-500/30 dark:bg-rose-950/30 dark:text-rose-200',
+                            reveal && !isSelected && !isCorrect && 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-500',
+                          )}
+                        >
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                            {option.label}
+                          </span>
+                          <span className="leading-6">{option.text}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <PremiumLimitDialog
         open={limitOpen}
@@ -258,7 +362,7 @@ export default function SectionTests() {
   );
 }
 
-function SectionGroup({ title, icon: Icon, sections, isLoading, onStart, highlight = false }) {
+function SectionGroup({ title, icon: Icon, sections, isLoading, onStart, onReview, highlight = false }) {
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-3">
@@ -275,11 +379,9 @@ function SectionGroup({ title, icon: Icon, sections, isLoading, onStart, highlig
       ) : (
         <div className="mx-auto grid w-full max-w-[calc(100vw-2.5rem)] gap-5 sm:max-w-none md:grid-cols-2 xl:grid-cols-3">
           {sections.map((section) => (
-            <button
+            <article
               key={section.id}
-              type="button"
-              className="group flex min-h-[214px] w-full min-w-0 flex-col rounded-2xl border border-slate-200 bg-card p-5 text-left shadow-md transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-xl dark:border-slate-800 dark:hover:border-sky-500/40"
-              onClick={() => onStart(section.id)}
+              className="group flex min-h-[232px] w-full min-w-0 flex-col rounded-2xl border border-slate-200 bg-card p-5 text-left shadow-md transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-xl dark:border-slate-800 dark:hover:border-sky-500/40"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -310,8 +412,16 @@ function SectionGroup({ title, icon: Icon, sections, isLoading, onStart, highlig
                   <span className="text-slate-500 dark:text-slate-400">{section.answered} з {section.count} вивчено</span>
                   <ArrowRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-primary" />
                 </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Button type="button" className="rounded-xl" onClick={() => onStart(section.id)}>
+                    Почати
+                  </Button>
+                  <Button type="button" variant="outline" className="rounded-xl" onClick={() => onReview?.(section)}>
+                    Переглянути питання
+                  </Button>
+                </div>
               </div>
-            </button>
+            </article>
           ))}
         </div>
       )}

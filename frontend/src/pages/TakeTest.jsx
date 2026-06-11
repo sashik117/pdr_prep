@@ -451,6 +451,7 @@ export default function TakeTest() {
           toast({
             title: `Нове досягнення: ${achievementCopy?.name || achievement.name}`,
             description: achievementCopy?.desc || achievement.description,
+            onClick: () => navigate('/achievements'),
           });
         });
       } catch {
@@ -784,6 +785,7 @@ export default function TakeTest() {
                 description: saved
                   ? 'Ви зможете повернутися до нього в розділі “Збережені запитання”.'
                   : 'Список повторення оновлено.',
+                onClick: saved ? () => navigate('/saved') : undefined,
               });
             } : undefined}
             isAuthenticated={!!user}

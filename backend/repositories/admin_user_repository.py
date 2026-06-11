@@ -36,6 +36,54 @@ class AdminUserRepository:
     def get_user(self, *, user_id: int) -> Optional[dict[str, Any]]:
         return self._row(self.conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone())
 
+    def get_user_by_email_or_username(self, *, email: str, username: str) -> Optional[dict[str, Any]]:
+        return self._row(
+            self.conn.execute(
+                "SELECT * FROM users WHERE lower(email) = lower(%s) OR lower(username) = lower(%s) LIMIT 1",
+                (email, username),
+            ).fetchone()
+        )
+
+    def create_user(
+        self,
+        *,
+        name: str,
+        surname: str,
+        username: str,
+        email: str,
+        password_hash: str,
+        is_premium: bool,
+        premium_months: int,
+        is_blocked: bool,
+    ) -> dict[str, Any]:
+        row = self.conn.execute(
+            """
+            INSERT INTO users (
+                name, surname, username, email, password_hash,
+                email_verified, is_premium, premium_expires_at, is_blocked
+            )
+            VALUES (
+                %s, %s, %s, lower(%s), %s,
+                true, %s,
+                CASE WHEN %s THEN NOW() + (%s * INTERVAL '1 month') ELSE NULL END,
+                %s
+            )
+            RETURNING *
+            """,
+            (
+                name,
+                surname,
+                username,
+                email,
+                password_hash,
+                is_premium,
+                is_premium,
+                max(1, int(premium_months or 1)),
+                is_blocked,
+            ),
+        ).fetchone()
+        return dict(row)
+
     def update_user(self, *, user_id: int, values: dict[str, Any]) -> Optional[dict[str, Any]]:
         if not values:
             return self.get_user(user_id=user_id)

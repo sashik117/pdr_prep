@@ -425,6 +425,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ content }),
     }),
+  sendSupportMessageAttachment: (content, file) => {
+    const form = new FormData();
+    form.append('content', content || '');
+    form.append('file', file);
+    return request('/support/messages/attachment', {
+      method: 'POST',
+      body: form,
+    });
+  },
   purchaseFrame: (frame_id) =>
     request('/frames/purchase', {
       method: 'POST',
@@ -438,6 +447,11 @@ export const api = {
       body: JSON.stringify({ content }),
     }),
   getAdminUsers: () => request('/admin/users'),
+  createAdminUser: (payload) =>
+    request('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   getAdminPremiumSettings: () => request('/admin/premium/settings'),
   updateAdminPremiumSettings: (payload) =>
     request('/admin/premium/settings', {

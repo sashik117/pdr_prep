@@ -58,19 +58,27 @@ export default function QuestionCard({
 
       <div className={cn(hasImage && 'lg:grid lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:items-start lg:gap-6')}>
         {hasImage ? (
-          <div className="group relative mb-6 overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-900 lg:mb-0">
-            <img src={question.image_url} alt="Ілюстрація до питання" className="max-h-72 w-full object-contain sm:max-h-80" />
+          <button
+            type="button"
+            onClick={() => onAnalyzeSituation?.(question)}
+            disabled={!onAnalyzeSituation}
+            className={cn(
+              'group relative mb-6 block w-full overflow-hidden rounded-xl bg-gray-100 text-left dark:bg-slate-900 lg:mb-0',
+              onAnalyzeSituation && 'cursor-zoom-in transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-400',
+            )}
+            aria-label={onAnalyzeSituation ? 'Відкрити ілюстрацію та аналіз ситуації' : 'Ілюстрація до питання'}
+          >
+            <img
+              src={question.image_url}
+              alt="Ілюстрація до питання"
+              className="pointer-events-none max-h-72 w-full object-contain sm:max-h-80"
+            />
             {onAnalyzeSituation ? (
-              <button
-                type="button"
-                onClick={() => onAnalyzeSituation(question)}
-                className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white opacity-90 shadow transition-opacity hover:opacity-100"
-              >
-                <ZoomIn className="h-3.5 w-3.5" />
-                Аналіз ситуації
-              </button>
+              <span className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-primary-700 shadow-sm ring-1 ring-black/5 transition group-hover:scale-105 dark:bg-slate-950/90 dark:text-primary-200">
+                <ZoomIn className="h-4 w-4" />
+              </span>
             ) : null}
-          </div>
+          </button>
         ) : null}
 
         <div className="space-y-3">

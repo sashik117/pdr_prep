@@ -310,7 +310,9 @@ class ProgressRepository:
                 COALESCE(SUM(time_seconds) FILTER (WHERE DATE(created_at) = CURRENT_DATE), 0)::int AS today_test_time_seconds,
                 COALESCE(
                     MIN(time_seconds) FILTER (
-                        WHERE mode IN ('mvs', 'ticket') AND total > 0 AND (correct::numeric / total) >= 0.8
+                        WHERE total >= 10
+                          AND time_seconds > 0
+                          AND (correct::numeric / NULLIF(total, 0)) >= 0.8
                     ),
                     0
                 )::int AS best_exam_time_seconds

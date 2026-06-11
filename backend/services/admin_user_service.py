@@ -7,8 +7,10 @@ from typing import Any
 import psycopg
 
 from core.database import db
+from domain.achievements import achievement_copy
+from domain.auth import normalize_username
 from repositories.admin_user_repository import AdminUserRepository
-from schemas.requests import AdminAchievementUpdateRequest, AdminUserUpdateRequest
+from schemas.requests import AdminAchievementUpdateRequest, AdminUserCreateRequest, AdminUserUpdateRequest
 from services.errors import ServiceError
 
 
@@ -17,6 +19,24 @@ StarsResolver = Callable[[psycopg.Connection, dict[str, Any]], int]
 JsonListCoercer = Callable[[Any], list[Any]]
 JsonDictCoercer = Callable[[Any], dict[str, Any]]
 AdminEmailChecker = Callable[[str | None], bool]
+PasswordHasher = Callable[[str], str]
+
+
+def _normalize_achievement_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        name, description = achievement_copy(
+            str(item.get("achievement_id") or ""),
+            str(item.get("achievement_name") or ""),
+            str(item.get("achievement_desc") or ""),
+        )
+        item["achievement_name"] = name
+        item["achievement_desc"] = description
+        item["name"] = name
+        item["description"] = description
+        normalized.append(item)
+    return normalized
 
 
 def list_admin_users(
@@ -43,6 +63,53 @@ def list_admin_users(
     return payload
 
 
+def create_admin_user(
+    req: AdminUserCreateRequest,
+    *,
+    hash_password: PasswordHasher,
+    present_user: UserPresenter,
+    total_stars: StarsResolver,
+    available_stars: StarsResolver,
+) -> dict[str, Any]:
+    name = req.name.strip()
+    surname = req.surname.strip()
+    username = normalize_username(req.username)
+    email = req.email.strip().lower()
+    password = req.password.strip()
+    if not name:
+        raise ServiceError(400, "Вкажіть ім'я користувача")
+    if not username:
+        raise ServiceError(400, "Вкажіть нікнейм")
+    if "@" not in email or "." not in email:
+        raise ServiceError(400, "Вкажіть коректний email")
+    if len(password) < 6:
+        raise ServiceError(400, "Пароль має містити щонайменше 6 символів")
+
+    with db() as conn:
+        repo = AdminUserRepository(conn)
+        if repo.get_user_by_email_or_username(email=email, username=username):
+            raise ServiceError(409, "Користувач із таким email або нікнеймом уже існує")
+        user_row = repo.create_user(
+            name=name,
+            surname=surname,
+            username=username,
+            email=email,
+            password_hash=hash_password(password),
+            is_premium=bool(req.is_premium),
+            premium_months=int(req.premium_months or 1),
+            is_blocked=bool(req.is_blocked),
+        )
+        payload = {
+            **present_user(user_row),
+            "achievement_count": 0,
+            "manual_star_adjustment": int(user_row.get("manual_star_adjustment") or 0),
+            "total_stars": total_stars(conn, user_row),
+            "available_stars": available_stars(conn, user_row),
+        }
+        conn.commit()
+    return payload
+
+
 def get_admin_user_audit(
     user_id: int,
     *,
@@ -57,7 +124,7 @@ def get_admin_user_audit(
         user_row = repo.get_user(user_id=user_id)
         if not user_row:
             raise ServiceError(404, "Користувача не знайдено")
-        achievements = repo.list_achievements(user_id=user_id)
+        achievements = _normalize_achievement_rows(repo.list_achievements(user_id=user_id))
         tests = repo.list_tests(user_id=user_id)
         battles = repo.list_battles(email=user_row["email"])
         messages = repo.list_messages(email=user_row["email"])
@@ -187,4 +254,4 @@ def update_admin_user_achievement(
                 category=category,
             )
         conn.commit()
-        return repo.list_achievements(user_id=user_id)
+        return _normalize_achievement_rows(repo.list_achievements(user_id=user_id))

@@ -7,6 +7,7 @@ from typing import Any
 import psycopg
 
 from core.database import db
+from domain.achievements import achievement_copy
 from domain.test_results import earned_star, plan_streak_update, streak_snapshot
 from repositories.progress_repository import ProgressRepository
 from schemas.progress import ProgressResultResponse, ProgressStatsResponse, TestResultResponse
@@ -24,6 +25,23 @@ SectionOrderSqlBuilder = Callable[[str], str]
 
 def _today():
     return datetime.now().astimezone().date()
+
+
+def _normalize_achievement_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        name, description = achievement_copy(
+            str(item.get("achievement_id") or ""),
+            str(item.get("achievement_name") or ""),
+            str(item.get("achievement_desc") or ""),
+        )
+        item["achievement_name"] = name
+        item["achievement_desc"] = description
+        item["name"] = name
+        item["description"] = description
+        normalized.append(item)
+    return normalized
 
 
 def submit_test_result(
@@ -214,7 +232,7 @@ def get_progress_stats(
         recent_tests = repo.list_recent_tests(user_id=user_id)
         time_stats = repo.get_time_stats(user_id=user_id)
         difficult_question_ids = repo.list_difficult_question_ids(user_id=user_id)
-        achievements = repo.list_achievements(user_id=user_id)
+        achievements = _normalize_achievement_rows(repo.list_achievements(user_id=user_id))
         passed_tests = repo.passed_tests_count(user_id=user_id)
         total_stars = int(available_stars(conn, user_row) or 0)
         activity_days = repo.list_activity_days(user_id=user_id)

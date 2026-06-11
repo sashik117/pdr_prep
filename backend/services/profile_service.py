@@ -7,6 +7,7 @@ from typing import Any
 
 from core.config import FRAME_SHOP, USERNAME_RE
 from core.database import db
+from domain.achievements import achievement_copy
 from domain.auth import normalize_username, username_is_valid
 from domain.profile import (
     clamp_font_size,
@@ -22,6 +23,23 @@ from services.errors import ServiceError
 
 UserPresenter = Callable[[dict[str, Any]], dict[str, Any]]
 AdminEmailChecker = Callable[[str | None], bool]
+
+
+def _normalize_achievement_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        name, description = achievement_copy(
+            str(item.get("achievement_id") or ""),
+            str(item.get("achievement_name") or item.get("name") or ""),
+            str(item.get("achievement_desc") or item.get("description") or ""),
+        )
+        item["achievement_name"] = name
+        item["achievement_desc"] = description
+        item["name"] = name
+        item["description"] = description
+        normalized.append(item)
+    return normalized
 
 
 def _validate_username(value: str) -> str:
@@ -140,7 +158,7 @@ def _public_profile_payload(
         "passed_tests": repo.passed_tests_count(user_id=int(user["id"])),
         **repo.battle_stats_for_email(user.get("email")),
         "total_wrong": max(0, int(user.get("total_answers", 0) or 0) - int(user.get("total_correct", 0) or 0)),
-        "achievements": repo.list_achievements(user_id=int(user["id"])),
+        "achievements": _normalize_achievement_rows(repo.list_achievements(user_id=int(user["id"]))),
     }
 
 

@@ -1,20 +1,32 @@
 export function registerServiceWorker() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
-  if (import.meta.env.DEV) {
+  const cleanupServiceWorkers = () => {
     navigator.serviceWorker.getRegistrations().then((registrations) => {
       registrations.forEach((registration) => {
         void registration.unregister();
       });
     }).catch(() => {
-      // Ignore cleanup errors in dev.
+      // Ignore cleanup errors; the app should still work as a normal website.
     });
-    return;
-  }
+
+    if ('caches' in window) {
+      caches.keys().then((keys) => {
+        keys.forEach((key) => {
+          if (key.startsWith('pdrprep-')) void caches.delete(key);
+        });
+      }).catch(() => {
+        // Cache cleanup is best effort.
+      });
+    }
+  };
 
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      // Keep the app working even when the service worker is absent in dev/build previews.
+    cleanupServiceWorkers();
+    navigator.serviceWorker.register('/sw.js').then((registration) => {
+      void registration.update();
+    }).catch(() => {
+      // The cleanup above is enough when /sw.js is not available.
     });
   });
 }

@@ -143,12 +143,6 @@ export default function UserProfile() {
             <ProfileAvatar profile={profile} />
 
             <div className="min-w-0 flex-1">
-              {profile.is_premium ? (
-                <span className="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-amber-700 ring-1 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-200 dark:ring-amber-500/20">
-                  <Crown className="h-3.5 w-3.5" />
-                  Premium користувач
-                </span>
-              ) : null}
               <h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl">
                 {profile.full_name || `${profile.name || ''} ${profile.surname || ''}`.trim()}
               </h2>
@@ -156,7 +150,7 @@ export default function UserProfile() {
                 <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-sm font-semibold text-primary">
                   <AtSign className="h-4 w-4" />
                   {profile.username}
-                  {profile.is_premium ? <Crown className="h-4 w-4 text-amber-500" /> : null}
+                  {profile.is_premium ? <Crown className="-mt-2 h-3.5 w-3.5 text-amber-500" /> : null}
                 </p>
               ) : null}
               {profile.email ? (

@@ -25,7 +25,7 @@ function normalizeEmbedUrl(value) {
         const embed = new URL(`https://www.youtube-nocookie.com/embed/${videoId}`);
         embed.searchParams.set('rel', '0');
         embed.searchParams.set('modestbranding', '1');
-        embed.searchParams.set('controls', '0');
+        embed.searchParams.set('controls', '1');
         embed.searchParams.set('showinfo', '0');
         embed.searchParams.set('fs', '0');
         embed.searchParams.set('iv_load_policy', '3');
@@ -39,7 +39,7 @@ function normalizeEmbedUrl(value) {
       url.searchParams.delete('origin');
       url.searchParams.set('rel', '0');
       url.searchParams.set('modestbranding', '1');
-      url.searchParams.set('controls', '0');
+      url.searchParams.set('controls', '1');
       url.searchParams.set('showinfo', '0');
       url.searchParams.set('fs', '0');
       url.searchParams.set('iv_load_policy', '3');
@@ -73,12 +73,12 @@ export default function TheoryVideoPanel({ title, embedUrl = '', videoUrl = '' }
           <div className="relative aspect-video overflow-hidden rounded-lg bg-slate-950 shadow-sm">
             {loaded ? (
               <>
-                <div className="pointer-events-auto absolute left-0 top-0 z-10 h-[22%] w-full bg-transparent" />
-                <div className="pointer-events-auto absolute bottom-0 right-0 z-10 h-[18%] w-[34%] bg-transparent" />
+                <div className="pointer-events-auto absolute left-0 top-0 z-10 h-[30%] w-full bg-transparent" />
+                <div className="pointer-events-auto absolute bottom-0 right-0 z-10 h-[28%] w-[48%] bg-transparent" />
                 <iframe
                   src={safeEmbedUrl}
                   title={`Відео: ${title}`}
-                  className="absolute left-0 top-[-82px] h-[calc(100%+146px)] w-full border-0 bg-slate-950 sm:top-[-96px] sm:h-[calc(100%+172px)]"
+                  className="absolute left-0 top-[-116px] h-[calc(100%+210px)] w-full border-0 bg-slate-950 sm:top-[-132px] sm:h-[calc(100%+238px)]"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   loading="lazy"
                   referrerPolicy="strict-origin-when-cross-origin"

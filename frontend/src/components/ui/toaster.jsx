@@ -8,17 +8,24 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast";
+import { cn } from "@/lib/utils";
 
 export function Toaster() {
   const { toasts, dismiss } = useToast();
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, onOpenChange, open, ...props }) {
+      {toasts.map(function ({ id, title, description, action, onOpenChange, open, onClick, className, ...props }) {
         return (
           <Toast
             key={id}
             data-state={open ? "open" : "closed"}
+            onClick={(event) => {
+              if (!onClick || event.defaultPrevented) return;
+              onClick(event);
+              dismiss(id);
+            }}
+            className={cn(onClick && "cursor-pointer", className)}
             {...props}
           >
             <div className="grid gap-1">

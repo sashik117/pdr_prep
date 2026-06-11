@@ -126,7 +126,8 @@ def list_user_support_messages(user: dict[str, Any]) -> list[dict[str, Any]]:
 
 def send_user_support_message(req: SupportMessageCreateRequest, user: dict[str, Any]) -> UserSupportMessage:
     content = req.content.strip()
-    if not content:
+    attachment_url = (req.attachment_url or "").strip() or None
+    if not content and not attachment_url:
         raise ServiceError(400, "Повідомлення не може бути порожнім")
     with db() as conn:
         repo = SupportRepository(conn)
@@ -134,7 +135,8 @@ def send_user_support_message(req: SupportMessageCreateRequest, user: dict[str, 
             support_email=SUPPORT_EMAIL,
             user_email=user["email"],
             user_name=user["name"],
-            content=content,
+            content=content or "Фото до звернення",
+            result_data_json=json.dumps({"attachment_url": attachment_url}, ensure_ascii=False) if attachment_url else "{}",
         )
         conn.commit()
     payload = {

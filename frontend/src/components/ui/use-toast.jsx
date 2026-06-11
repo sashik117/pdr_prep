@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 
 const TOAST_LIMIT = 20;
 const TOAST_REMOVE_DELAY = 180;
+const TOAST_AUTO_DISMISS_DELAY = 6500;
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -19,6 +20,31 @@ function genId() {
 }
 
 const toastTimeouts = new Map();
+const toastAutoDismissTimeouts = new Map();
+
+const clearAutoDismissQueue = (toastId) => {
+  const timeout = toastAutoDismissTimeouts.get(toastId);
+  if (timeout) {
+    clearTimeout(timeout);
+    toastAutoDismissTimeouts.delete(toastId);
+  }
+};
+
+const addToAutoDismissQueue = (toastId, delay = TOAST_AUTO_DISMISS_DELAY) => {
+  if (delay === Infinity || delay === null || delay === false || toastAutoDismissTimeouts.has(toastId)) {
+    return;
+  }
+
+  const timeout = setTimeout(() => {
+    toastAutoDismissTimeouts.delete(toastId);
+    dispatch({
+      type: actionTypes.DISMISS_TOAST,
+      toastId,
+    });
+  }, Math.max(1000, Number(delay) || TOAST_AUTO_DISMISS_DELAY));
+
+  toastAutoDismissTimeouts.set(toastId, timeout);
+};
 
 const addToRemoveQueue = (toastId) => {
   if (toastTimeouts.has(toastId)) {
@@ -66,9 +92,11 @@ export const reducer = (state, action) => {
       // ! Side effects ! - This could be extracted into a dismissToast() action,
       // but I'll keep it here for simplicity
       if (toastId) {
+        clearAutoDismissQueue(toastId);
         addToRemoveQueue(toastId);
       } else {
         state.toasts.forEach((toast) => {
+          clearAutoDismissQueue(toast.id);
           addToRemoveQueue(toast.id);
         });
       }
@@ -87,11 +115,14 @@ export const reducer = (state, action) => {
     }
     case actionTypes.REMOVE_TOAST:
       if (action.toastId === undefined) {
+        toastAutoDismissTimeouts.forEach((timeout) => clearTimeout(timeout));
+        toastAutoDismissTimeouts.clear();
         return {
           ...state,
           toasts: [],
         };
       }
+      clearAutoDismissQueue(action.toastId);
       return {
         ...state,
         toasts: state.toasts.filter((t) => t.id !== action.toastId),
@@ -133,6 +164,7 @@ function toast({ ...props }) {
       },
     },
   });
+  addToAutoDismissQueue(id, props.duration);
 
   return {
     id,

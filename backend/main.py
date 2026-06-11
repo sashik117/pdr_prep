@@ -92,6 +92,7 @@ from schemas.requests import (
     AdminSupportReplyRequest,
     AdminTheoryParseRequest,
     AdminTheorySectionUpdateRequest,
+    AdminUserCreateRequest,
     AdminUserUpdateRequest,
     BattleCreateRequest,
     BattleSubmitRequest,
@@ -183,6 +184,7 @@ from services.support_service import (
 )
 from services.admin_user_service import (
     create_admin_password_reset as create_admin_password_reset_use_case,
+    create_admin_user as create_admin_user_use_case,
     delete_admin_user as delete_admin_user_use_case,
     get_admin_user_audit as get_admin_user_audit_use_case,
     list_admin_users as list_admin_users_use_case,
@@ -866,7 +868,7 @@ def _admin_public() -> dict[str, Any]:
     return {
         "id": 0,
         "username": ADMIN_USERNAME,
-        "name": "РђРґРјС–РЅС–СЃС‚СЂР°С‚РѕСЂ",
+        "name": "Адміністратор",
         "full_name": "DrivePrep Admin",
         "email": SUPPORT_EMAIL,
         "is_admin": True,
@@ -1991,6 +1993,23 @@ async def send_support_message(req: SupportMessageCreateRequest, user=Depends(ge
     return sent.payload
 
 
+@app.post("/support/messages/attachment")
+async def send_support_message_attachment(
+    file: UploadFile = File(...),
+    content: str = Form(default=""),
+    user=Depends(get_current_user),
+):
+    saved = _save_admin_media_upload(file, scope="support", admin=None)
+    req = SupportMessageCreateRequest(content=content, attachment_url=saved["url"])
+    try:
+        sent = send_user_support_message_use_case(req, user)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
+    await realtime_hub.emit(SUPPORT_EMAIL, "support_message", {"from_email": user["email"]})
+    await realtime_hub.emit(user["email"], "support_message", {"from_email": user["email"]})
+    return sent.payload
+
+
 @app.get("/notifications/summary")
 def get_notifications_summary(user=Depends(get_current_user)):
     return get_notifications_summary_use_case(user)
@@ -2027,6 +2046,20 @@ def admin_users(admin=Depends(require_admin)):
         total_stars=_total_stars,
         available_stars=_available_stars,
     )
+
+
+@app.post("/admin/users")
+def admin_create_user(req: AdminUserCreateRequest, admin=Depends(require_admin)):
+    try:
+        return create_admin_user_use_case(
+            req,
+            hash_password=hash_password,
+            present_user=_user_public,
+            total_stars=_total_stars,
+            available_stars=_available_stars,
+        )
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
 
 
 @app.get("/admin/users/{user_id}/audit")
@@ -2083,15 +2116,20 @@ def admin_reset_user_password(user_id: int, admin=Depends(require_admin)):
 
 
 @app.post("/admin/users/{user_id}/achievements")
-def admin_update_user_achievements(user_id: int, req: AdminAchievementUpdateRequest, admin=Depends(require_admin)):
+async def admin_update_user_achievements(user_id: int, req: AdminAchievementUpdateRequest, admin=Depends(require_admin)):
     try:
-        return update_admin_user_achievement_use_case(
+        achievements = update_admin_user_achievement_use_case(
             user_id,
             req,
             achievement_defs=ACHIEVEMENTS_DEF,
         )
     except ServiceError as exc:
         raise HTTPException(exc.status_code, exc.message) from exc
+    with db() as conn:
+        target = conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
+    if target and target.get("email"):
+        await realtime_hub.emit(target["email"], "user_updated", {"user": _user_public(target)})
+    return achievements
 
 
 @app.get("/admin/questions")

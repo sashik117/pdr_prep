@@ -124,13 +124,14 @@ class SupportRepository:
         user_email: str,
         user_name: str,
         content: str,
+        result_data_json: str = "{}",
     ) -> dict[str, Any]:
         row = self.conn.execute(
             """
             INSERT INTO messages (to_email, from_email, from_name, content, type, result_data)
-            VALUES (%s, %s, %s, %s, 'text', '{}'::jsonb)
+            VALUES (%s, %s, %s, %s, 'text', %s::jsonb)
             RETURNING *
             """,
-            (support_email, user_email, user_name, content),
+            (support_email, user_email, user_name, content, result_data_json),
         ).fetchone()
         return dict(row)

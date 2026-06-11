@@ -111,6 +111,7 @@ class BattleDecisionRequest(BaseModel):
 
 class SupportMessageCreateRequest(BaseModel):
     content: str
+    attachment_url: Optional[str] = None
 
 
 class FramePurchaseRequest(BaseModel):
@@ -151,6 +152,17 @@ class AdminUserUpdateRequest(BaseModel):
     marathon_best: Optional[int] = None
     streak_days: Optional[int] = None
     manual_star_adjustment: Optional[int] = None
+
+
+class AdminUserCreateRequest(BaseModel):
+    name: str
+    surname: str = ""
+    username: str
+    email: str
+    password: str
+    is_premium: bool = False
+    premium_months: Optional[int] = Field(default=None, ge=0, le=120)
+    is_blocked: bool = False
 
 
 class AdminAchievementUpdateRequest(BaseModel):
