@@ -20,7 +20,7 @@ import SituationAnalysisModal from '@/components/test/SituationAnalysisModal';
 import GhostBar from '@/components/test/GhostBar';
 import LoginPrompt from '@/components/auth/LoginPrompt';
 import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
-import { registerFreeTestCompletion } from '@/lib/accessLimits';
+import { hasPremiumAccess, registerFreeTestCompletion } from '@/lib/accessLimits';
 import { getSavedQuestionIds, isQuestionSaved, toggleSavedQuestion } from '@/lib/savedQuestions';
 import { playTone } from '@/lib/soundEffects';
 import { getAchievementCopy } from '@/lib/achievements';
@@ -119,6 +119,7 @@ export default function TakeTest() {
   );
   const initialDraft = useMemo(() => readTestDraft(draftKey), [draftKey]);
   const hasRestorableDraft = Boolean(initialDraft?.questions?.length);
+  const premiumAccess = hasPremiumAccess(user);
 
   const [currentIndex, setCurrentIndex] = useState(() => Math.max(0, Number(initialDraft?.currentIndex || 0)));
   const [answers, setAnswers] = useState(() => initialDraft?.answers || {});
@@ -195,7 +196,7 @@ export default function TakeTest() {
     let canceled = false;
     async function prepareAccess() {
       if (isLoadingAuth) return;
-      if (hasRestorableDraft || showResults || user?.is_premium) {
+      if (hasRestorableDraft || showResults || premiumAccess) {
         if (!canceled) setServerAccessReady(true);
         return;
       }
@@ -227,7 +228,7 @@ export default function TakeTest() {
     return () => {
       canceled = true;
     };
-  }, [hasRestorableDraft, isLoadingAuth, mode, premiumOnly, showResults, user?.is_premium]);
+  }, [hasRestorableDraft, isLoadingAuth, mode, premiumOnly, premiumAccess, showResults]);
 
   useEffect(() => {
     if (hasRestorableDraft) return;
@@ -246,7 +247,7 @@ export default function TakeTest() {
     answeredAllAtRef.current = null;
     finishInProgressRef.current = false;
     finishedAtRef.current = null;
-    if (!user?.is_premium && LIMITED_FREE_TEST_MODES.includes(mode) && !limitRegisteredRef.current) {
+    if (!premiumAccess && LIMITED_FREE_TEST_MODES.includes(mode) && !limitRegisteredRef.current) {
       registerFreeTestCompletion(user || null, mode);
       limitRegisteredRef.current = true;
     }
@@ -293,13 +294,13 @@ export default function TakeTest() {
   }, []);
 
   useEffect(() => {
-    if (user?.is_premium) return;
+    if (premiumAccess) return;
     if (premiumOnly) {
       setLimitBlocked(true);
       return;
     }
     // Server-side access limit decides this now.
-  }, [mode, premiumOnly, user]);
+  }, [mode, premiumAccess, premiumOnly, user]);
 
   useEffect(() => {
     const refresh = () => setSavedIds(getSavedQuestionIds());

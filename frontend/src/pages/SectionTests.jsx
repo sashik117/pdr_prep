@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
 import api from '@/api/apiClient';
 import { useAuth } from '@/lib/AuthContext';
-import { getFreeDailyTestLimit, getRemainingFreeTests } from '@/lib/accessLimits';
+import { getFreeDailyTestLimit, getRemainingFreeTests, hasPremiumAccess } from '@/lib/accessLimits';
 import { buildSections, categoryGroups } from '@/lib/testCatalog';
 import { cn } from '@/lib/utils';
 
@@ -47,6 +47,7 @@ export default function SectionTests() {
   );
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
+  const premiumAccess = hasPremiumAccess(user);
 
   const selectedCategoryMeta = categoryGroups.find((item) => item.id === selectedCategory) || categoryGroups[1];
   const SelectedCategoryIcon = selectedCategoryMeta.icon;
@@ -116,7 +117,7 @@ export default function SectionTests() {
   };
 
   const startSection = async (sectionId) => {
-    if (!user?.is_premium) {
+    if (!premiumAccess) {
       try {
         const access = await api.checkAccessLimit('section_test_v2');
         if (!access?.allowed) {
@@ -153,7 +154,7 @@ export default function SectionTests() {
             <p className="w-[calc(100vw-2.5rem)] max-w-3xl break-words text-base leading-7 text-slate-600 dark:text-slate-300 sm:w-auto">
               Спочатку показуємо популярні та складні теми, а нижче залишаємо повний список розділів для спокійного тренування.
             </p>
-            {!user?.is_premium ? (
+            {!premiumAccess ? (
               <Badge variant="outline" className="mt-3 rounded-xl border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200">
                 Free: ще {getRemainingFreeTests(user, 'section')} із {getFreeDailyTestLimit(user)} спроб сьогодні
               </Badge>

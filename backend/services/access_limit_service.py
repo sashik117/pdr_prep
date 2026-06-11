@@ -64,8 +64,12 @@ def access_scope(*, user: dict[str, Any] | None, guest_id: str | None, ip_addres
     }
 
 
+def _has_premium_access(user: dict[str, Any] | None) -> bool:
+    return bool(user and (user.get("has_premium_access") or user.get("is_premium")))
+
+
 def check_access_limit(*, action: str, user: dict[str, Any] | None, guest_id: str | None, ip_address: str | None) -> dict[str, Any]:
-    if user and bool(user.get("is_premium")):
+    if _has_premium_access(user):
         return {"allowed": True, "count": 0, "limit": None, "remaining": None, "premium": True}
 
     limit = limit_for(action, user)
@@ -86,7 +90,7 @@ def check_access_limit(*, action: str, user: dict[str, Any] | None, guest_id: st
 
 
 def consume_access_limit(*, action: str, user: dict[str, Any] | None, guest_id: str | None, ip_address: str | None) -> dict[str, Any]:
-    if user and bool(user.get("is_premium")):
+    if _has_premium_access(user):
         return {"allowed": True, "count": 0, "limit": None, "remaining": None, "premium": True}
 
     limit = limit_for(action, user)

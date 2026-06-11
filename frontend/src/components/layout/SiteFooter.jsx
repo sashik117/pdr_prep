@@ -1,179 +1,121 @@
 import { Link } from 'react-router-dom';
-import {
-  BookOpenText,
-  ClipboardList,
-  Mail,
-  MessageCircle,
-  ShieldCheck,
-  Trophy,
-  UserRound,
-  UsersRound,
-} from 'lucide-react';
+import { BookOpenText, Crown, Mail, MessageCircle, ShieldCheck, Trophy } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { hasPremiumAccess } from '@/lib/accessLimits';
 
-const footerGroups = [
+const footerLinks = [
   {
     title: 'Навчання',
     icon: BookOpenText,
     links: [
-      { to: '/study', label: 'Бібліотека теорії' },
-      { to: '/study/rules', label: 'Правила дорожнього руху' },
-      { to: '/signs', label: 'Дорожні знаки' },
-      { to: '/study/road-markings', label: 'Дорожня розмітка' },
-      { to: '/study/video-lectures', label: 'Відеолекції' },
-    ],
-  },
-  {
-    title: 'Практика',
-    icon: ClipboardList,
-    links: [
-      { to: '/tests', label: 'Офіційні тести' },
-      { to: '/section-tests', label: 'Тести по розділах' },
-      { to: '/tickets', label: 'Офіційні білети' },
-      { to: '/mistakes', label: 'Топ помилок багатьох', auth: true },
-      { to: '/saved-questions', label: 'Збережені питання', auth: true },
-    ],
-  },
-  {
-    title: 'Кабінет',
-    icon: UserRound,
-    links: [
-      { to: '/cabinet', label: 'Кабінет', auth: true },
-      { to: '/profile', label: 'Профіль', auth: true },
-      { to: '/analytics', label: 'Аналітика', auth: true },
-      { to: '/achievements', label: 'Досягнення', auth: true },
-      { to: '/settings', label: 'Налаштування' },
-    ],
-  },
-  {
-    title: 'Спільнота',
-    icon: UsersRound,
-    links: [
-      { to: '/friends', label: 'Друзі', auth: true },
-      { to: '/battle', label: 'Батли', auth: true },
-      { to: '/marathon', label: 'Марафон', auth: true },
-      { to: '/leaderboard', label: 'Рейтинг' },
-      { to: '/support', label: 'Підтримка', auth: true },
+      { to: '/study', label: 'Теорія' },
+      { to: '/tests', label: 'Тести' },
+      { to: '/tickets', label: 'Білети' },
+      { to: '/section-tests', label: 'Практика' },
     ],
   },
   {
     title: 'Сервіс',
     icon: ShieldCheck,
     links: [
+      { to: '/support', label: 'Підтримка', auth: true },
+      { to: '/leaderboard', label: 'Рейтинг' },
       { to: '/privacy', label: 'Конфіденційність' },
       { to: '/terms', label: 'Угода підписника' },
-      { to: '/auth?tab=login', label: 'Вхід' },
-      { to: '/auth?tab=register', label: 'Реєстрація' },
     ],
   },
 ];
 
-const quickStats = [
-  { value: '1 000+', label: 'учнів готуються разом' },
-  { value: '35', label: 'розділів теорії' },
-  { value: '2 190', label: 'питань у базі' },
-];
-
 export default function SiteFooter() {
-  const { isAuthenticated } = useAuth();
-
-  const handleFooterLinkClick = () => {
-    window.scrollTo({ top: 0, behavior: 'auto' });
-  };
+  const { isAuthenticated, user } = useAuth();
+  const premiumAccess = hasPremiumAccess(user);
 
   const getLinkTarget = (link) => {
     if (link.auth && !isAuthenticated) {
       return `/auth?tab=login&redirect=${encodeURIComponent(link.to)}`;
     }
-
     return link.to;
   };
 
+  const scrollTop = () => window.scrollTo({ top: 0, behavior: 'auto' });
+
   return (
-    <footer className="mt-10 bg-slate-950 text-white">
-      <div className="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8">
-        <div className="grid gap-7 lg:grid-cols-[0.9fr_2fr]">
-          <div>
-            <Link to="/" onClick={handleFooterLinkClick} className="inline-flex items-center gap-3">
-              <img src="/logo.png" alt="DrivePrep" className="h-10 w-10 rounded-xl bg-white object-cover shadow-lg" />
-              <div>
-                <span className="block text-lg font-semibold tracking-tight text-white">DrivePrep</span>
-                <span className="text-sm text-slate-400">Тести ПДР без хаосу</span>
-              </div>
-            </Link>
-
-            <p className="mt-4 max-w-md text-sm leading-6 text-slate-400">
-              Актуальна база питань, структурована теорія, білети за логікою іспиту МВС, збережені питання,
-              аналітика та підтримка для майбутнього водія.
-            </p>
-
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              {quickStats.map((stat) => (
-                <div key={stat.label} className="rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-2.5">
-                  <p className="text-base font-semibold text-white">{stat.value}</p>
-                  <p className="mt-1 text-xs leading-4 text-slate-400">{stat.label}</p>
-                </div>
-              ))}
+    <footer className="mt-8 border-t border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300">
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[1fr_auto] lg:px-8">
+        <div className="space-y-4">
+          <Link to="/" onClick={scrollTop} className="inline-flex items-center gap-3">
+            <img src="/logo.png" alt="DrivePrep" className="h-10 w-10 rounded-xl object-contain shadow-sm" />
+            <div>
+              <p className="text-base font-semibold text-slate-950 dark:text-white">DrivePrep</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Підготовка до теоретичного іспиту ПДР</p>
             </div>
-          </div>
+          </Link>
 
-          <div className="grid grid-cols-2 gap-x-5 gap-y-6 sm:grid-cols-3 xl:grid-cols-5">
-            {footerGroups.map((group) => {
-              const Icon = group.icon;
-
-              return (
-                <div key={group.title}>
-                  <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-100">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.06] text-blue-200">
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    {group.title}
-                  </div>
-                  <ul className="space-y-2.5">
-                    {group.links.map((link) => (
-                      <li key={`${group.title}-${link.to}-${link.label}`}>
-                        <Link
-                          to={getLinkTarget(link)}
-                          onClick={handleFooterLinkClick}
-                          className="text-sm leading-5 text-slate-400 transition-colors hover:text-white"
-                        >
-                          {link.label}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
+          <div className="flex flex-wrap gap-2 text-sm">
+            {!premiumAccess ? (
+              <Link
+                to="/pricing"
+                onClick={scrollTop}
+                className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 font-medium text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-200 dark:ring-amber-500/20"
+              >
+                <Crown className="h-4 w-4" />
+                Premium
+              </Link>
+            ) : null}
+            <Link
+              to={isAuthenticated ? '/support' : '/auth?tab=login&redirect=%2Fsupport'}
+              onClick={scrollTop}
+              className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Підтримка
+            </Link>
+            <Link
+              to="/leaderboard"
+              onClick={scrollTop}
+              className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              <Trophy className="h-4 w-4" />
+              Рейтинг
+            </Link>
           </div>
         </div>
 
-        <div className="mt-7 grid gap-4 border-t border-white/10 pt-5 text-sm text-slate-400 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div>
-            <p className="text-slate-300">© 2026 DrivePrep. Матеріали створені для самопідготовки до теоретичного іспиту ПДР.</p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              Сервіс допомагає тренуватися, повторювати складні теми й рухатися до іспиту у власному темпі.
-            </p>
-          </div>
+        <div className="grid grid-cols-2 gap-5 sm:min-w-[360px]">
+          {footerLinks.map((group) => {
+            const Icon = group.icon;
+            return (
+              <div key={group.title}>
+                <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-white">
+                  <Icon className="h-4 w-4 text-blue-500" />
+                  {group.title}
+                </p>
+                <ul className="space-y-1.5">
+                  {group.links.map((link) => (
+                    <li key={`${group.title}-${link.to}`}>
+                      <Link
+                        to={getLinkTarget(link)}
+                        onClick={scrollTop}
+                        className="text-sm text-slate-500 transition hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <a href="mailto:pdr.preparation@gmail.com" className="inline-flex items-center gap-2 transition-colors hover:text-white">
-              <Mail className="h-4 w-4" />
-              pdr.preparation@gmail.com
-            </a>
-            <Link
-              to={isAuthenticated ? '/support' : '/auth?tab=login&redirect=%2Fsupport'}
-              onClick={handleFooterLinkClick}
-              className="inline-flex items-center gap-2 transition-colors hover:text-white"
-            >
-              <MessageCircle className="h-4 w-4" />
-              Написати в підтримку
-            </Link>
-            <Link to="/leaderboard" onClick={handleFooterLinkClick} className="inline-flex items-center gap-2 transition-colors hover:text-white">
-              <Trophy className="h-4 w-4" />
-              Рейтинг учнів
-            </Link>
-          </div>
+      <div className="border-t border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-500">
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span>© 2026 DrivePrep. Навчайтесь у своєму темпі.</span>
+          <a href="mailto:pdr.preparation@gmail.com" className="inline-flex items-center gap-2 transition hover:text-blue-600 dark:hover:text-blue-300">
+            <Mail className="h-3.5 w-3.5" />
+            pdr.preparation@gmail.com
+          </a>
         </div>
       </div>
     </footer>

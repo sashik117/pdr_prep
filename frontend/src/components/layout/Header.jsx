@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
   ClipboardList,
+  Crown,
   CreditCard,
   LayoutDashboard,
   Layers,
@@ -19,6 +20,7 @@ import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { resolveApiUrl } from '@/api/apiClient';
+import { hasPremiumAccess } from '@/lib/accessLimits';
 
 const navItems = [
   { path: '/cabinet', label: 'Кабінет', icon: LayoutDashboard, auth: true },
@@ -42,15 +44,16 @@ function Badge({ value }) {
 export default function Header({ isOpen, setIsOpen, isAuthenticated, user, notificationSummary, onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const premiumAccess = hasPremiumAccess(user);
 
   const visibleNavItems = useMemo(
     () =>
       navItems.filter((item) => {
-        if (item.path === '/pricing' && isAuthenticated && user?.is_premium) return false;
+        if (item.path === '/pricing' && isAuthenticated && premiumAccess) return false;
         if (item.auth && !isAuthenticated) return false;
         return true;
       }),
-    [isAuthenticated, user?.is_premium],
+    [isAuthenticated, premiumAccess],
   );
 
   const isItemActive = (path) => {
@@ -74,14 +77,19 @@ export default function Header({ isOpen, setIsOpen, isAuthenticated, user, notif
           <div className="flex min-w-0 items-center gap-2 lg:hidden">
             <Link
               to={isAuthenticated ? '/profile' : '/auth?tab=login'}
-              className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-800"
+              className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-800"
               aria-label="Профіль"
             >
               {isAuthenticated && user?.avatar_url ? (
-                <img src={resolveApiUrl(user.avatar_url) || user.avatar_url} alt="Профіль" width={96} height={96} decoding="async" className="h-full w-full object-cover [backface-visibility:hidden]" />
+                <img src={resolveApiUrl(user.avatar_url) || user.avatar_url} alt="Профіль" width={96} height={96} decoding="async" className="h-full w-full rounded-full object-cover [backface-visibility:hidden]" />
               ) : (
                 <User className="h-6 w-6" />
               )}
+              {user?.is_premium ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-white shadow-sm">
+                  <Crown className="h-2.5 w-2.5" />
+                </span>
+              ) : null}
             </Link>
             <Link to="/" className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl">
               <img src="/logo.png" alt="DrivePrep" width={128} height={128} decoding="async" className="h-[46px] w-[46px] object-contain [backface-visibility:hidden]" />
@@ -141,14 +149,19 @@ export default function Header({ isOpen, setIsOpen, isAuthenticated, user, notif
                 </Link>
                 <Link
                   to="/profile"
-                  className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-50 text-gray-500 transition-colors hover:bg-primary-50 hover:text-primary-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-primary-500/10 dark:hover:text-primary-200"
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-gray-500 transition-colors hover:bg-primary-50 hover:text-primary-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-primary-500/10 dark:hover:text-primary-200"
                   aria-label="Профіль"
                 >
                   {user?.avatar_url ? (
-                    <img src={resolveApiUrl(user.avatar_url) || user.avatar_url} alt="Профіль" width={96} height={96} decoding="async" className="h-full w-full object-cover [backface-visibility:hidden]" />
+                    <img src={resolveApiUrl(user.avatar_url) || user.avatar_url} alt="Профіль" width={96} height={96} decoding="async" className="h-full w-full rounded-full object-cover [backface-visibility:hidden]" />
                   ) : (
                     <User className="h-5 w-5 text-gray-500" />
                   )}
+                  {user?.is_premium ? (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-white shadow-sm">
+                      <Crown className="h-2.5 w-2.5" />
+                    </span>
+                  ) : null}
                 </Link>
                 <Button variant="ghost" size="sm" onClick={onLogout} className="text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-300">
                   <LogOut className="mr-1.5 h-4 w-4" />

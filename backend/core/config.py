@@ -247,6 +247,7 @@ PREMIUM_PLAN_ALIASES: dict[str, str] = {
 DEFAULT_IMPORT_FILE = BASE_DIR / "data" / "questions" / "pdr_final_fixed.json"
 PROMO_SETTINGS_FILE = BASE_DIR / "config" / "promo_settings.json"
 PREMIUM_FEATURES_FILE = BASE_DIR / "config" / "premium_features.json"
+PREMIUM_SETTINGS_FILE = BASE_DIR / "config" / "premium_settings.json"
 
 DEFAULT_PROMO_SETTINGS: dict[str, Any] = {
     "is_active": False,
@@ -301,3 +302,7 @@ DEFAULT_PREMIUM_FEATURES: list[dict[str, Any]] = [
         "sort_order": 6,
     },
 ]
+
+DEFAULT_PREMIUM_SETTINGS: dict[str, Any] = {
+    "premium_enabled": True,
+}

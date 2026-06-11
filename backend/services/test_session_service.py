@@ -11,6 +11,7 @@ from core.config import (
     MVS_BLOCKS,
     MVS_CATEGORY_BLOCKS,
     PUBLIC_IMAGES_DIR,
+    PUBLIC_STATIC_IMAGES_DIR,
     QUESTION_UI_MARKERS,
 )
 from core.database import db
@@ -26,7 +27,11 @@ from schemas.questions import MvsExamResponse
 
 
 def _question_has_available_image(question: dict[str, Any]) -> bool:
-    return any(local_or_remote_image_exists(image, PUBLIC_IMAGES_DIR) for image in question.get("images") or [])
+    return any(
+        local_or_remote_image_exists(image, PUBLIC_IMAGES_DIR)
+        or local_or_remote_image_exists(image, PUBLIC_STATIC_IMAGES_DIR)
+        for image in question.get("images") or []
+    )
 
 
 def _prepare_questions(rows: list[dict[str, Any]], count: int) -> list[dict[str, Any]]:
@@ -84,4 +89,3 @@ def build_mvs_exam_session(category: Optional[str], seed: Optional[str] = None) 
         blocks=build_exam_block_summary(MVS_BLOCKS, questions),
         questions=questions,
     )
-

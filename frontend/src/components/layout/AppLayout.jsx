@@ -17,7 +17,7 @@ export default function AppLayout() {
   const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
   const networkBootRef = useRef(true);
   const previousOnlineRef = useRef(/** @type {boolean | null} */ (null));
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, checkUserAuth } = useAuth();
   const { toast } = useToast();
 
   const notificationsQuery = useQuery({
@@ -181,6 +181,11 @@ export default function AppLayout() {
       try {
         const message = JSON.parse(event.data);
         const eventType = String(message?.event || '');
+        if (eventType === 'user_updated' || eventType === 'premium_settings_updated') {
+          void checkUserAuth();
+          queryClient.invalidateQueries();
+          return;
+        }
         if (eventType.includes('support')) {
           queryClient.invalidateQueries({ queryKey: ['support-messages'] });
           queryClient.invalidateQueries({ queryKey: ['admin-support-conversations'] });
@@ -201,7 +206,7 @@ export default function AppLayout() {
     };
 
     return () => socket.close();
-  }, [isAuthenticated, queryClient]);
+  }, [checkUserAuth, isAuthenticated, queryClient]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-slate-950 dark:text-slate-50">

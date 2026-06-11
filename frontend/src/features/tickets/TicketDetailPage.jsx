@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { categoryGroups } from '@/lib/testCatalog';
-import { canPreviewFreeTicket, registerFreeTicketPreview } from '@/lib/accessLimits';
+import { canPreviewFreeTicket, hasPremiumAccess, registerFreeTicketPreview } from '@/lib/accessLimits';
 
 function TicketQuestionPreview({ question, index }) {
   const options = question.options || [];
@@ -77,7 +77,7 @@ export default function TicketDetailPage() {
   const categoryFromUrl = searchParams.get('category') || 'B';
   const category = categoryGroups.some((item) => item.id === categoryFromUrl) ? categoryFromUrl : 'B';
   const categoryMeta = useMemo(() => categoryGroups.find((item) => item.id === category) || categoryGroups[1], [category]);
-  const isPremium = Boolean(user?.is_premium);
+  const isPremium = hasPremiumAccess(user);
   const lockedPreview = !isPremium && (numericTicket > 1 || !canPreviewFreeTicket(user, numericTicket));
 
   const ticketQuery = useQuery({

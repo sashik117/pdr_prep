@@ -39,6 +39,7 @@ export default function PremiumPage() {
   const usersQuery = useQuery({ queryKey: ['admin-users'], queryFn: () => api.getAdminUsers() });
   const ordersQuery = useQuery({ queryKey: ['admin-premium-orders'], queryFn: () => api.getAdminPremiumOrders(80) });
   const featuresQuery = useQuery({ queryKey: ['admin-premium-features'], queryFn: () => api.getAdminPremiumFeatures() });
+  const settingsQuery = useQuery({ queryKey: ['admin-premium-settings'], queryFn: () => api.getAdminPremiumSettings() });
 
   useEffect(() => {
     const status = promoQuery.data;
@@ -61,6 +62,7 @@ export default function PremiumPage() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['admin-promo-status'] }),
       queryClient.invalidateQueries({ queryKey: ['admin-premium-orders'] }),
+      queryClient.invalidateQueries({ queryKey: ['admin-premium-settings'] }),
       queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
     ]);
   };
@@ -79,6 +81,10 @@ export default function PremiumPage() {
       await queryClient.invalidateQueries({ queryKey: ['admin-premium-features'] });
     },
   });
+  const saveSettingsMutation = useMutation({
+    mutationFn: (payload) => api.updateAdminPremiumSettings(payload),
+    onSuccess: invalidatePremiumData,
+  });
 
   const users = usersQuery.data || [];
   const orders = ordersQuery.data || [];
@@ -90,6 +96,7 @@ export default function PremiumPage() {
     .reduce((sum, order) => sum + Number(order.amount || 0), 0) / 100;
   const secondsLeft = promoQuery.data?.seconds_left;
   const hoursLeft = secondsLeft === null || secondsLeft === undefined ? null : Math.floor(Number(secondsLeft || 0) / 3600);
+  const premiumEnabled = settingsQuery.data?.premium_enabled !== false;
 
   const statusText = useMemo(() => {
     if (!promoQuery.data?.is_active) return 'Вимкнена';
@@ -147,6 +154,25 @@ export default function PremiumPage() {
                     : `До завершення залишилось приблизно ${hoursLeft || 0} год.`
                   : 'Акція не показується користувачам, поки Ви її не запустите.'}
               </p>
+            </div>
+
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-950/20">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-950 dark:text-white">Premium на сайті</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                    Якщо вимкнути, платні обмеження зникають, а Premium-бейдж лишається тільки у тих, кому він реально виданий.
+                  </p>
+                </div>
+                <Switch
+                  checked={premiumEnabled}
+                  disabled={settingsQuery.isLoading || saveSettingsMutation.isPending}
+                  onCheckedChange={(value) => saveSettingsMutation.mutate({ premium_enabled: value })}
+                />
+              </div>
+              <Badge className={`mt-3 ${premiumEnabled ? 'bg-amber-600' : 'bg-emerald-600'}`}>
+                {premiumEnabled ? 'Paywall увімкнено' : 'Усе відкрито'}
+              </Badge>
             </div>
 
             <label className="space-y-2">

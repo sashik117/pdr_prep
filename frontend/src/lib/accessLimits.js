@@ -64,8 +64,16 @@ function writeJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+export function hasPremiumAccess(user) {
+  return Boolean(user?.has_premium_access ?? user?.is_premium);
+}
+
+export function isPremiumEnabled(user) {
+  return user?.premium_enabled !== false;
+}
+
 export function isPremiumUser(user) {
-  return Boolean(user?.is_premium);
+  return hasPremiumAccess(user);
 }
 
 function getUserScope(user) {

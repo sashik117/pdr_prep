@@ -14,6 +14,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '@/api/apiClient';
 import { useAuth } from '@/lib/AuthContext';
+import { hasPremiumAccess } from '@/lib/accessLimits';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { normalizeTheoryCategory, normalizeTheorySection, normalizeTheoryTopic } from '@/features/theory/theory-model';
@@ -74,7 +75,7 @@ export default function TheoryTopicPage() {
   const [searchParams] = useSearchParams();
   const { user, isAuthenticated, navigateToLogin } = useAuth();
 
-  const isPremiumUser = Boolean(user?.is_premium);
+  const isPremiumUser = hasPremiumAccess(user);
   const selectedTopicSlug = searchParams.get('topic') || '';
 
   const categoriesQuery = useQuery({

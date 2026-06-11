@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import { hasPremiumAccess } from '@/lib/accessLimits';
 
 const freeFeatures = [
   '3 безкоштовні тести на день у кожному режимі.',
@@ -134,7 +135,7 @@ export default function PricingPage() {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [selectedPlanCode, setSelectedPlanCode] = useState(null);
-  const isPremium = Boolean(user?.is_premium);
+  const isPremium = hasPremiumAccess(user);
 
   const promoStatusQuery = useQuery({
     queryKey: ['promo-status'],

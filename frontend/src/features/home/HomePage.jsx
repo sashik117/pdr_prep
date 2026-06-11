@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/AuthContext';
+import { hasPremiumAccess } from '@/lib/accessLimits';
 
 const reveal = {
   initial: { opacity: 0, y: 20 },
@@ -143,9 +144,10 @@ const supportActions = [
 
 export default function HomePage() {
   const { isAuthenticated, user } = useAuth();
+  const premiumAccess = hasPremiumAccess(user);
   const visibleExtraModes = extraModes;
   const visibleSupportActions = supportActions.filter((action) => {
-    if (action.to === '/pricing' && user?.is_premium) return false;
+    if (action.to === '/pricing' && premiumAccess) return false;
     return !action.auth || isAuthenticated;
   });
   const accountCta = isAuthenticated

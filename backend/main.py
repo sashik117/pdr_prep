@@ -35,6 +35,7 @@ from core.config import (
     CATEGORY_ALIASES,
     DEFAULT_IMPORT_FILE,
     DEFAULT_PREMIUM_FEATURES,
+    DEFAULT_PREMIUM_SETTINGS,
     DEFAULT_PROMO_SETTINGS,
     EMBEDDED_OPTION_RE,
     FRAME_SHOP,
@@ -52,6 +53,7 @@ from core.config import (
     MVS_TICKET_COUNT,
     PORT,
     PREMIUM_FEATURES_FILE,
+    PREMIUM_SETTINGS_FILE,
     PREMIUM_PLAN_ALIASES,
     PREMIUM_PLANS,
     PROMO_ADMIN_KEY,
@@ -101,6 +103,7 @@ from schemas.requests import (
     MessageCreateRequest,
     PremiumCheckoutRequest,
     PremiumFeaturesUpdateRequest,
+    PremiumSettingsUpdateRequest,
     PromoConfigRequest,
     RegisterRequest,
     ResendVerificationRequest,
@@ -299,7 +302,7 @@ def _json_dumps(value: Any) -> str:
 def _normalize_plan_code(plan_code: Any) -> str:
     normalized = PREMIUM_PLAN_ALIASES.get(str(plan_code or "").strip().lower())
     if not normalized:
-        raise HTTPException(400, "РќРµРІС–РґРѕРјРёР№ С‚Р°СЂРёС„ Premium")
+        raise HTTPException(400, "Невідомий тариф Premium")
     return normalized
 
 
@@ -466,6 +469,62 @@ def _load_premium_features() -> list[dict[str, Any]]:
     if features != raw:
         _save_premium_features(features)
     return features
+
+
+def _normalize_premium_settings(raw: Any) -> dict[str, Any]:
+    payload = raw if isinstance(raw, dict) else {}
+    return {
+        "premium_enabled": bool(payload.get("premium_enabled", DEFAULT_PREMIUM_SETTINGS["premium_enabled"])),
+    }
+
+
+def _save_premium_settings(settings: dict[str, Any]) -> None:
+    normalized = _normalize_premium_settings(settings)
+    PREMIUM_SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PREMIUM_SETTINGS_FILE.write_text(
+        _json_dumps(normalized),
+        encoding="utf-8",
+    )
+    try:
+        with db() as conn:
+            conn.execute(
+                """
+                INSERT INTO app_settings (key, value, updated_at)
+                VALUES ('premium', %s::jsonb, NOW())
+                ON CONFLICT (key) DO UPDATE
+                SET value = EXCLUDED.value,
+                    updated_at = NOW()
+                """,
+                (_json_dumps(normalized),),
+            )
+            conn.commit()
+    except Exception:
+        return
+
+
+def _load_premium_settings() -> dict[str, Any]:
+    try:
+        with db() as conn:
+            row = conn.execute("SELECT value FROM app_settings WHERE key = 'premium'").fetchone()
+            if row and row["value"]:
+                return _normalize_premium_settings(row["value"])
+    except Exception:
+        pass
+    if not PREMIUM_SETTINGS_FILE.exists():
+        _save_premium_settings(DEFAULT_PREMIUM_SETTINGS)
+        return dict(DEFAULT_PREMIUM_SETTINGS)
+    try:
+        raw = json.loads(PREMIUM_SETTINGS_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        raw = DEFAULT_PREMIUM_SETTINGS
+    settings = _normalize_premium_settings(raw)
+    if settings != raw:
+        _save_premium_settings(settings)
+    return settings
+
+
+def _premium_enabled() -> bool:
+    return bool(_load_premium_settings().get("premium_enabled", True))
 
 
 def _build_liqpay_payload(*, order_id: str, plan: dict[str, Any], result_url: str) -> dict[str, Any]:
@@ -699,6 +758,8 @@ def _user_public(user: dict[str, Any]) -> dict[str, Any]:
     premium_is_active = bool(user.get("is_premium", False))
     if premium_expires_at and isinstance(premium_expires_at, datetime) and premium_expires_at < datetime.utcnow():
         premium_is_active = False
+    premium_enabled = _premium_enabled()
+    has_premium_access = premium_is_active or not premium_enabled
     username_change_count = int(user.get("username_change_count") or 0)
     username_last_changed_at = user.get("username_last_changed_at")
     username_change_available_at = None
@@ -726,6 +787,8 @@ def _user_public(user: dict[str, Any]) -> dict[str, Any]:
         "sound_enabled": bool(user.get("sound_enabled", True)),
         "push_enabled": bool(user.get("push_enabled", False)),
         "is_premium": premium_is_active,
+        "has_premium_access": has_premium_access,
+        "premium_enabled": premium_enabled,
         "premium_expires_at": premium_expires_at.isoformat() if isinstance(premium_expires_at, datetime) else premium_expires_at,
         "is_admin": _is_admin_email(user.get("email")),
         "is_blocked": bool(user.get("is_blocked", False)),
@@ -828,7 +891,7 @@ def _check_admin_credentials(username: str, password: str) -> bool:
 
 def get_current_admin(authorization: Optional[str] = Header(default=None)) -> dict[str, Any]:
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(401, "РџРѕС‚СЂС–Р±РµРЅ РІС…С–Рґ РІ Р°РґРјС–РЅ-РїР°РЅРµР»СЊ")
+        raise HTTPException(401, "Потрібен вхід в адмін-панель")
 
     token = authorization[7:]
     try:
@@ -836,10 +899,10 @@ def get_current_admin(authorization: Optional[str] = Header(default=None)) -> di
         if payload.get("scope") == "admin":
             token_username = str(payload.get("sub") or "").replace("admin:", "", 1)
             if token_username.lower() != ADMIN_USERNAME.lower():
-                raise HTTPException(401, "РђРґРјС–РЅ-СЃРµСЃС–СЏ РЅРµРґС–Р№СЃРЅР°")
+                raise HTTPException(401, "Адмін-сесія недійсна")
             return _admin_public()
     except jwt.ExpiredSignatureError as exc:
-        raise HTTPException(401, "РђРґРјС–РЅ-СЃРµСЃС–СЏ Р·Р°РІРµСЂС€РёР»Р°СЃСЏ, СѓРІС–Р№РґС–С‚СЊ Р·РЅРѕРІСѓ") from exc
+        raise HTTPException(401, "Адмін-сесія завершилася, увійдіть знову") from exc
     except HTTPException:
         raise
     except Exception:
@@ -847,7 +910,7 @@ def get_current_admin(authorization: Optional[str] = Header(default=None)) -> di
 
     user = get_current_user(authorization)
     if not _is_admin_email(user.get("email")):
-        raise HTTPException(403, "РџРѕС‚СЂС–Р±РЅС– РїСЂР°РІР° Р°РґРјС–РЅС–СЃС‚СЂР°С‚РѕСЂР°")
+        raise HTTPException(403, "Потрібні права адміністратора")
     return user
 
 
@@ -862,22 +925,23 @@ def get_optional_admin(authorization: Optional[str] = Header(default=None)) -> O
 
 def get_current_user(authorization: Optional[str] = Header(default=None)) -> dict[str, Any]:
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(401, "РџРѕС‚СЂС–Р±РЅР° Р°РІС‚РѕСЂРёР·Р°С†С–СЏ")
+        raise HTTPException(401, "Потрібна авторизація")
 
     token = authorization[7:]
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         user_id = int(payload["sub"])
     except jwt.ExpiredSignatureError as exc:
-        raise HTTPException(401, "РЎРµСЃС–СЏ Р·Р°РІРµСЂС€РёР»Р°СЃСЏ, СѓРІС–Р№РґС–С‚СЊ Р·РЅРѕРІСѓ") from exc
+        raise HTTPException(401, "Сесія завершилася, увійдіть знову") from exc
     except Exception as exc:
-        raise HTTPException(401, "РќРµРІР°Р»С–РґРЅРёР№ С‚РѕРєРµРЅ") from exc
+        raise HTTPException(401, "Невалідний токен") from exc
 
     try:
         user = get_session_user_use_case(user_id, is_admin_email=_is_admin_email)
         premium_expires_at = user.get("premium_expires_at")
         if premium_expires_at and isinstance(premium_expires_at, datetime) and premium_expires_at < datetime.utcnow():
             user["is_premium"] = False
+        user["has_premium_access"] = bool(user.get("is_premium", False)) or not _premium_enabled()
         return user
     except ServiceError as exc:
         raise HTTPException(exc.status_code, exc.message) from exc
@@ -885,6 +949,10 @@ def get_current_user(authorization: Optional[str] = Header(default=None)) -> dic
 
 def get_optional_user(authorization: Optional[str] = Header(default=None)) -> Optional[dict[str, Any]]:
     if not authorization:
+        return None
+    try:
+        return get_current_user(authorization)
+    except HTTPException:
         return None
 
 
@@ -896,10 +964,6 @@ def get_client_ip(request: Request) -> str:
     if real_ip:
         return real_ip.strip()
     return request.client.host if request.client else "unknown"
-    try:
-        return get_current_user(authorization)
-    except HTTPException:
-        return None
 
 
 def require_admin(admin=Depends(get_current_admin)) -> dict[str, Any]:
@@ -914,7 +978,7 @@ def require_promo_admin(
         return {"source": "secret-key"}
     if admin:
         return admin
-    raise HTTPException(403, "РџРѕС‚СЂС–Р±РЅС– РїСЂР°РІР° Р°РґРјС–РЅС–СЃС‚СЂР°С‚РѕСЂР° Р°Р±Рѕ РєРѕСЂРµРєС‚РЅРёР№ promo key")
+    raise HTTPException(403, "Потрібні права адміністратора або коректний promo key")
 
 
 def _resolve_user_from_token(token: str) -> Optional[dict[str, Any]]:
@@ -986,54 +1050,54 @@ def _prepare_import_question(item: dict[str, Any]) -> dict[str, Any]:
 
 
 ACHIEVEMENTS_DEF = [
-    ("first_step", 1, "РџРµСЂС€РёР№ РІРёС—Р·Рґ", "РџСЂРѕР№С‚Рё РїРµСЂС€РёР№ С‚РµСЃС‚", "tests", 1),
-    ("rookie", 2, "РќРѕРІР°С‡РѕРє", "РџСЂРѕР№С‚Рё 10 С‚РµСЃС‚С–РІ", "tests", 10),
-    ("driver", 3, "Р’РѕРґС–Р№", "РџСЂРѕР№С‚Рё 50 С‚РµСЃС‚С–РІ", "tests", 50),
-    ("pro_driver", 4, "РџСЂРѕС„С–", "РџСЂРѕР№С‚Рё 100 С‚РµСЃС‚С–РІ", "tests", 100),
-    ("veteran_driver", 4, "Р”РѕСЃРІС–РґС‡РµРЅРёР№ РІРѕРґС–Р№", "РџСЂРѕР№С‚Рё 250 С‚РµСЃС‚С–РІ", "tests", 250),
-    ("hundred", 1, "РЎРѕС‚РЅСЏ", "100 РїСЂР°РІРёР»СЊРЅРёС… РІС–РґРїРѕРІС–РґРµР№", "correct", 100),
-    ("five_hundred", 2, "Рџ'СЏС‚РёСЃРѕС‚РЅСЏ", "500 РїСЂР°РІРёР»СЊРЅРёС… РІС–РґРїРѕРІС–РґРµР№", "correct", 500),
-    ("thousand", 3, "РўРёСЃСЏС‡РЅРёРє", "1000 РїСЂР°РІРёР»СЊРЅРёС… РІС–РґРїРѕРІС–РґРµР№", "correct", 1000),
-    ("legend", 4, "Р›РµРіРµРЅРґР°", "5000 РїСЂР°РІРёР»СЊРЅРёС… РІС–РґРїРѕРІС–РґРµР№", "correct", 5000),
-    ("streak_3", 1, "Р РѕР·С–РіСЂС–РІ", "3 РґРЅС– РїС–РґСЂСЏРґ", "streak", 3),
-    ("streak_7", 2, "РўРµРјРї", "7 РґРЅС–РІ РїС–РґСЂСЏРґ", "streak", 7),
-    ("streak_28", 3, "Р’РѕРіРѕРЅСЊ", "28 РґРЅС–РІ РїС–РґСЂСЏРґ", "streak", 28),
-    ("streak_90", 4, "РЎС‚Р°Р±С–Р»СЊРЅРёР№ С‚РµРјРї", "90 РґРЅС–РІ Р°РєС‚РёРІРЅРѕСЃС‚С– РїС–РґСЂСЏРґ", "streak", 90),
-    ("marathon_10", 1, "Р‘С–РіСѓРЅ", "10 Сѓ РјР°СЂР°С„РѕРЅС–", "marathon", 10),
-    ("marathon_50", 2, "РЎРїСЂРёРЅС‚РµСЂ", "50 Сѓ РјР°СЂР°С„РѕРЅС–", "marathon", 50),
-    ("marathon_100", 3, "Р‘Р»РёСЃРєР°РІРєР°", "100 Сѓ РјР°СЂР°С„РѕРЅС–", "marathon", 100),
-    ("perfect_1", 1, "Р‘РµР· РїРѕРјРёР»РѕРє", "РџРµСЂС€РёР№ С–РґРµР°Р»СЊРЅРёР№ С‚РµСЃС‚", "perfect", 1),
-    ("perfect_5", 2, "Р’С–РґРјС–РЅРЅРёРє", "5 С–РґРµР°Р»СЊРЅРёС… С‚РµСЃС‚С–РІ", "perfect", 5),
-    ("perfect_20", 3, "Р§РёСЃС‚Р° СЃРµСЂС–СЏ", "20 С‚РµСЃС‚С–РІ Р±РµР· РїРѕРјРёР»РѕРє", "perfect", 20),
-    ("exam_passed", 2, "Р†СЃРїРёС‚ СЃРєР»Р°РґРµРЅРѕ", "РЎРєР»Р°СЃС‚Рё РїРµСЂС€РёР№ С–СЃРїРёС‚ РњР’РЎ Р°Р±Рѕ Р±С–Р»РµС‚", "exam", 1),
-    ("exam_5", 3, "РЎС‚Р°Р±С–Р»СЊРЅРёР№ С–СЃРїРёС‚", "РЎРєР»Р°СЃС‚Рё 5 С–СЃРїРёС‚С–РІ РњР’РЎ Р°Р±Рѕ Р±С–Р»РµС‚С–РІ", "exam", 5),
-    ("exam_10", 3, "Р”РµСЃСЏС‚РєР° С–СЃРїРёС‚С–РІ", "РЎРєР»Р°СЃС‚Рё 10 С–СЃРїРёС‚С–РІ РњР’РЎ Р°Р±Рѕ Р±С–Р»РµС‚С–РІ", "exam", 10),
-    ("exam_20", 4, "Р•РєР·Р°РјРµРЅР°С†С–Р№РЅРёР№ С‚РµРјРї", "РЎРєР»Р°СЃС‚Рё 20 С–СЃРїРёС‚С–РІ РњР’РЎ Р°Р±Рѕ Р±С–Р»РµС‚С–РІ", "exam", 20),
-    ("exam_50", 4, "Р“РѕС‚РѕРІРёР№ РґРѕ СЃРµСЂРІС–СЃРЅРѕРіРѕ С†РµРЅС‚СЂСѓ", "РЎРєР»Р°СЃС‚Рё 50 С–СЃРїРёС‚С–РІ РњР’РЎ Р°Р±Рѕ Р±С–Р»РµС‚С–РІ", "exam", 50),
-    ("exam_perfect", 4, "Р†РґРµР°Р»СЊРЅРёР№ С–СЃРїРёС‚", "РЎРєР»Р°СЃС‚Рё С–СЃРїРёС‚ РњР’РЎ Р°Р±Рѕ Р±С–Р»РµС‚ Р±РµР· РїРѕРјРёР»РѕРє", "exam", 1),
-    ("exam_perfect_5", 4, "Рџ'СЏС‚СЊ С‡РёСЃС‚РёС… С–СЃРїРёС‚С–РІ", "РЎРєР»Р°СЃС‚Рё 5 С–СЃРїРёС‚С–РІ Р°Р±Рѕ Р±С–Р»РµС‚С–РІ Р±РµР· РїРѕРјРёР»РѕРє", "exam", 5),
-    ("exam_perfect_10", 4, "Р”РµСЃСЏС‚СЊ С‡РёСЃС‚РёС… С–СЃРїРёС‚С–РІ", "РЎРєР»Р°СЃС‚Рё 10 С–СЃРїРёС‚С–РІ Р°Р±Рѕ Р±С–Р»РµС‚С–РІ Р±РµР· РїРѕРјРёР»РѕРє", "exam", 10),
-    ("accuracy_70", 1, "Р С–РІРЅР° С—Р·РґР°", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 70%", "accuracy", 70),
-    ("accuracy_75", 1, "Р’РїРµРІРЅРµРЅР° Р±Р°Р·Р°", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 75%", "accuracy", 75),
-    ("accuracy_80", 2, "Р’РїРµРІРЅРµРЅР° С‚РѕС‡РЅС–СЃС‚СЊ", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 80%", "accuracy", 80),
-    ("accuracy_85", 2, "Р§С–С‚РєРёР№ РєРѕРЅС‚СЂРѕР»СЊ", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 85%", "accuracy", 85),
-    ("accuracy_90", 3, "РўРѕС‡РЅРёР№ РјР°СЂС€СЂСѓС‚", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 90%", "accuracy", 90),
-    ("accuracy_92", 3, "РњР°Р№Р¶Рµ Р±РµР· РїСЂРѕРјР°С…С–РІ", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 92%", "accuracy", 92),
-    ("accuracy_95", 4, "Р®РІРµР»С–СЂРЅР° С‚РѕС‡РЅС–СЃС‚СЊ", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 95%", "accuracy", 95),
-    ("accuracy_98", 4, "Р•С‚Р°Р»РѕРЅРЅР° С‚РѕС‡РЅС–СЃС‚СЊ", "РўСЂРёРјР°С‚Рё Р·Р°РіР°Р»СЊРЅСѓ С‚РѕС‡РЅС–СЃС‚СЊ РІС–Рґ 98%", "accuracy", 98),
-    ("battle_first", 1, "РџРµСЂС€РёР№ Р±Р°С‚Р»", "Р—Р°РІРµСЂС€РёС‚Рё РїРµСЂС€РёР№ Р±Р°С‚Р»", "battle", 1),
-    ("battle_3", 1, "РўСЂРё РІРёРєР»РёРєРё", "Р—Р°РІРµСЂС€РёС‚Рё 3 Р±Р°С‚Р»Рё", "battle", 3),
-    ("battle_5", 2, "Р‘Р°С‚Р»-СЃРµСЂС–СЏ", "Р—Р°РІРµСЂС€РёС‚Рё 5 Р±Р°С‚Р»С–РІ", "battle", 5),
-    ("battle_10", 2, "Р”РµСЃСЏС‚РєР° Р±Р°С‚Р»С–РІ", "Р—Р°РІРµСЂС€РёС‚Рё 10 Р±Р°С‚Р»С–РІ", "battle", 10),
-    ("battle_20", 3, "РђСЂРµРЅР° РґРѕСЃРІС–РґСѓ", "Р—Р°РІРµСЂС€РёС‚Рё 20 Р±Р°С‚Р»С–РІ", "battle", 20),
-    ("battle_50", 4, "Р’РµС‚РµСЂР°РЅ Р±Р°С‚Р»С–РІ", "Р—Р°РІРµСЂС€РёС‚Рё 50 Р±Р°С‚Р»С–РІ", "battle", 50),
-    ("battle_winner", 2, "РџРµСЂРµРјРѕРіР° РІ Р±Р°С‚Р»С–", "Р’РёРіСЂР°С‚Рё РїРµСЂС€РёР№ Р±Р°С‚Р»", "battle_wins", 1),
-    ("battle_wins_3", 2, "РўСЂРё РїРµСЂРµРјРѕРіРё", "Р’РёРіСЂР°С‚Рё 3 Р±Р°С‚Р»Рё", "battle_wins", 3),
-    ("battle_wins_5", 3, "Рџ'СЏС‚СЊ РїРµСЂРµРјРѕРі", "Р’РёРіСЂР°С‚Рё 5 Р±Р°С‚Р»С–РІ", "battle_wins", 5),
-    ("battle_champion", 3, "Р§РµРјРїС–РѕРЅ Р±Р°С‚Р»С–РІ", "Р’РёРіСЂР°С‚Рё 10 Р±Р°С‚Р»С–РІ", "battle_wins", 10),
-    ("battle_wins_15", 4, "РЎРµСЂС–СЏ РїРµСЂРµРјРѕР¶С†СЏ", "Р’РёРіСЂР°С‚Рё 15 Р±Р°С‚Р»С–РІ", "battle_wins", 15),
-    ("battle_wins_25", 4, "Р›С–РґРµСЂ Р±Р°С‚Р»С–РІ", "Р’РёРіСЂР°С‚Рё 25 Р±Р°С‚Р»С–РІ", "battle_wins", 25),
-    ("battle_wins_50", 4, "Р›РµРіРµРЅРґР° РґСѓРµР»РµР№", "Р’РёРіСЂР°С‚Рё 50 Р±Р°С‚Р»С–РІ", "battle_wins", 50),
+    ("first_step", 1, "Перший виїзд", "Пройти перший тест", "tests", 1),
+    ("rookie", 2, "Новачок", "Пройти 10 тестів", "tests", 10),
+    ("driver", 3, "Водій", "Пройти 50 тестів", "tests", 50),
+    ("pro_driver", 4, "Профі", "Пройти 100 тестів", "tests", 100),
+    ("veteran_driver", 4, "Досвідчений водій", "Пройти 250 тестів", "tests", 250),
+    ("hundred", 1, "Сотня", "100 правильних відповідей", "correct", 100),
+    ("five_hundred", 2, "П'ятисотня", "500 правильних відповідей", "correct", 500),
+    ("thousand", 3, "Тисячник", "1000 правильних відповідей", "correct", 1000),
+    ("legend", 4, "Легенда", "5000 правильних відповідей", "correct", 5000),
+    ("streak_3", 1, "Розігрів", "3 дні підряд", "streak", 3),
+    ("streak_7", 2, "Темп", "7 днів підряд", "streak", 7),
+    ("streak_28", 3, "Вогонь", "28 днів підряд", "streak", 28),
+    ("streak_90", 4, "Стабільний темп", "90 днів активності підряд", "streak", 90),
+    ("marathon_10", 1, "Бігун", "10 у марафоні", "marathon", 10),
+    ("marathon_50", 2, "Спринтер", "50 у марафоні", "marathon", 50),
+    ("marathon_100", 3, "Блискавка", "100 у марафоні", "marathon", 100),
+    ("perfect_1", 1, "Без помилок", "Перший ідеальний тест", "perfect", 1),
+    ("perfect_5", 2, "Відмінник", "5 ідеальних тестів", "perfect", 5),
+    ("perfect_20", 3, "Чиста серія", "20 тестів без помилок", "perfect", 20),
+    ("exam_passed", 2, "Іспит складено", "Скласти перший іспит МВС або білет", "exam", 1),
+    ("exam_5", 3, "Стабільний іспит", "Скласти 5 іспитів МВС або білетів", "exam", 5),
+    ("exam_10", 3, "Десятка іспитів", "Скласти 10 іспитів МВС або білетів", "exam", 10),
+    ("exam_20", 4, "Екзаменаційний темп", "Скласти 20 іспитів МВС або білетів", "exam", 20),
+    ("exam_50", 4, "Готовий до сервісного центру", "Скласти 50 іспитів МВС або білетів", "exam", 50),
+    ("exam_perfect", 4, "Ідеальний іспит", "Скласти іспит МВС або білет без помилок", "exam", 1),
+    ("exam_perfect_5", 4, "П'ять чистих іспитів", "Скласти 5 іспитів або білетів без помилок", "exam", 5),
+    ("exam_perfect_10", 4, "Десять чистих іспитів", "Скласти 10 іспитів або білетів без помилок", "exam", 10),
+    ("accuracy_70", 1, "Рівна їзда", "Тримати загальну точність від 70%", "accuracy", 70),
+    ("accuracy_75", 1, "Впевнена база", "Тримати загальну точність від 75%", "accuracy", 75),
+    ("accuracy_80", 2, "Впевнена точність", "Тримати загальну точність від 80%", "accuracy", 80),
+    ("accuracy_85", 2, "Чіткий контроль", "Тримати загальну точність від 85%", "accuracy", 85),
+    ("accuracy_90", 3, "Точний маршрут", "Тримати загальну точність від 90%", "accuracy", 90),
+    ("accuracy_92", 3, "Майже без промахів", "Тримати загальну точність від 92%", "accuracy", 92),
+    ("accuracy_95", 4, "Ювелірна точність", "Тримати загальну точність від 95%", "accuracy", 95),
+    ("accuracy_98", 4, "Еталонна точність", "Тримати загальну точність від 98%", "accuracy", 98),
+    ("battle_first", 1, "Перший батл", "Завершити перший батл", "battle", 1),
+    ("battle_3", 1, "Три виклики", "Завершити 3 батли", "battle", 3),
+    ("battle_5", 2, "Батл-серія", "Завершити 5 батлів", "battle", 5),
+    ("battle_10", 2, "Десятка батлів", "Завершити 10 батлів", "battle", 10),
+    ("battle_20", 3, "Арена досвіду", "Завершити 20 батлів", "battle", 20),
+    ("battle_50", 4, "Ветеран батлів", "Завершити 50 батлів", "battle", 50),
+    ("battle_winner", 2, "Перемога в батлі", "Виграти перший батл", "battle_wins", 1),
+    ("battle_wins_3", 2, "Три перемоги", "Виграти 3 батли", "battle_wins", 3),
+    ("battle_wins_5", 3, "П'ять перемог", "Виграти 5 батлів", "battle_wins", 5),
+    ("battle_champion", 3, "Чемпіон батлів", "Виграти 10 батлів", "battle_wins", 10),
+    ("battle_wins_15", 4, "Серія переможця", "Виграти 15 батлів", "battle_wins", 15),
+    ("battle_wins_25", 4, "Лідер батлів", "Виграти 25 батлів", "battle_wins", 25),
+    ("battle_wins_50", 4, "Легенда дуелей", "Виграти 50 батлів", "battle_wins", 50),
 ]
 
 
@@ -1301,7 +1365,7 @@ def update_promo_config(req: PromoConfigRequest, admin=Depends(require_promo_adm
         settings["regular_prices"] = _normalize_price_map(req.regular_prices, settings["regular_prices"])
     _save_promo_settings(settings)
     return {
-        "message": "РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р°РєС†С–С— Р·Р±РµСЂРµР¶РµРЅРѕ",
+        "message": "Налаштування акції збережено",
         "status": _compute_promo_status(settings, persist=False),
     }
 
@@ -1322,7 +1386,7 @@ def start_promo(req: PromoConfigRequest, admin=Depends(require_promo_admin)):
     settings["started_at"] = datetime.utcnow().isoformat()
     _save_promo_settings(settings)
     return {
-        "message": "РђРєС†С–СЋ Р·Р°РїСѓС‰РµРЅРѕ Р±РµР· РґР°С‚Рё Р·Р°РІРµСЂС€РµРЅРЅСЏ" if settings.get("never_ends") else f"РђРєС†С–СЋ Р·Р°РїСѓС‰РµРЅРѕ РЅР° {settings['duration_days']} РґРЅС–РІ",
+        "message": "Акцію запущено без дати завершення" if settings.get("never_ends") else f"Акцію запущено на {settings['duration_days']} днів",
         "status": _compute_promo_status(settings, persist=False),
     }
 
@@ -1336,7 +1400,7 @@ def stop_promo(admin=Depends(require_promo_admin)):
     settings["never_ends"] = False
     _save_promo_settings(settings)
     return {
-        "message": "РђРєС†С–СЋ Р·СѓРїРёРЅРµРЅРѕ",
+        "message": "Акцію зупинено",
         "status": _compute_promo_status(settings, persist=False),
     }
 
@@ -1345,6 +1409,27 @@ def stop_promo(admin=Depends(require_promo_admin)):
 @app.get("/api/premium/features", include_in_schema=False)
 def get_premium_features():
     return [feature for feature in _load_premium_features() if feature.get("is_enabled")]
+
+
+@app.get("/premium/settings")
+@app.get("/api/premium/settings", include_in_schema=False)
+def get_premium_settings():
+    return _load_premium_settings()
+
+
+@app.get("/admin/premium/settings")
+@app.get("/api/admin/premium/settings", include_in_schema=False)
+def admin_premium_settings(admin=Depends(require_admin)):
+    return _load_premium_settings()
+
+
+@app.patch("/admin/premium/settings")
+@app.patch("/api/admin/premium/settings", include_in_schema=False)
+async def admin_update_premium_settings(req: PremiumSettingsUpdateRequest, admin=Depends(require_admin)):
+    settings = _normalize_premium_settings(req.model_dump())
+    _save_premium_settings(settings)
+    await realtime_hub.broadcast("premium_settings_updated", settings)
+    return settings
 
 
 @app.get("/admin/premium/features")
@@ -1358,7 +1443,7 @@ def admin_premium_features(admin=Depends(require_admin)):
 def admin_update_premium_features(req: PremiumFeaturesUpdateRequest, admin=Depends(require_admin)):
     features = _normalize_premium_features(req.features)
     _save_premium_features(features)
-    return {"message": "Premium-С„С–С‡С– РѕРЅРѕРІР»РµРЅРѕ", "features": features}
+    return {"message": "Premium-фічі оновлено", "features": features}
 
 
 @app.get("/admin/premium/orders")
@@ -1369,11 +1454,15 @@ def admin_premium_orders(limit: int = Query(default=60, ge=1, le=200), admin=Dep
 
 @app.post("/admin/premium/orders/{order_id}/activate")
 @app.post("/api/admin/premium/orders/{order_id}/activate", include_in_schema=False)
-def admin_activate_premium_order(order_id: int, admin=Depends(require_admin)):
+async def admin_activate_premium_order(order_id: int, admin=Depends(require_admin)):
     try:
-        return activate_admin_premium_order_use_case(order_id, get_plan=_get_premium_plan)
+        result = activate_admin_premium_order_use_case(order_id, get_plan=_get_premium_plan)
     except ServiceError as exc:
         raise HTTPException(exc.status_code, exc.message) from exc
+    user = result.get("user") if isinstance(result, dict) else None
+    if user and user.get("email"):
+        await realtime_hub.emit(user["email"], "user_updated", {"user": _user_public(user)})
+    return result
 
 
 @app.post("/payment/checkout")
@@ -1663,11 +1752,11 @@ def import_questions(payload: list[dict[str, Any]], user=Depends(get_optional_us
 @app.post("/questions/import-bundled")
 def import_bundled_questions(user=Depends(get_optional_user)):
     if not DEFAULT_IMPORT_FILE.exists():
-        raise HTTPException(404, f"Р¤Р°Р№Р» РЅРµ Р·РЅР°Р№РґРµРЅРѕ: {DEFAULT_IMPORT_FILE.name}")
+        raise HTTPException(404, f"Файл не знайдено: {DEFAULT_IMPORT_FILE.name}")
     payload = json.loads(DEFAULT_IMPORT_FILE.read_text(encoding="utf-8"))
     questions = payload if isinstance(payload, list) else payload.get("questions", [])
     if not isinstance(questions, list):
-        raise HTTPException(400, "РќРµРІР°Р»С–РґРЅРёР№ С„РѕСЂРјР°С‚ bundled JSON")
+        raise HTTPException(400, "Невалідний формат bundled JSON")
     return import_questions(questions, user)
 
 
@@ -1956,9 +2045,9 @@ def admin_user_audit(user_id: int, admin=Depends(require_admin)):
 
 
 @app.patch("/admin/users/{user_id}")
-def admin_update_user(user_id: int, req: AdminUserUpdateRequest, admin=Depends(require_admin)):
+async def admin_update_user(user_id: int, req: AdminUserUpdateRequest, admin=Depends(require_admin)):
     try:
-        return update_admin_user_use_case(
+        updated = update_admin_user_use_case(
             user_id,
             req,
             present_user=_user_public,
@@ -1966,6 +2055,9 @@ def admin_update_user(user_id: int, req: AdminUserUpdateRequest, admin=Depends(r
         )
     except ServiceError as exc:
         raise HTTPException(exc.status_code, exc.message) from exc
+    if updated.get("email"):
+        await realtime_hub.emit(updated["email"], "user_updated", {"user": updated})
+    return updated
 
 
 @app.delete("/admin/users/{user_id}")
@@ -1984,10 +2076,10 @@ def admin_reset_user_password(user_id: int, admin=Depends(require_admin)):
         raise HTTPException(exc.status_code, exc.message) from exc
     sent = send_email(
         reset["email"],
-        "РЎРєРёРґР°РЅРЅСЏ РїР°СЂРѕР»СЏ PDRPrep",
-        f"<p>РђРґРјС–РЅС–СЃС‚СЂР°С‚РѕСЂ РЅР°РґС–СЃР»Р°РІ РІС–РґРЅРѕРІР»РµРЅРЅСЏ РґРѕСЃС‚СѓРїСѓ. Р’Р°С€ РєРѕРґ: <b style='font-size:24px'>{reset['code']}</b></p>",
+        "Скидання пароля PDRPrep",
+        f"<p>Адміністратор надіслав відновлення доступу. Ваш код: <b style='font-size:24px'>{reset['code']}</b></p>",
     )
-    return email_delivery_response(sent, reset["code"], "Р›РёСЃС‚ РЅР° РІС–РґРЅРѕРІР»РµРЅРЅСЏ РїР°СЂРѕР»СЏ РЅР°РґС–СЃР»Р°РЅРѕ")
+    return email_delivery_response(sent, reset["code"], "Лист на відновлення пароля надіслано")
 
 
 @app.post("/admin/users/{user_id}/achievements")

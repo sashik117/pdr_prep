@@ -133,6 +133,10 @@ class PremiumFeaturesUpdateRequest(BaseModel):
     features: list[dict[str, Any]]
 
 
+class PremiumSettingsUpdateRequest(BaseModel):
+    premium_enabled: bool = True
+
+
 class AdminSupportReplyRequest(BaseModel):
     content: str
 

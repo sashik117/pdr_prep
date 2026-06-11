@@ -43,7 +43,14 @@ def local_or_remote_image_exists(image_ref: Any, public_images_dir: Path) -> boo
         return False
     if normalized.startswith(("http://", "https://")):
         return True
-    return (public_images_dir / Path(normalized.split("?")[0]).name).exists()
+    clean_path = normalized.split("?")[0].split("#")[0].replace("\\", "/")
+    if clean_path.startswith("/images/"):
+        relative_path = clean_path.removeprefix("/images/").lstrip("/")
+        return (public_images_dir / relative_path).exists()
+    if clean_path.startswith("images/"):
+        relative_path = clean_path.removeprefix("images/").lstrip("/")
+        return (public_images_dir / relative_path).exists()
+    return (public_images_dir / Path(clean_path).name).exists()
 
 
 def sanitize_question_row(
@@ -129,4 +136,3 @@ def dedupe_and_filter_questions(
         if count and len(prepared) >= count:
             break
     return prepared
-

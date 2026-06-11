@@ -11,6 +11,8 @@ export type UserProfile = {
   bio?: string | null;
   active_frame?: string | null;
   is_premium?: boolean;
+  has_premium_access?: boolean;
+  premium_enabled?: boolean;
   streak_days?: number;
   marathon_best?: number;
   total_tests?: number;

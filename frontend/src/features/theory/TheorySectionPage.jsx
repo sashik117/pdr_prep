@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '@/api/apiClient';
 import { useAuth } from '@/lib/AuthContext';
+import { hasPremiumAccess } from '@/lib/accessLimits';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import TheoryAssetGallery from '@/features/theory/components/TheoryAssetGallery';
@@ -87,7 +88,7 @@ export default function TheorySectionPage() {
   const requiresPremium = isPremiumSlug(resolvedTopicKey);
   const isVideoTopic = resolvedTopicKey === 'video-lectures' || topicKey === 'video-lectures';
   const sectionTitle = isVideoTopic ? cleanVideoTitle(section?.title) : section?.title;
-  const isPremiumUser = Boolean(user?.is_premium);
+  const isPremiumUser = hasPremiumAccess(user);
   const hasInlineImages = /<img\b/i.test(section?.contentHtml || '');
   const currentIndex = sections.findIndex((item) => item.id === section?.id);
 

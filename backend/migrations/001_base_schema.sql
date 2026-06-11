@@ -96,6 +96,12 @@ CREATE TABLE IF NOT EXISTS access_usage (
 CREATE INDEX IF NOT EXISTS idx_access_usage_user ON access_usage(user_id);
 CREATE INDEX IF NOT EXISTS idx_access_usage_guest ON access_usage(guest_id);
 
+CREATE TABLE IF NOT EXISTS app_settings (
+    key        TEXT PRIMARY KEY,
+    value      JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS user_answers (
     id              BIGSERIAL PRIMARY KEY,
     user_id         INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

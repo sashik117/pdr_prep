@@ -164,6 +164,13 @@ def ensure_runtime_migrations() -> None:
         )
         """,
         "CREATE INDEX IF NOT EXISTS idx_admin_media_files_scope ON admin_media_files(scope)",
+        """
+        CREATE TABLE IF NOT EXISTS app_settings (
+            key TEXT PRIMARY KEY,
+            value JSONB NOT NULL DEFAULT '{}'::jsonb,
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+        """,
         "ALTER TABLE test_results ADD COLUMN IF NOT EXISTS client_attempt_id TEXT",
         "CREATE UNIQUE INDEX IF NOT EXISTS uq_test_results_user_attempt ON test_results(user_id, client_attempt_id) WHERE client_attempt_id IS NOT NULL",
         """

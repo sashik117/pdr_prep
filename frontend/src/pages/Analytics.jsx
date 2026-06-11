@@ -39,6 +39,7 @@ import LoginPrompt from '@/components/auth/LoginPrompt';
 import ActivityCalendar from '@/components/progress/ActivityCalendar';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { hasPremiumAccess } from '@/lib/accessLimits';
 
 const tabs = [
   { id: 'overview', label: 'Огляд', icon: LayoutDashboard },
@@ -125,7 +126,7 @@ export default function Analytics() {
   const { user, isCheckingAccess, canAccess } = useProtectedScreen();
   const requestedTab = searchParams.get('tab') || 'overview';
   const [tab, setTab] = useState(tabs.some((item) => item.id === requestedTab) ? requestedTab : 'overview');
-  const isPremiumUser = Boolean(user?.is_premium);
+  const isPremiumUser = hasPremiumAccess(user);
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   const isMobile = useIsMobile();
   const axisColor = isDark ? '#dbe7ff' : '#0f172a';

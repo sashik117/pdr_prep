@@ -349,6 +349,7 @@ export const api = {
       body: JSON.stringify({ action }),
     }),
   getPremiumFeatures: () => request('/premium/features'),
+  getPremiumSettings: () => request('/premium/settings'),
   updatePromoConfig: (payload, adminKey) =>
     request('/admin/promo/config', {
       method: 'PATCH',
@@ -437,6 +438,12 @@ export const api = {
       body: JSON.stringify({ content }),
     }),
   getAdminUsers: () => request('/admin/users'),
+  getAdminPremiumSettings: () => request('/admin/premium/settings'),
+  updateAdminPremiumSettings: (payload) =>
+    request('/admin/premium/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
   getAdminPremiumFeatures: () => request('/admin/premium/features'),
   updateAdminPremiumFeatures: (features) =>
     request('/admin/premium/features', {

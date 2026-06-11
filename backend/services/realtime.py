@@ -34,3 +34,7 @@ class RealtimeHub:
                 stale.append(socket)
         for socket in stale:
             self.disconnect(normalized, socket)
+
+    async def broadcast(self, event: str, payload: Optional[dict[str, Any]] = None) -> None:
+        for email in list(self._connections.keys()):
+            await self.emit(email, event, payload)

@@ -21,7 +21,7 @@ import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
 import api from '@/api/apiClient';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
-import { getFreeDailyTestLimit, getRemainingFreeTests } from '@/lib/accessLimits';
+import { getFreeDailyTestLimit, getRemainingFreeTests, hasPremiumAccess } from '@/lib/accessLimits';
 import { categoryGroups } from '@/lib/testCatalog';
 
 const modes = [
@@ -88,6 +88,7 @@ export default function TestSelection() {
   const selectedCategoryMeta = categoryGroups.find((item) => item.id === selectedCategory) || categoryGroups[1];
   const SelectedCategoryIcon = selectedCategoryMeta.icon;
   const isMobileCategoryStep = Boolean(mobileModeStep);
+  const premiumAccess = hasPremiumAccess(user);
 
   const openLimit = (text) => {
     setLimitText(text);
@@ -96,7 +97,7 @@ export default function TestSelection() {
 
   const canStartMode = (modeId) => {
     const mode = modes.find((item) => item.id === modeId);
-    if (mode?.premium && !user?.is_premium) {
+    if (mode?.premium && !premiumAccess) {
       openLimit('Іспит МВС доступний у Premium. Так Ви отримуєте повну імітацію білета без денних обмежень.');
       return false;
     }
@@ -111,7 +112,7 @@ export default function TestSelection() {
 
   const handleStart = async (modeId = selectedMode) => {
     if (!canStartMode(modeId)) return;
-    if (!user?.is_premium) {
+    if (!premiumAccess) {
       try {
         const access = await api.checkAccessLimit(accessActionForMode(modeId));
         if (!access?.allowed) {
@@ -180,7 +181,7 @@ export default function TestSelection() {
                   <mode.icon className="h-5 w-5" />
                 </div>
                 <Badge variant="outline" className="border-slate-200 bg-transparent text-slate-600 dark:border-slate-700 dark:bg-transparent dark:text-slate-300">
-                  {mode.premium && !user?.is_premium ? <Crown className="mr-1 h-3.5 w-3.5 text-amber-500" /> : null}
+                  {mode.premium && !premiumAccess ? <Crown className="mr-1 h-3.5 w-3.5 text-amber-500" /> : null}
                   {mode.questions} питань
                 </Badge>
               </div>
@@ -277,9 +278,9 @@ export default function TestSelection() {
             <p className="text-sm font-medium text-slate-500 dark:text-slate-300">Готово до старту</p>
             <h3 className="mt-1 text-2xl font-semibold text-slate-950 dark:text-white">{currentMode.label}</h3>
             <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Категорія {selectedCategory}. {currentMode.premium && !user?.is_premium ? 'Потрібен Premium-доступ.' : 'Можна починати, коли Вам зручно.'}
+              Категорія {selectedCategory}. {currentMode.premium && !premiumAccess ? 'Потрібен Premium-доступ.' : 'Можна починати, коли Вам зручно.'}
             </p>
-            {!user?.is_premium && !currentMode.premium ? (
+            {!premiumAccess && !currentMode.premium ? (
               <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-600 dark:text-amber-300">
                 Free: ще {getRemainingFreeTests(user, selectedMode)} із {getFreeDailyTestLimit(user)} спроб сьогодні
               </p>

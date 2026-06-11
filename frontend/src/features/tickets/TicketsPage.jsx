@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { categoryGroups } from '@/lib/testCatalog';
-import { canPreviewFreeTicket } from '@/lib/accessLimits';
+import { canPreviewFreeTicket, hasPremiumAccess } from '@/lib/accessLimits';
 
 export default function TicketsPage() {
   const { user } = useAuth();
@@ -19,7 +19,7 @@ export default function TicketsPage() {
   const urlCategory = searchParams.get('category') || 'B';
   const selectedCategory = categoryGroups.some((item) => item.id === urlCategory) ? urlCategory : 'B';
   const [categoryOpen, setCategoryOpen] = useState(false);
-  const isPremium = Boolean(user?.is_premium);
+  const isPremium = hasPremiumAccess(user);
 
   const selectedCategoryMeta = useMemo(
     () => categoryGroups.find((item) => item.id === selectedCategory) || categoryGroups[1],

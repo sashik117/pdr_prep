@@ -9,6 +9,7 @@ from core.config import (
     EMBEDDED_OPTION_RE,
     IMAGE_REQUIRED_MARKERS,
     PUBLIC_IMAGES_DIR,
+    PUBLIC_STATIC_IMAGES_DIR,
     QUESTION_UI_MARKERS,
 )
 from core.database import db
@@ -35,7 +36,11 @@ def _append_category_condition(conds: list[str], params: list[Any], category: Op
 
 
 def _question_has_available_image(question: dict[str, Any]) -> bool:
-    return any(local_or_remote_image_exists(image, PUBLIC_IMAGES_DIR) for image in question.get("images") or [])
+    return any(
+        local_or_remote_image_exists(image, PUBLIC_IMAGES_DIR)
+        or local_or_remote_image_exists(image, PUBLIC_STATIC_IMAGES_DIR)
+        for image in question.get("images") or []
+    )
 
 
 def _prepare_questions(rows: list[dict[str, Any]], count: Optional[int] = None) -> list[dict[str, Any]]:

@@ -17,7 +17,7 @@ import { normalizeQuestion } from '@/api/questionsApi';
 import { cn } from '@/lib/utils';
 import QuestionCard from '@/components/test/QuestionCard';
 import { useToast } from '@/components/ui/use-toast';
-import { canStartFreeBattle, registerFreeBattleStart } from '@/lib/accessLimits';
+import { canStartFreeBattle, hasPremiumAccess, registerFreeBattleStart } from '@/lib/accessLimits';
 
 const battleCategoryOptions = ['A', 'B', 'C', 'D', 'T', 'BE'];
 
@@ -27,6 +27,7 @@ export default function Battle() {
   const queryClient = useQueryClient();
   const { user, isCheckingAccess, isTemporaryAuthFailure, canAccess, checkUserAuth } = useProtectedScreen();
   const { toast } = useToast();
+  const premiumAccess = hasPremiumAccess(user);
 
   const [opponentUser, setOpponentUser] = useState('');
   const [friendSearch, setFriendSearch] = useState('');
@@ -128,7 +129,7 @@ export default function Battle() {
   };
 
   const handleCreateBattle = (username) => {
-    if (!user?.is_premium && !canStartFreeBattle(user)) {
+    if (!premiumAccess && !canStartFreeBattle(user)) {
       toast({
         title: 'Денний trial для батлів вичерпано',
         description: 'Безкоштовно доступний лише один батл на день. Для більшої кількості відкрийте Premium.',
@@ -144,7 +145,7 @@ export default function Battle() {
     mutationFn: ({ opponent_user, category: battleCategory }) =>
       api.createBattle({ opponent_user: String(opponent_user || '').trim().replace(/^@/, ''), category: battleCategory }),
     onSuccess: async (battle) => {
-      if (!user?.is_premium) {
+      if (!premiumAccess) {
         registerFreeBattleStart(user);
       }
       setOpponentUser('');
