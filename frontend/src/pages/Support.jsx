@@ -146,7 +146,7 @@ export default function Support() {
         <Card
           className={`border-white/90 shadow-[0_18px_45px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950/92 ${
             isChatOpen
-              ? 'fixed inset-3 z-[80] flex max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden bg-white dark:bg-slate-950'
+              ? 'fixed inset-0 z-[80] flex max-h-screen flex-col overflow-hidden rounded-none bg-white dark:bg-slate-950'
               : 'hidden'
           } md:relative md:inset-auto md:z-auto md:flex md:max-h-none md:overflow-visible`}
         >

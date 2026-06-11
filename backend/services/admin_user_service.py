@@ -207,7 +207,7 @@ def delete_admin_user(user_id: int, *, is_admin_email: AdminEmailChecker) -> dic
             raise ServiceError(400, "Адміністратора не можна видалити")
         repo.delete_user(user_id=user_id)
         conn.commit()
-    return {"message": "Користувача видалено"}
+    return {"message": "Користувача видалено", "email": target.get("email")}
 
 
 def create_admin_password_reset(user_id: int, *, code_factory: Callable[[], str]) -> dict[str, Any]:

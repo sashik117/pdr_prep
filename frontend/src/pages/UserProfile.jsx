@@ -143,14 +143,14 @@ export default function UserProfile() {
             <ProfileAvatar profile={profile} />
 
             <div className="min-w-0 flex-1">
-              <h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl">
-                {profile.full_name || `${profile.name || ''} ${profile.surname || ''}`.trim()}
+              <h2 className="inline-flex min-w-0 items-start gap-1.5 text-2xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl">
+                <span className="min-w-0 truncate">{profile.full_name || `${profile.name || ''} ${profile.surname || ''}`.trim()}</span>
+                {profile.is_premium ? <Crown className="mt-0.5 h-4 w-4 shrink-0 text-amber-500 sm:h-5 sm:w-5" /> : null}
               </h2>
               {profile.username ? (
                 <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-sm font-semibold text-primary">
                   <AtSign className="h-4 w-4" />
                   {profile.username}
-                  {profile.is_premium ? <Crown className="-mt-2 h-3.5 w-3.5 text-amber-500" /> : null}
                 </p>
               ) : null}
               {profile.email ? (

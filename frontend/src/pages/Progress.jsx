@@ -106,6 +106,7 @@ export default function Progress({ view = 'dashboard' }) {
   const passedTests = stats?.passed_tests || 0;
   const failedTests = Math.max(0, totalTests - passedTests);
   const totalWrong = stats?.total_wrong ?? Math.max(0, totalAnswers - totalCorrect);
+  const hasDashboardStats = totalTests > 0 || totalAnswers > 0 || totalCorrect > 0 || passedTests > 0 || totalWrong > 0;
   const progressPercent = Math.min(100, Math.max(8, totalTests * 2 + Math.round(accuracy * 0.4)));
   const recentTests = (stats?.recent_tests?.length ? stats.recent_tests : resultsFallback) || [];
   const quickActions = [
@@ -402,14 +403,18 @@ export default function Progress({ view = 'dashboard' }) {
               <CardTitle className="text-xl font-semibold text-slate-950 dark:text-white">Ваша статистика</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                <DashboardStatTile icon={Target} label="Тестів пройдено" value={String(totalTests)} accent="blue" />
-                <DashboardStatTile icon={Trophy} label="Успішних" value={String(passedTests)} accent="green" />
-                <DashboardStatTile icon={ShieldX} label="Не успішних" value={String(failedTests)} accent="red" />
-                <DashboardStatTile icon={TrendingUp} label="Точність" value={`${accuracy}%`} accent="amber" />
-                <DashboardStatTile icon={CheckCircle2} label="Правильних" value={String(totalCorrect)} accent="sky" />
-                <DashboardStatTile icon={BadgeX} label="Неправильних" value={String(totalWrong)} accent="rose" />
-              </div>
+              {hasDashboardStats ? (
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                  <DashboardStatTile icon={Target} label="Тестів пройдено" value={String(totalTests)} accent="blue" />
+                  <DashboardStatTile icon={Trophy} label="Успішних" value={String(passedTests)} accent="green" />
+                  <DashboardStatTile icon={ShieldX} label="Не успішних" value={String(failedTests)} accent="red" />
+                  <DashboardStatTile icon={TrendingUp} label="Точність" value={`${accuracy}%`} accent="amber" />
+                  <DashboardStatTile icon={CheckCircle2} label="Правильних" value={String(totalCorrect)} accent="sky" />
+                  <DashboardStatTile icon={BadgeX} label="Неправильних" value={String(totalWrong)} accent="rose" />
+                </div>
+              ) : (
+                <EmptyState text="Статистика з’явиться після першого завершеного тесту. Поки тут чистий старт." />
+              )}
             </CardContent>
           </Card>
 
@@ -442,8 +447,9 @@ export default function Progress({ view = 'dashboard' }) {
                 <>
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0">
-                      <h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl">
-                        {user.full_name || `${user.name || ''} ${user.surname || ''}`.trim() || 'Користувач'}
+                      <h2 className="inline-flex min-w-0 items-start gap-1.5 text-2xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white sm:text-3xl">
+                        <span className="min-w-0 truncate">{user.full_name || `${user.name || ''} ${user.surname || ''}`.trim() || 'Користувач'}</span>
+                        {user.is_premium ? <Crown className="mt-0.5 h-4 w-4 shrink-0 text-amber-500 sm:h-5 sm:w-5" /> : null}
                       </h2>
                       <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-300">
                         <span className="inline-flex items-center gap-2">
@@ -454,7 +460,6 @@ export default function Progress({ view = 'dashboard' }) {
                           <button type="button" className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-primary" onClick={() => void copyNickname()}>
                             <AtSign className="h-4 w-4" />
                             {user.username}
-                            {user.is_premium ? <Crown className="-mt-2 h-3.5 w-3.5 text-amber-500" /> : null}
                             <Copy className="h-3.5 w-3.5" />
                           </button>
                         ) : null}

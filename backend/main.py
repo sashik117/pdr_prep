@@ -264,6 +264,19 @@ if PUBLIC_IMAGES_DIR.exists():
 app.mount("/images", StaticFiles(directory=str(PUBLIC_STATIC_IMAGES_DIR)), name="images")
 
 
+@app.get("/sw.js", include_in_schema=False)
+def service_worker_fallback():
+    sw_path = FRONTEND_DIST_DIR / "sw.js"
+    if sw_path.exists():
+        return FileResponse(sw_path, media_type="application/javascript")
+    return Response(
+        "self.addEventListener('install',event=>self.skipWaiting());"
+        "self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));",
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-store, max-age=0"},
+    )
+
+
 def _is_frontend_navigation(request: Request) -> bool:
     if request.method != "GET" or not IS_PRODUCTION or not FRONTEND_DIST_DIR.exists():
         return False
@@ -2094,11 +2107,14 @@ async def admin_update_user(user_id: int, req: AdminUserUpdateRequest, admin=Dep
 
 
 @app.delete("/admin/users/{user_id}")
-def admin_delete_user(user_id: int, admin=Depends(require_admin)):
+async def admin_delete_user(user_id: int, admin=Depends(require_admin)):
     try:
-        return delete_admin_user_use_case(user_id, is_admin_email=_is_admin_email)
+        result = delete_admin_user_use_case(user_id, is_admin_email=_is_admin_email)
     except ServiceError as exc:
         raise HTTPException(exc.status_code, exc.message) from exc
+    if result.get("email"):
+        await realtime_hub.emit(result["email"], "account_deleted", {})
+    return {"message": result.get("message", "Користувача видалено")}
 
 
 @app.post("/admin/users/{user_id}/reset-password")

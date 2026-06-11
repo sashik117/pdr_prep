@@ -23,10 +23,5 @@ export function registerServiceWorker() {
 
   window.addEventListener('load', () => {
     cleanupServiceWorkers();
-    navigator.serviceWorker.register('/sw.js').then((registration) => {
-      void registration.update();
-    }).catch(() => {
-      // The cleanup above is enough when /sw.js is not available.
-    });
   });
 }

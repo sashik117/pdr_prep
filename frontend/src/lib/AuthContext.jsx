@@ -103,6 +103,23 @@ export const AuthProvider = ({ children }) => {
     [],
   );
 
+  const applyRealtimeUser = useCallback(
+    /**
+     * @param {import('@/types/app').UserProfile | null | undefined} currentUser
+     */
+    (currentUser) => {
+      const token = tokenStore.get();
+      if (!token || !currentUser) return;
+      userStore.set(currentUser, tokenStore.hasPersistent());
+      setUser(currentUser);
+      setIsAuthenticated(true);
+      setAuthError(null);
+      setAuthChecked(true);
+      setIsLoadingAuth(false);
+    },
+    [],
+  );
+
   const logout = useCallback(() => {
     tokenStore.clear();
     userStore.clear();
@@ -138,11 +155,12 @@ export const AuthProvider = ({ children }) => {
     authChecked,
     authError,
     login,
+    applyRealtimeUser,
     logout,
     navigateToLogin,
     navigateToRegister,
     checkUserAuth,
-  }), [user, isAuthenticated, isLoadingAuth, authChecked, authError, login, logout, navigateToLogin, navigateToRegister, checkUserAuth]);
+  }), [user, isAuthenticated, isLoadingAuth, authChecked, authError, login, applyRealtimeUser, logout, navigateToLogin, navigateToRegister, checkUserAuth]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

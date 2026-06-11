@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BadgeCheck, Crown, KeyRound, Search, Shield, Star, Trash2, UserPlus, UserRoundCog, Users } from 'lucide-react';
+import { BadgeCheck, Crown, Eye, EyeOff, KeyRound, Search, Shield, Star, Trash2, UserPlus, UserRoundCog, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,6 +37,7 @@ export default function UsersPage() {
     premium_months: 1,
     is_blocked: false,
   });
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
 
   const usersQuery = useQuery({ queryKey: ['admin-users'], queryFn: () => api.getAdminUsers() });
   const auditQuery = useQuery({
@@ -69,7 +70,22 @@ export default function UsersPage() {
 
   const updateUserMutation = useMutation({
     mutationFn: ({ userId, payload }) => api.updateAdminUser(userId, payload),
-    onSuccess: async () => {
+    onSuccess: async (updatedUser) => {
+      if (updatedUser?.id) {
+        setDrafts((current) => {
+          const next = { ...current };
+          delete next[updatedUser.id];
+          return next;
+        });
+        queryClient.setQueryData(['admin-users'], (current = []) => (
+          Array.isArray(current)
+            ? current.map((item) => (Number(item.id) === Number(updatedUser.id) ? { ...item, ...updatedUser } : item))
+            : current
+        ));
+        queryClient.setQueryData(['admin-user-audit', updatedUser.id], (current) => (
+          current ? { ...current, user: { ...(current.user || {}), ...updatedUser } } : current
+        ));
+      }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
         queryClient.invalidateQueries({ queryKey: ['admin-user-audit', selectedUserId] }),
@@ -182,22 +198,22 @@ export default function UsersPage() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col">
       <AdminPageHeader
         eyebrow="Користувачі"
         title="Керування акаунтами"
         description="Пошук, Premium-доступ, блокування, статистика, досягнення та аудит активності користувача."
       />
 
-      <Card className="mt-6 border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
-        <CardHeader>
+      <Card className="order-3 mt-4 border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+        <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold">
             <UserPlus className="h-5 w-5 text-blue-600" />
             Додати користувача
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={submitCreateUser} className="grid gap-3 lg:grid-cols-6">
+        <CardContent className="pt-0">
+          <form onSubmit={submitCreateUser} autoComplete="off" className="grid gap-2 lg:grid-cols-6">
             <Input
               className="lg:col-span-1"
               placeholder="Ім'я"
@@ -214,6 +230,7 @@ export default function UsersPage() {
             <Input
               className="lg:col-span-1"
               placeholder="@username"
+              autoComplete="off"
               value={createUserForm.username}
               onChange={(event) => updateCreateUserForm('username', event.target.value.replace(/\s+/g, ''))}
               required
@@ -222,25 +239,37 @@ export default function UsersPage() {
               className="lg:col-span-1"
               type="email"
               placeholder="email"
+              autoComplete="off"
               value={createUserForm.email}
               onChange={(event) => updateCreateUserForm('email', event.target.value)}
               required
             />
-            <Input
-              className="lg:col-span-1"
-              type="password"
-              placeholder="пароль"
-              value={createUserForm.password}
-              onChange={(event) => updateCreateUserForm('password', event.target.value)}
-              required
-              minLength={6}
-            />
+            <div className="relative lg:col-span-1">
+              <Input
+                type={showCreatePassword ? 'text' : 'password'}
+                placeholder="пароль"
+                autoComplete="new-password"
+                value={createUserForm.password}
+                onChange={(event) => updateCreateUserForm('password', event.target.value)}
+                required
+                minLength={6}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+                onClick={() => setShowCreatePassword((value) => !value)}
+                aria-label={showCreatePassword ? 'Приховати пароль' : 'Показати пароль'}
+              >
+                {showCreatePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
             <Button type="submit" disabled={createUserMutation.isPending} className="rounded-xl lg:col-span-1">
               {createUserMutation.isPending ? 'Створення...' : 'Створити'}
             </Button>
 
-            <div className="flex flex-wrap gap-3 lg:col-span-6">
-              <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="flex flex-wrap gap-2 lg:col-span-6">
+              <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
                 <input
                   type="checkbox"
                   checked={createUserForm.is_premium}
@@ -249,7 +278,7 @@ export default function UsersPage() {
                 Premium
               </label>
               {createUserForm.is_premium ? (
-                <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
                   Місяців
                   <Input
                     type="number"
@@ -261,7 +290,7 @@ export default function UsersPage() {
                   />
                 </label>
               ) : null}
-              <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+              <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
                 <input
                   type="checkbox"
                   checked={createUserForm.is_blocked}
@@ -282,14 +311,14 @@ export default function UsersPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="order-2 mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={Users} label="Усього" value={users.length} hint="зареєстровані акаунти" tone="blue" />
         <StatCard icon={Crown} label="Premium" value={premiumUsers} hint={`${percent(premiumUsers, users.length)}% від бази`} tone="amber" />
         <StatCard icon={Shield} label="Блокування" value={blockedUsers} hint="потребують уваги" tone="rose" />
         <StatCard icon={BadgeCheck} label="Середня точність" value={`${averageAccuracy}%`} hint="по всіх акаунтах" tone="green" />
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_0.9fr]">
+      <div className="order-4 mt-6 grid gap-6 xl:grid-cols-[1fr_0.9fr]">
         <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
           <CardHeader className="space-y-4">
             <CardTitle className="text-lg font-semibold">Список користувачів</CardTitle>

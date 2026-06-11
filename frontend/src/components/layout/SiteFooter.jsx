@@ -120,12 +120,12 @@ export default function SiteFooter() {
       </div>
 
       <div className="border-t border-white/10 px-4 py-3 text-xs text-blue-100/80">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <span className="inline-flex items-center gap-2">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-2 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+          <span className="inline-flex items-center justify-center gap-2">
             <Sparkles className="h-3.5 w-3.5" />
             © 2026 DrivePrep. Вчіться у своєму темпі.
           </span>
-          <a href="mailto:pdr.preparation@gmail.com" className="inline-flex items-center gap-2 transition hover:text-white">
+          <a href="mailto:pdr.preparation@gmail.com" className="inline-flex items-center justify-center gap-2 transition hover:text-white">
             <Mail className="h-3.5 w-3.5" />
             pdr.preparation@gmail.com
           </a>
