@@ -32,7 +32,8 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [authError, setAuthError] = useState(/** @type {import('@/types/app').AuthError} */ (null));
 
-  const checkUserAuth = useCallback(async () => {
+  const checkUserAuth = useCallback(async (options = {}) => {
+    const silent = Boolean(options?.silent);
     const token = tokenStore.get();
     if (!token) {
       applyTheme();
@@ -45,7 +46,9 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
 
-    setIsLoadingAuth(true);
+    if (!silent) {
+      setIsLoadingAuth(true);
+    }
     const cachedUser = userStore.get();
     if (cachedUser) {
       setUser(cachedUser);
@@ -78,7 +81,9 @@ export const AuthProvider = ({ children }) => {
       return null;
     } finally {
       setAuthChecked(true);
-      setIsLoadingAuth(false);
+      if (!silent) {
+        setIsLoadingAuth(false);
+      }
     }
   }, []);
 

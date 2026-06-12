@@ -114,7 +114,7 @@ export default function AppLayout() {
         const nextOnline = healthResponse.ok;
         setIsOnline(nextOnline);
         if (nextOnline && isAuthenticated) {
-          void checkUserAuth();
+          void checkUserAuth({ silent: true });
         }
 
         if (!networkBootRef.current && previousOnlineRef.current !== null && previousOnlineRef.current !== nextOnline) {
@@ -188,12 +188,12 @@ export default function AppLayout() {
           if (message?.user) {
             applyRealtimeUser(message.user);
           }
-          void checkUserAuth();
+          void checkUserAuth({ silent: true });
           queryClient.invalidateQueries();
           return;
         }
         if (eventType === 'premium_settings_updated') {
-          void checkUserAuth();
+          void checkUserAuth({ silent: true });
           queryClient.invalidateQueries();
           return;
         }

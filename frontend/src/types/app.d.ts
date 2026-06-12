@@ -35,7 +35,7 @@ export type AuthContextValue = {
   logout: () => void;
   navigateToLogin: (redirectTo?: string) => void;
   navigateToRegister: (redirectTo?: string) => void;
-  checkUserAuth: () => Promise<UserProfile | null>;
+  checkUserAuth: (options?: { silent?: boolean }) => Promise<UserProfile | null>;
 };
 
 export type TestResult = {
