@@ -113,9 +113,6 @@ export default function AppLayout() {
         const healthResponse = await fetch(healthUrl, { method: 'GET', cache: 'no-store' });
         const nextOnline = healthResponse.ok;
         setIsOnline(nextOnline);
-        if (nextOnline && isAuthenticated) {
-          void checkUserAuth({ silent: true });
-        }
 
         if (!networkBootRef.current && previousOnlineRef.current !== null && previousOnlineRef.current !== nextOnline) {
           if (nextOnline) {

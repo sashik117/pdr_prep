@@ -233,6 +233,7 @@ export default function TakeTest() {
   useEffect(() => {
     if (hasRestorableDraft) return;
     if (rawQuestions.length === 0) return;
+    if (questions.length > 0) return;
     setQuestions(rawQuestions);
     setAnswers({});
     setCurrentIndex(0);
@@ -251,7 +252,7 @@ export default function TakeTest() {
       registerFreeTestCompletion(user || null, mode);
       limitRegisteredRef.current = true;
     }
-  }, [rawQuestions, effectiveTime, mode, user, hasRestorableDraft]);
+  }, [rawQuestions, effectiveTime, mode, user?.id, hasRestorableDraft, questions.length, premiumAccess]);
 
   useEffect(() => {
     if (!initialDraft?.questions?.length || questions.length > 0) return;
