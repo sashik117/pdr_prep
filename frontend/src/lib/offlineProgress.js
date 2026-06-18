@@ -1,6 +1,7 @@
 const DB_NAME = 'pdrprep-offline';
 const DB_VERSION = 1;
 const STORE_NAME = 'pending-test-results';
+const FALLBACK_KEY = 'driveprep-pending-test-results';
 
 /** @typedef {{ id?: number, payload: any, createdAt: string }} PendingTestResult */
 
@@ -46,31 +47,78 @@ async function withStore(mode, executor) {
   });
 }
 
+function readFallbackQueue() {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(FALLBACK_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeFallbackQueue(items) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(FALLBACK_KEY, JSON.stringify(items));
+  } catch {
+    // IndexedDB remains the primary queue; this fallback is best-effort.
+  }
+}
+
 /** @param {any} payload */
 export async function queuePendingTestResult(payload) {
   /** @returns {Promise<number>} */
-  return withStore('readwrite', (store, resolve) => {
-    const request = store.add({
-      payload,
-      createdAt: new Date().toISOString(),
+  try {
+    return await withStore('readwrite', (store, resolve) => {
+      const request = store.add({
+        payload,
+        createdAt: new Date().toISOString(),
+      });
+      request.onsuccess = () => resolve(request.result);
     });
-    request.onsuccess = () => resolve(request.result);
-  });
+  } catch {
+    const id = `ls:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+    writeFallbackQueue([
+      ...readFallbackQueue(),
+      {
+        id,
+        payload,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+    return id;
+  }
 }
 
 export async function getPendingTestResults() {
   /** @returns {Promise<PendingTestResult[]>} */
-  return withStore('readonly', (store, resolve) => {
-    const request = store.getAll();
-    request.onsuccess = () => resolve(request.result || []);
-  });
+  const fallback = readFallbackQueue();
+  try {
+    const indexed = await withStore('readonly', (store, resolve) => {
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+    });
+    return [...indexed, ...fallback];
+  } catch {
+    return fallback;
+  }
 }
 
 /** @param {number} id */
 export async function removePendingTestResult(id) {
-  return withStore('readwrite', (store) => {
-    store.delete(id);
-  });
+  if (String(id).startsWith('ls:')) {
+    writeFallbackQueue(readFallbackQueue().filter((item) => item.id !== id));
+    return;
+  }
+  try {
+    await withStore('readwrite', (store) => {
+      store.delete(id);
+    });
+  } catch {
+    writeFallbackQueue(readFallbackQueue().filter((item) => item.id !== id));
+  }
 }
 
 export async function hasPendingTestResults() {

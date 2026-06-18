@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom';
+﻿import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
@@ -96,7 +96,7 @@ export default function AppLayout() {
         if (!networkBootRef.current && previousOnlineRef.current !== false) {
           toast({
             title: 'З’єднання втрачено',
-            description: 'Ви можете продовжити, а ми синхронізуємо прогрес після відновлення.',
+            description: 'Ви можете продовжити. Ми синхронізуємо прогрес після відновлення зв’язку.',
             variant: 'destructive',
           });
         }
@@ -121,7 +121,7 @@ export default function AppLayout() {
           } else {
             toast({
               title: 'З’єднання втрачено',
-              description: 'Ви можете продовжити, а ми синхронізуємо прогрес після відновлення.',
+              description: 'Ви можете продовжити. Ми синхронізуємо прогрес після відновлення зв’язку.',
               variant: 'destructive',
             });
           }
@@ -132,7 +132,7 @@ export default function AppLayout() {
         if (!networkBootRef.current && previousOnlineRef.current !== false) {
           toast({
             title: 'З’єднання втрачено',
-            description: 'Ви можете продовжити, а ми синхронізуємо прогрес після відновлення.',
+            description: 'Ви можете продовжити. Ми синхронізуємо прогрес після відновлення зв’язку.',
             variant: 'destructive',
           });
         }
@@ -146,7 +146,7 @@ export default function AppLayout() {
       if (!networkBootRef.current && previousOnlineRef.current !== false) {
         toast({
           title: 'З’єднання втрачено',
-          description: 'Ви можете продовжити, а ми синхронізуємо прогрес після відновлення.',
+          description: 'Ви можете продовжити. Ми синхронізуємо прогрес після відновлення зв’язку.',
           variant: 'destructive',
         });
       }
@@ -244,3 +244,4 @@ export default function AppLayout() {
     </div>
   );
 }
+
