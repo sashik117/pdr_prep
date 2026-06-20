@@ -4,6 +4,8 @@ from typing import Any, Optional
 
 import psycopg
 
+from services.private_data import decrypt_message_row
+
 
 class AdminUserRepository:
     def __init__(self, conn: psycopg.Connection):
@@ -174,4 +176,4 @@ class AdminUserRepository:
             """,
             (email, email, limit),
         ).fetchall()
-        return [dict(row) for row in rows]
+        return [decrypt_message_row(row) for row in rows]

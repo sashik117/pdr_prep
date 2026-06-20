@@ -1,10 +1,12 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 from datetime import datetime
 from typing import Any
 
 import psycopg
+
+from services.private_data import encrypt_private_text
 
 class BattleRepository:
     def __init__(self, conn: psycopg.Connection):
@@ -127,7 +129,7 @@ class BattleRepository:
                 to_email,
                 from_email,
                 from_name,
-                "Запрошення на батл",
+                encrypt_private_text("Запрошення на батл"),
                 json.dumps({"kind": "battle_invite", "battle_id": battle_id, "category": category}, ensure_ascii=False),
             ),
         )
@@ -263,3 +265,4 @@ class BattleRepository:
                         for question_id, selected_index, is_correct, time_ms in answer_rows
                     ],
                 )
+

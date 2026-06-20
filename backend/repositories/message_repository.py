@@ -4,6 +4,8 @@ from typing import Any
 
 import psycopg
 
+from services.private_data import decrypt_message_row, encrypt_private_text
+
 
 class MessageRepository:
     def __init__(self, conn: psycopg.Connection):
@@ -20,7 +22,7 @@ class MessageRepository:
             """,
             (current_email, partner_email, partner_email, current_email),
         ).fetchall()
-        return [dict(row) for row in rows]
+        return [decrypt_message_row(row) for row in rows]
 
     def mark_read(self, *, to_email: str, from_email: str) -> None:
         self.conn.execute(
@@ -43,7 +45,7 @@ class MessageRepository:
             """,
             (email, email, limit),
         ).fetchall()
-        return [dict(row) for row in rows]
+        return [decrypt_message_row(row) for row in rows]
 
     def friendship_exists(self, *, user_id: int, friend_id: int) -> bool:
         row = self.conn.execute(
@@ -74,6 +76,6 @@ class MessageRepository:
             VALUES (%s, %s, %s, %s, %s, %s::jsonb)
             RETURNING *
             """,
-            (to_email, from_email, from_name, content, message_type, result_data_json),
+            (to_email, from_email, from_name, encrypt_private_text(content), message_type, result_data_json),
         ).fetchone()
-        return dict(row)
+        return decrypt_message_row(row)

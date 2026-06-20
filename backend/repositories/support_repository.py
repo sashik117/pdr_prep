@@ -4,6 +4,8 @@ from typing import Any, Optional
 
 import psycopg
 
+from services.private_data import decrypt_message_row, encrypt_private_text
+
 
 class SupportRepository:
     def __init__(self, conn: psycopg.Connection):
@@ -12,6 +14,10 @@ class SupportRepository:
     @staticmethod
     def _row(row: Any) -> Optional[dict[str, Any]]:
         return dict(row) if row else None
+
+    @staticmethod
+    def _message_row(row: Any) -> Optional[dict[str, Any]]:
+        return decrypt_message_row(row) if row else None
 
     def list_conversation_heads(self, *, support_email: str) -> list[dict[str, Any]]:
         rows = self.conn.execute(
@@ -58,7 +64,7 @@ class SupportRepository:
             """,
             (support_email, counterpart_email, counterpart_email, support_email),
         ).fetchone()
-        return self._row(row)
+        return self._message_row(row)
 
     def unread_from_user(self, *, support_email: str, counterpart_email: str) -> int:
         row = self.conn.execute(
@@ -84,7 +90,7 @@ class SupportRepository:
             """,
             (support_email, user_email, user_email, support_email),
         ).fetchall()
-        return [dict(row) for row in rows]
+        return [decrypt_message_row(row) for row in rows]
 
     def mark_user_messages_read(self, *, support_email: str, user_email: str) -> None:
         self.conn.execute(
@@ -113,9 +119,9 @@ class SupportRepository:
             VALUES (%s, %s, %s, %s, 'text', %s::jsonb)
             RETURNING *
             """,
-            (to_email, support_email, support_name, content, result_data_json),
+            (to_email, support_email, support_name, encrypt_private_text(content), result_data_json),
         ).fetchone()
-        return dict(row)
+        return decrypt_message_row(row)
 
     def create_user_message(
         self,
@@ -132,6 +138,6 @@ class SupportRepository:
             VALUES (%s, %s, %s, %s, 'text', %s::jsonb)
             RETURNING *
             """,
-            (support_email, user_email, user_name, content, result_data_json),
+            (support_email, user_email, user_name, encrypt_private_text(content), result_data_json),
         ).fetchone()
-        return dict(row)
+        return decrypt_message_row(row)

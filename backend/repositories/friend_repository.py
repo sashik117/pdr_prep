@@ -4,6 +4,8 @@ from typing import Any, Optional
 
 import psycopg
 
+from services.private_data import decrypt_message_row
+
 
 class FriendRepository:
     def __init__(self, conn: psycopg.Connection):
@@ -116,4 +118,4 @@ class FriendRepository:
             """,
             (current_email, counterpart_email, counterpart_email, current_email),
         ).fetchone()
-        return self._row(row)
+        return decrypt_message_row(row) if row else None
