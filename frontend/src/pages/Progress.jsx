@@ -760,11 +760,15 @@ function formatDuration(seconds) {
   return [hours, minutes, secs].map((part) => String(part).padStart(2, '0')).join(':');
 }
 
-function Field(props) {
+function Field({ label, onChange, value, ...props }) {
   return (
     <label className="space-y-2">
-      <span className="text-sm font-semibold text-slate-600 dark:text-slate-200">{props.label}</span>
-      <Input {...props} />
+      <span className="text-sm font-semibold text-slate-600 dark:text-slate-200">{label}</span>
+      <Input
+        {...props}
+        value={value ?? ''}
+        onChange={(event) => onChange?.(event.target.value)}
+      />
     </label>
   );
 }
