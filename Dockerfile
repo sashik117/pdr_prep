@@ -32,7 +32,13 @@ ENV VITE_MONO_JAR_CARD=$VITE_MONO_JAR_CARD
 WORKDIR /app
 
 COPY backend/requirements.txt ./backend/requirements.txt
-RUN pip install --no-cache-dir -r backend/requirements.txt
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc libffi-dev \
+    && pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r backend/requirements.txt \
+    && apt-get purge -y gcc \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY backend ./backend
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
