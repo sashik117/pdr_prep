@@ -58,9 +58,9 @@ function normalizeContentHtml(html) {
   const raw = String(html || '');
   if (!raw) return '';
 
-  return raw.replace(/(<(?:img|source)\b[^>]*\bsrc=["'])(\/(?:uploads|images)\/[^"']+)(["'][^>]*>)/gi, (_, prefix, path, suffix) => {
-    const resolved = resolveApiUrl(path);
-    return `${prefix}${resolved || path}${suffix}`;
+  return raw.replace(/(<(?:img|source)\b[^>]*\bsrc=["'])([^"']+)(["'][^>]*>)/gi, (_, prefix, path, suffix) => {
+    const resolved = resolveApiUrl(path) || resolveApiUrl(path.startsWith('/') ? path : `/${path}`) || path;
+    return `${prefix}${resolved}${suffix}`;
   });
 }
 

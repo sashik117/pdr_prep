@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import api, { adminTokenStore, adminUserStore } from '@/api/apiClient';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClientInstance } from '@/lib/query-client';
 import AdminShell from '@admin/components/AdminShell';
 import OverviewPage from '@admin/pages/OverviewPage';
 import UsersPage from '@admin/pages/UsersPage';
@@ -70,21 +72,27 @@ export default function AdminApp() {
   }
 
   if (!admin) {
-    return <AdminLoginPage onLogin={handleLogin} />;
+    return (
+      <QueryClientProvider client={queryClientInstance}>
+        <AdminLoginPage onLogin={handleLogin} />
+      </QueryClientProvider>
+    );
   }
 
   return (
-    <AdminShell admin={admin} onLogout={handleLogout}>
-      <Routes>
-        <Route index element={<OverviewPage />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="theory" element={<TheoryPage />} />
-        <Route path="questions" element={<QuestionsPage />} />
-        <Route path="premium" element={<PremiumPage />} />
-        <Route path="support" element={<SupportPage />} />
-        <Route path="*" element={<Navigate to="/admin" replace />} />
-      </Routes>
-    </AdminShell>
+    <QueryClientProvider client={queryClientInstance}>
+      <AdminShell admin={admin} onLogout={handleLogout}>
+        <Routes>
+          <Route index element={<OverviewPage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="theory" element={<TheoryPage />} />
+          <Route path="questions" element={<QuestionsPage />} />
+          <Route path="premium" element={<PremiumPage />} />
+          <Route path="support" element={<SupportPage />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Routes>
+      </AdminShell>
+    </QueryClientProvider>
   );
 }
 
@@ -100,7 +108,7 @@ function AdminLoginPage({ onLogin }) {
     setError('');
     setIsSubmitting(true);
     try {
-      const payload = await api.adminLogin(username, password, rememberMe);
+      const payload = await api.adminLogin(username.trim(), password.trim(), rememberMe);
       onLogin(payload, rememberMe);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не вдалося увійти в адмін-панель.');
@@ -128,9 +136,12 @@ function AdminLoginPage({ onLogin }) {
               <span className="text-sm font-medium text-slate-200">Нік адміністратора</span>
               <Input
                 autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
-                className="border-slate-700 bg-slate-950 text-white"
+                className="border-slate-600 bg-slate-950 text-white placeholder:text-slate-500 focus-visible:border-blue-400 focus-visible:ring-blue-500/30"
                 placeholder="admin"
               />
             </label>
@@ -139,11 +150,14 @@ function AdminLoginPage({ onLogin }) {
               <span className="text-sm font-medium text-slate-200">Пароль</span>
               <Input
                 autoComplete="current-password"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="border-slate-700 bg-slate-950 text-white"
-                placeholder="Ваш admin password"
+                className="border-slate-600 bg-slate-950 text-white placeholder:text-slate-500 focus-visible:border-blue-400 focus-visible:ring-blue-500/30"
+                placeholder="Пароль"
               />
             </label>
 

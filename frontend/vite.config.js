@@ -50,9 +50,11 @@ export default defineConfig({
     },
   },
   resolve: {
+    dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
     alias: {
       '@': path.resolve(frontendRoot, './src'),
       '@admin': adminRoot,
+      '@tanstack/react-query': path.dirname(requireFromFrontend.resolve('@tanstack/react-query/package.json')),
     },
   },
 })

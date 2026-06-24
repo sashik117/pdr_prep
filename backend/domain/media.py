@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 _MEDIA_TAG_RE = re.compile(r"""<(?:img|source)\b[^>]*(?:src|srcset)=["']([^"']+)["'][^>]*>\s*(?:<br\s*/?>)?""", re.IGNORECASE)
+_PLACEHOLDER_URL = "/uploads/handbook/placeholder.png"
 
 
 def local_asset_exists(asset_url: Any, *, public_images_dir: Path, uploads_dir: Path) -> bool:
@@ -48,9 +49,12 @@ def remove_unavailable_media_tags(
     content = str(html)
 
     def replace(match: re.Match[str]) -> str:
+        tag = match.group(0)
         url = match.group(1)
         if local_asset_exists(url, public_images_dir=public_images_dir, uploads_dir=uploads_dir):
-            return match.group(0)
+            return tag
+        if local_asset_exists(_PLACEHOLDER_URL, public_images_dir=public_images_dir, uploads_dir=uploads_dir):
+            return tag.replace(url, _PLACEHOLDER_URL, 1)
         return ""
 
     return _MEDIA_TAG_RE.sub(replace, content)

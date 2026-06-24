@@ -93,6 +93,15 @@ function normalizeTheoryIframeSrc(value) {
   }
 }
 
+function resolveTheoryImageSrc(value) {
+  const src = String(value || '').trim();
+  if (!src) return '';
+  if (src.startsWith('data:')) return src;
+  if (/^https?:\/\//i.test(src)) return src;
+  if (src.startsWith('//')) return `https:${src}`;
+  return resolveApiUrl(src.startsWith('/') ? src : `/${src}`) || src;
+}
+
 function signAnchorId(code) {
   return `sign-${String(code).replace(/\./g, '-')}`;
 }
@@ -110,14 +119,60 @@ function decorateSignAnchors(root) {
   });
 }
 
-function linkInlineSignReferences(root) {
+function shouldLinkifyTextNode(textNode) {
+  const parent = textNode.parentElement;
+  if (!parent) return false;
+  if (['SCRIPT', 'STYLE', 'A', 'IMG', 'IFRAME', 'BUTTON', 'NOSCRIPT'].includes(parent.tagName)) return false;
+  if (parent.closest('a, img, iframe, [data-theory-image-link], [data-penalty-cards], table')) return false;
+  return Boolean(String(textNode.textContent || '').trim());
+}
+
+function linkInlineSignReferences(doc, root) {
   const pattern = /\b([1-8]\.\d{1,2}(?:\.\d{1,2})?)\b/g;
-  Array.from(root.querySelectorAll('p, li, td')).forEach((node) => {
-    if (node.closest('a')) return;
-    const source = node.innerHTML;
-    if (!pattern.test(source)) return;
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if (shouldLinkifyTextNode(node)) {
+      textNodes.push(node);
+    }
+  }
+
+  textNodes.forEach((textNode) => {
+    const text = textNode.textContent || '';
+    const parts = [];
+    let lastIndex = 0;
+    let match = null;
     pattern.lastIndex = 0;
-    node.innerHTML = source.replace(pattern, (code) => `<a href="${signReferenceHref(code)}" class="theory-sign-ref">${code}</a>`);
+
+    while ((match = pattern.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ type: 'text', value: text.slice(lastIndex, match.index) });
+      }
+      parts.push({ type: 'link', value: match[1] });
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (!parts.length) return;
+    if (lastIndex < text.length) {
+      parts.push({ type: 'text', value: text.slice(lastIndex) });
+    }
+
+    const fragment = doc.createDocumentFragment();
+    parts.forEach((part) => {
+      if (part.type === 'text') {
+        fragment.appendChild(doc.createTextNode(part.value));
+        return;
+      }
+      const link = doc.createElement('a');
+      link.setAttribute('href', signReferenceHref(part.value));
+      link.className = 'theory-sign-ref';
+      link.textContent = part.value;
+      fragment.appendChild(link);
+    });
+
+    textNode.parentNode?.replaceChild(fragment, textNode);
   });
 }
 
@@ -177,12 +232,12 @@ function sanitizeHtml(html) {
     });
 
     Array.from(doc.body.querySelectorAll('img, source')).forEach((node) => {
-      const src = String(node.getAttribute('src') || '').trim();
-      if (src.startsWith('/uploads/') || src.startsWith('/images/')) {
-        const resolved = resolveApiUrl(src);
-        if (resolved) {
-          node.setAttribute('src', resolved);
-        }
+      const src = String(node.getAttribute('src') || node.getAttribute('data-src') || '').trim();
+      const resolved = resolveTheoryImageSrc(src);
+      if (resolved) {
+        node.setAttribute('src', resolved);
+        node.removeAttribute('data-src');
+        node.removeAttribute('data-original');
       }
     });
 
@@ -284,7 +339,7 @@ function sanitizeHtml(html) {
     });
 
     decorateSignAnchors(doc.body);
-    linkInlineSignReferences(doc.body);
+    linkInlineSignReferences(doc, doc.body);
     appendPenaltyCards(doc, doc.body);
 
     return doc.body.innerHTML.trim();
