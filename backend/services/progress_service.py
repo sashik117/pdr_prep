@@ -8,7 +8,7 @@ import psycopg
 
 from core.database import db
 from domain.achievements import achievement_copy
-from domain.test_results import earned_star, plan_streak_update, streak_snapshot
+from domain.test_results import earned_star, is_passing_score, plan_streak_update, streak_snapshot
 from repositories.progress_repository import ProgressRepository
 from schemas.progress import ProgressResultResponse, ProgressStatsResponse, TestResultResponse
 from schemas.requests import MarathonScoreSubmit, TestResultSubmit
@@ -133,7 +133,7 @@ def list_progress_results(user: dict[str, Any], *, limit: int = 365) -> list[Pro
                 correct=correct,
                 time_seconds=int(row.get("time_seconds") or 0),
                 score_percent=score_percent,
-                passed=score_percent >= 80,
+                passed=is_passing_score(total, correct),
                 created_at=str(row.get("created_at") or ""),
             )
         )

@@ -64,6 +64,19 @@ class QuestionRepository:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    def list_recent_answered_question_ids(self, *, user_id: int, limit: int = 300) -> list[int]:
+        rows = self.conn.execute(
+            """
+            SELECT question_id
+            FROM user_answers
+            WHERE user_id = %s
+            ORDER BY id DESC
+            LIMIT %s
+            """,
+            (user_id, limit),
+        ).fetchall()
+        return [int(row["question_id"]) for row in rows]
+
     def get_question(self, *, question_id: int) -> dict[str, Any] | None:
         row = self.conn.execute("SELECT * FROM questions WHERE id = %s", (question_id,)).fetchone()
         return dict(row) if row else None

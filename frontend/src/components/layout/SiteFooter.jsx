@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { BarChart3, BookOpenText, Crown, Mail, MessageCircle, ShieldCheck, Sparkles, Trophy } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
-import { hasPremiumAccess } from '@/lib/accessLimits';
+import { hasPremiumAccess, shouldShowPremiumOffers } from '@/lib/accessLimits';
 
 const footerLinks = [
   {
@@ -20,7 +20,7 @@ const footerLinks = [
     links: [
       { to: '/cabinet', label: 'Кабінет', auth: true },
       { to: '/analytics', label: 'Аналітика', auth: true },
-      { to: '/saved', label: 'Збережені', auth: true },
+      { to: '/saved-questions', label: 'Збережені', auth: true },
       { to: '/achievements', label: 'Досягнення', auth: true },
     ],
   },
@@ -29,7 +29,7 @@ const footerLinks = [
     icon: Trophy,
     links: [
       { to: '/friends', label: 'Друзі', auth: true },
-      { to: '/battles', label: 'Батли', auth: true },
+      { to: '/battle', label: 'Батли', auth: true },
       { to: '/leaderboard', label: 'Рейтинг' },
       { to: '/support', label: 'Підтримка', auth: true },
     ],
@@ -47,6 +47,7 @@ const footerLinks = [
 export default function SiteFooter() {
   const { isAuthenticated, user } = useAuth();
   const premiumAccess = hasPremiumAccess(user);
+  const showPremiumOffers = shouldShowPremiumOffers(user);
 
   const getLinkTarget = (link) => {
     if (link.auth && !isAuthenticated) {
@@ -72,6 +73,7 @@ export default function SiteFooter() {
           </Link>
 
           <div className="flex flex-wrap gap-2 text-sm">
+            {showPremiumOffers ? (
             <Link
               to="/pricing"
               onClick={scrollTop}
@@ -80,6 +82,7 @@ export default function SiteFooter() {
               <Crown className="h-4 w-4" />
               {premiumAccess ? 'Premium активний' : 'Premium'}
             </Link>
+            ) : null}
             <Link
               to={isAuthenticated ? '/support' : '/auth?tab=login&redirect=%2Fsupport'}
               onClick={scrollTop}

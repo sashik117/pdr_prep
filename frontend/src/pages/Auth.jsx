@@ -343,6 +343,9 @@ export default function Auth() {
               <form className="space-y-4" onSubmit={(event) => void handleVerify(event)}>
                 <Field icon={Mail} label="Пошта" type="email" value={email} onChange={setEmail} />
                 <Field label="Код із листа" value={code} onChange={setCode} />
+                <p className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm leading-6 text-sky-800 dark:border-sky-500/30 dark:bg-sky-950/40 dark:text-sky-100">
+                  Якщо листа немає у «Вхідних», перевірте папку «Спам» або «Промоакції».
+                </p>
                 <Button type="submit" className="h-11 w-full rounded-full" disabled={loading}>
                   {loading ? 'Перевірка...' : 'Підтвердити'}
                 </Button>

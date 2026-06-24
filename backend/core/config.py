@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from parsers.theory_sources import THEORY_CATEGORY_SEEDS
+from scripts.parsers.theory_sources import THEORY_CATEGORY_SEEDS
 
 load_dotenv()
 
@@ -41,7 +41,7 @@ ADMIN_EMAILS = {
     if item.strip()
 }
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin").strip() or "admin"
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "").strip()
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin07").strip()
 ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "").strip()
 PROMO_ADMIN_KEY = os.getenv("PROMO_ADMIN_KEY", "").strip()
 

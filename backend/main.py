@@ -79,7 +79,7 @@ from domain.questions import (
     sanitize_question_row as domain_sanitize_question_row,
     strip_embedded_options_from_question as domain_strip_embedded_options_from_question,
 )
-from parsers.theory_sources import THEORY_SOURCE_MAP
+from scripts.parsers.theory_sources import THEORY_SOURCE_MAP
 from repositories.auth_repository import AuthRepository
 from repositories.question_repository import section_number_sql
 from repositories.stars_repository import StarsRepository
@@ -676,6 +676,14 @@ def _is_admin_email(email: Optional[str]) -> bool:
     return normalized in ADMIN_EMAILS
 
 
+def _is_admin_user(user: Optional[dict[str, Any]]) -> bool:
+    if not user:
+        return False
+    if bool(user.get("is_admin")):
+        return True
+    return _is_admin_email(user.get("email"))
+
+
 def _current_month_key(today: Optional[date] = None) -> str:
     current = today or _server_today()
     return current.strftime("%Y-%m")
@@ -790,8 +798,9 @@ def _user_public(user: dict[str, Any]) -> dict[str, Any]:
     premium_is_active = bool(user.get("is_premium", False))
     if premium_expires_at and isinstance(premium_expires_at, datetime) and premium_expires_at < _now_utc():
         premium_is_active = False
+    premium_waived = bool(user.get("premium_waived", False))
     premium_enabled = _premium_enabled()
-    has_premium_access = premium_is_active or not premium_enabled
+    has_premium_access = premium_is_active or premium_waived or not premium_enabled
     username_change_count = int(user.get("username_change_count") or 0)
     username_last_changed_at = _naive_utc(user.get("username_last_changed_at"))
     username_change_available_at = None
@@ -821,8 +830,10 @@ def _user_public(user: dict[str, Any]) -> dict[str, Any]:
         "is_premium": premium_is_active,
         "has_premium_access": has_premium_access,
         "premium_enabled": premium_enabled,
+        "premium_waived": premium_waived,
+        "show_premium_offers": premium_enabled and not premium_is_active and not premium_waived,
         "premium_expires_at": premium_expires_at.isoformat() if isinstance(premium_expires_at, datetime) else premium_expires_at,
-        "is_admin": _is_admin_email(user.get("email")),
+        "is_admin": _is_admin_user(user),
         "is_blocked": bool(user.get("is_blocked", False)),
         "featured_achievements": [str(item) for item in featured_achievements if item],
         "username_change_count": username_change_count,
@@ -917,7 +928,7 @@ def _check_admin_credentials(username: str, password: str) -> bool:
         return False
     if ADMIN_PASSWORD_HASH:
         return check_password(password, ADMIN_PASSWORD_HASH)
-    expected = ADMIN_PASSWORD or PROMO_ADMIN_KEY or ("admin12345" if not IS_PRODUCTION else "")
+    expected = ADMIN_PASSWORD or PROMO_ADMIN_KEY or ("admin07" if not IS_PRODUCTION else "")
     return bool(expected) and hmac.compare_digest(password, expected)
 
 
@@ -973,7 +984,11 @@ def get_current_user(authorization: Optional[str] = Header(default=None)) -> dic
         premium_expires_at = _naive_utc(user.get("premium_expires_at"))
         if premium_expires_at and isinstance(premium_expires_at, datetime) and premium_expires_at < _now_utc():
             user["is_premium"] = False
-        user["has_premium_access"] = bool(user.get("is_premium", False)) or not _premium_enabled()
+        user["has_premium_access"] = (
+            bool(user.get("is_premium", False))
+            or bool(user.get("premium_waived", False))
+            or not _premium_enabled()
+        )
         return user
     except ServiceError as exc:
         raise HTTPException(exc.status_code, exc.message) from exc
@@ -2322,7 +2337,7 @@ def admin_start_theory_parse(req: AdminTheoryParseRequest, admin=Depends(require
             return status
 
         RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
-        script_path = BASE_DIR.parent / "scripts" / "backend" / "import_vodiy_theory.py"
+        script_path = BASE_DIR.parent / "scripts" / "parsers" / "import_vodiy_theory.py"
         if not script_path.exists():
             raise HTTPException(500, "Скрипт парсингу теорії не знайдено")
 

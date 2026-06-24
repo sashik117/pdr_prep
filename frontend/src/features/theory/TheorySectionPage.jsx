@@ -51,6 +51,7 @@ export default function TheorySectionPage() {
     queryFn: async () => (await api.getTheorySections(topicKey)).map(normalizeTheorySection),
     enabled: Boolean(topicKey),
     staleTime: 5 * 60 * 1000,
+    placeholderData: (previous) => previous,
   });
 
   const sections = useMemo(() => {
@@ -93,8 +94,16 @@ export default function TheorySectionPage() {
   const currentIndex = sections.findIndex((item) => item.id === section?.id);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'auto' });
-  }, [entryId]);
+    const hash = window.location.hash.replace('#', '');
+    if (!hash) {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      return undefined;
+    }
+    const timeout = window.setTimeout(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+    return () => window.clearTimeout(timeout);
+  }, [entryId, section?.id]);
 
   useEffect(() => {
     if (!resolvedSection?.id || resolvedSection.id === entryNumber || !resolvedTopicKey) return;

@@ -39,7 +39,7 @@ const Tickets = lazy(() => import('@/pages/Tickets'));
 const TicketDetail = lazy(() => import('@/pages/TicketDetail'));
 const SavedQuestions = lazy(() => import('@/pages/SavedQuestions'));
 const TheoryTopicPage = lazy(() => import('@/features/theory/TheoryTopicPage'));
-const AdminApp = lazy(() => import('@/features/admin/AdminApp'));
+const AdminApp = lazy(() => import('@admin/AdminApp'));
 
 function RouteFallback() {
   return (

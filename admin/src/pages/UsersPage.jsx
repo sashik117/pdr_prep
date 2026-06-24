@@ -9,8 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import api from '@/api/apiClient';
-import { AdminPageHeader, EmptyState, LoadingState, StatCard } from '@/features/admin/components/AdminCards';
-import { clampNumber, formatAdminDate, percent, resolveUserName } from '@/features/admin/admin-utils';
+import { AdminPageHeader, EmptyState, LoadingState, StatCard } from '@admin/components/AdminCards';
+import { clampNumber, formatAdminDate, percent, resolveUserName } from '@admin/admin-utils';
 
 const userFilters = [
   { value: 'all', label: 'Усі користувачі' },
@@ -36,6 +36,7 @@ export default function UsersPage() {
     is_premium: false,
     premium_months: 1,
     is_blocked: false,
+    is_admin: false,
   });
   const [showCreatePassword, setShowCreatePassword] = useState(false);
 
@@ -177,6 +178,8 @@ export default function UsersPage() {
         manual_star_adjustment: clampNumber(draft.manual_star_adjustment),
         is_premium: Boolean(draft.is_premium),
         premium_months: clampNumber(draft.premium_months || 0),
+        premium_waived: Boolean(draft.premium_waived),
+        is_admin: Boolean(draft.is_admin),
         is_blocked: Boolean(draft.is_blocked),
       },
     });
@@ -293,6 +296,14 @@ export default function UsersPage() {
               <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
                 <input
                   type="checkbox"
+                  checked={createUserForm.is_admin}
+                  onChange={(event) => updateCreateUserForm('is_admin', event.target.checked)}
+                />
+                Адмін
+              </label>
+              <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                <input
+                  type="checkbox"
                   checked={createUserForm.is_blocked}
                   onChange={(event) => updateCreateUserForm('is_blocked', event.target.checked)}
                 />
@@ -402,16 +413,28 @@ export default function UsersPage() {
                     <div>
                       <p className="text-xl font-semibold tracking-[-0.03em]">{resolveUserName(selectedUser)}</p>
                       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">@{selectedUser.username || 'user'} · {selectedUser.email}</p>
+                      {selectedUser.premium_expires_at ? (
+                        <p className="mt-1 text-xs text-amber-700 dark:text-amber-200">
+                          Premium до {formatAdminDate(selectedUser.premium_expires_at)}
+                        </p>
+                      ) : null}
+                      {selectedUser.premium_waived ? (
+                        <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-200">Premium приховано, доступ повний без upsell</p>
+                      ) : null}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button
                         variant={draft.is_premium ? 'default' : 'outline'}
                         size="sm"
                         className="rounded-lg"
-                        onClick={() => updateDraft('is_premium', !draft.is_premium)}
+                        onClick={() => {
+                          const nextPremium = !draft.is_premium;
+                          updateDraft('is_premium', nextPremium);
+                          updateDraft('premium_waived', !nextPremium);
+                        }}
                       >
                         <Crown className="mr-2 h-4 w-4" />
-                        {draft.is_premium ? 'Premium активний' : 'Видати Premium'}
+                        {draft.is_premium ? 'Premium активний' : 'Відмінити Premium'}
                       </Button>
                       <label className="flex min-w-[150px] items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300">
                         <span>Міс.</span>
@@ -424,6 +447,15 @@ export default function UsersPage() {
                           className="h-8 w-20"
                         />
                       </label>
+                      <Button
+                        variant={draft.is_admin ? 'default' : 'outline'}
+                        size="sm"
+                        className="rounded-lg"
+                        onClick={() => updateDraft('is_admin', !draft.is_admin)}
+                      >
+                        <Shield className="mr-2 h-4 w-4" />
+                        {draft.is_admin ? 'Адмін' : 'Видати адмінку'}
+                      </Button>
                       <Button
                         variant={draft.is_blocked ? 'destructive' : 'outline'}
                         size="sm"

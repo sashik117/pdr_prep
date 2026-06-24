@@ -454,9 +454,9 @@ export default function Analytics() {
                     <div className="min-w-0">
                       <p className="font-semibold text-slate-900 dark:text-white">{MODE_LABELS[item.mode] || item.mode || 'Тест'}</p>
                       <p className="text-sm text-slate-600 dark:text-slate-200">
-                        {item.created_at ? new Date(item.created_at).toLocaleString('uk-UA') : 'Без дати'}
+                        {item.created_at ? new Date(item.created_at).toLocaleString('uk-UA', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }) : 'Без дати'}
                         {item.section ? ` • ${item.section}` : ''}
-                        {item.time_seconds ? ` • ${Math.floor(item.time_seconds / 60)} хв ${item.time_seconds % 60} с` : ''}
+                        {item.time_seconds ? ` • ${formatDuration(item.time_seconds)}` : ''}
                       </p>
                     </div>
                     <div className="text-left sm:text-right">

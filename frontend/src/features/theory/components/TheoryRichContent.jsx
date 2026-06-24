@@ -93,6 +93,56 @@ function normalizeTheoryIframeSrc(value) {
   }
 }
 
+function signAnchorId(code) {
+  return `sign-${String(code).replace(/\./g, '-')}`;
+}
+
+function signReferenceHref(code) {
+  return `/study/road-signs#${signAnchorId(code)}`;
+}
+
+function decorateSignAnchors(root) {
+  Array.from(root.querySelectorAll('h3, h4, p, li, strong, td')).forEach((node) => {
+    if (node.querySelector('a, img')) return;
+    const text = String(node.textContent || '').trim();
+    const match = text.match(/^([1-8]\.\d{1,2}(?:\.\d{1,2})?)\b/);
+    if (match) node.id = signAnchorId(match[1]);
+  });
+}
+
+function linkInlineSignReferences(root) {
+  const pattern = /\b([1-8]\.\d{1,2}(?:\.\d{1,2})?)\b/g;
+  Array.from(root.querySelectorAll('p, li, td')).forEach((node) => {
+    if (node.closest('a')) return;
+    const source = node.innerHTML;
+    if (!pattern.test(source)) return;
+    pattern.lastIndex = 0;
+    node.innerHTML = source.replace(pattern, (code) => `<a href="${signReferenceHref(code)}" class="theory-sign-ref">${code}</a>`);
+  });
+}
+
+function appendPenaltyCards(doc, root) {
+  Array.from(root.querySelectorAll('table')).forEach((table) => {
+    const wrapper = table.closest('[data-table-scroll="true"]') || table.parentElement;
+    if (!wrapper || wrapper.nextElementSibling?.getAttribute('data-penalty-cards') === 'true') return;
+    const rows = Array.from(table.querySelectorAll('tr')).slice(1);
+    if (!rows.length) return;
+    const cards = doc.createElement('div');
+    cards.setAttribute('data-penalty-cards', 'true');
+    rows.forEach((row) => {
+      const cells = Array.from(row.querySelectorAll('td, th')).map((cell) => cell.textContent?.trim() || '');
+      if (!cells.some(Boolean)) return;
+      const card = doc.createElement('article');
+      card.className = 'penalty-card';
+      card.innerHTML = cells.map((value, index) => `<p data-cell="${index}"><span>${value}</span></p>`).join('');
+      cards.appendChild(card);
+    });
+    if (cards.childElementCount) {
+      wrapper.parentNode?.insertBefore(cards, wrapper.nextSibling);
+    }
+  });
+}
+
 function sanitizeHtml(html) {
   if (!html || typeof DOMParser === 'undefined') return html || '';
 
@@ -233,6 +283,10 @@ function sanitizeHtml(html) {
       wrapper.appendChild(table);
     });
 
+    decorateSignAnchors(doc.body);
+    linkInlineSignReferences(doc.body);
+    appendPenaltyCards(doc, doc.body);
+
     return doc.body.innerHTML.trim();
   } catch {
     return html || '';
@@ -313,6 +367,10 @@ export default function TheoryRichContent({ html, className }) {
         '[&_table]:w-full [&_table]:min-w-[620px] [&_table]:border-separate [&_table]:border-spacing-0 [&_table]:bg-white [&_table]:text-sm dark:[&_table]:bg-slate-950',
         '[&_td]:border-b [&_td]:border-slate-200 [&_td]:px-3 [&_td]:py-3 [&_td]:align-top [&_td]:leading-6 dark:[&_td]:border-slate-800',
         '[&_th]:border-b [&_th]:border-slate-200 [&_th]:bg-sky-50/80 [&_th]:px-3 [&_th]:py-3 [&_th]:text-left [&_th]:font-medium dark:[&_th]:border-slate-800 dark:[&_th]:bg-sky-950/25',
+        '[&_.theory-sign-ref]:font-semibold [&_.theory-sign-ref]:text-primary [&_.theory-sign-ref]:no-underline hover:[&_.theory-sign-ref]:underline',
+        '[&_[data-penalty-cards="true"]]:my-6 [&_[data-penalty-cards="true"]]:grid [&_[data-penalty-cards="true"]]:gap-3 md:[&_[data-penalty-cards="true"]]:hidden',
+        '[&_.penalty-card]:rounded-2xl [&_.penalty-card]:border [&_.penalty-card]:border-slate-200 [&_.penalty-card]:bg-white [&_.penalty-card]:p-4 [&_.penalty-card]:shadow-sm dark:[&_.penalty-card]:border-slate-800 dark:[&_.penalty-card]:bg-slate-950',
+        '[&_.penalty-card_p]:text-sm [&_.penalty-card_p]:leading-6 [&_.penalty-card_p]:text-slate-700 dark:[&_.penalty-card_p]:text-slate-200',
         className,
       )}
       dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}

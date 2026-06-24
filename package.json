@@ -11,8 +11,8 @@
     "typecheck": "npm --prefix frontend run typecheck",
     "test": "npm --prefix frontend run test",
     "backend:test": "node scripts/run-backend-python.cjs -m pytest backend/tests",
-    "backend:audit-media": "node scripts/run-backend-python.cjs scripts/backend/audit_media.py",
-    "backend:smoke": "node scripts/run-backend-python.cjs scripts/backend/smoke_api.py",
+    "backend:audit-media": "node scripts/run-backend-python.cjs scripts/maintenance/audit_media.py",
+    "backend:smoke": "node scripts/run-backend-python.cjs scripts/maintenance/smoke_api.py",
     "deploy:northflank:env": "node scripts/prepare-northflank-env.cjs",
     "clean:workspace": "node scripts/clean-workspace.cjs",
     "verify": "npm run lint && npm run build && npm run backend:test && npm run backend:audit-media && npm run backend:smoke"

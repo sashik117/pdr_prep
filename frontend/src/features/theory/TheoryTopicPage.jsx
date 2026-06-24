@@ -14,7 +14,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '@/api/apiClient';
 import { useAuth } from '@/lib/AuthContext';
-import { hasPremiumAccess } from '@/lib/accessLimits';
+import { hasPremiumAccess, shouldShowPremiumOffers } from '@/lib/accessLimits';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { normalizeTheoryCategory, normalizeTheorySection, normalizeTheoryTopic } from '@/features/theory/theory-model';
@@ -76,6 +76,7 @@ export default function TheoryTopicPage() {
   const { user, isAuthenticated, navigateToLogin } = useAuth();
 
   const isPremiumUser = hasPremiumAccess(user);
+  const showPremiumOffers = shouldShowPremiumOffers(user);
   const selectedTopicSlug = searchParams.get('topic') || '';
 
   const categoriesQuery = useQuery({
@@ -121,8 +122,9 @@ export default function TheoryTopicPage() {
   const sectionsQuery = useQuery({
     queryKey: ['theory-sections', resolvedTopicSlug],
     queryFn: async () => (await api.getTheorySections(resolvedTopicSlug)).map(normalizeTheorySection),
-    enabled: Boolean(resolvedTopicSlug) && (!hasNestedTopics || Boolean(selectedTopicSlug) || sortedTopics.some((item) => item.slug === topicKey)),
+    enabled: Boolean(resolvedTopicSlug),
     staleTime: 5 * 60 * 1000,
+    placeholderData: (previous) => previous,
   });
 
   const sections = useMemo(() => {
@@ -365,7 +367,7 @@ export default function TheoryTopicPage() {
             ))
           )}
 
-          {!topicIsPremium ? (
+          {showPremiumOffers && !topicIsPremium ? (
             <motion.div {...reveal}>
               <Card className="border-slate-200 bg-card shadow-sm dark:border-slate-800">
                 <CardContent className="flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">

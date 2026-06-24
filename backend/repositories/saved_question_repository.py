@@ -9,6 +9,21 @@ class SavedQuestionRepository:
     def __init__(self, conn: psycopg.Connection):
         self.conn = conn
 
+    def ensure_schema(self) -> None:
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS saved_questions (
+                user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                question_id INT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+                saved_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                PRIMARY KEY (user_id, question_id)
+            )
+            """
+        )
+        self.conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_saved_questions_user_saved_at ON saved_questions(user_id, saved_at DESC)"
+        )
+
     def list_ids(self, *, user_id: int) -> list[int]:
         rows = self.conn.execute(
             """

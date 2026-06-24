@@ -6,8 +6,8 @@ import { BookOpenText, Crown, FileQuestion, MessageCircleMore, ShieldCheck, User
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import api from '@/api/apiClient';
-import { AdminPageHeader, LoadingState, StatCard } from '@/features/admin/components/AdminCards';
-import { buildRegistrationChart, formatAdminDate, percent, resolveUserName } from '@/features/admin/admin-utils';
+import { AdminPageHeader, LoadingState, StatCard } from '@admin/components/AdminCards';
+import { buildRegistrationChart, formatAdminDate, percent, resolveUserName } from '@admin/admin-utils';
 
 export default function OverviewPage() {
   const usersQuery = useQuery({ queryKey: ['admin-users'], queryFn: () => api.getAdminUsers() });

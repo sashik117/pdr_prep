@@ -21,7 +21,7 @@ import GhostBar from '@/components/test/GhostBar';
 import LoginPrompt from '@/components/auth/LoginPrompt';
 import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
 import { hasPremiumAccess, registerFreeTestCompletion } from '@/lib/accessLimits';
-import { getSavedQuestionIds, isQuestionSaved, loadSavedQuestionIds, toggleSavedQuestion } from '@/lib/savedQuestions';
+import { getSavedQuestionIds, loadSavedQuestionIds, toggleSavedQuestion } from '@/lib/savedQuestions';
 import { playTone } from '@/lib/soundEffects';
 import { getAchievementCopy } from '@/lib/achievements';
 
@@ -139,7 +139,7 @@ export default function TakeTest() {
   const [ghostBestTime, setGhostBestTime] = useState(0);
   const [limitBlocked, setLimitBlocked] = useState(false);
   const [serverAccessReady, setServerAccessReady] = useState(false);
-  const [, setSavedIds] = useState(() => getSavedQuestionIds());
+  const [savedIds, setSavedIds] = useState(() => getSavedQuestionIds());
   const startTimeRef = useRef(Number(initialDraft?.startTime || Date.now()));
   const attemptIdRef = useRef(String(initialDraft?.attemptId || ''));
   const answersRef = useRef(initialDraft?.answers || {});
@@ -406,7 +406,10 @@ export default function TakeTest() {
     playTone('finish');
     const finishedAt = finishedAtRef.current || answeredAllAtRef.current || Date.now();
     finishedAtRef.current = finishedAt;
-    const timeSpent = Math.floor((finishedAt - startTimeRef.current) / 1000);
+    const elapsedByClock = Math.floor((finishedAt - startTimeRef.current) / 1000);
+    const elapsedByTimer = Math.max(0, effectiveTime - timeLeft);
+    const staleSession = elapsedByClock > effectiveTime * 5;
+    const timeSpent = Math.max(0, Math.min(effectiveTime, staleSession ? elapsedByTimer : Math.max(elapsedByTimer, Math.min(elapsedByClock, effectiveTime))));
     const finalAnswers = answersRef.current;
     const correct = questions.filter((question) => finalAnswers[String(question.id)] === question.correct_answer).length;
     const nextBest = ghostBestTime > 0 ? Math.min(ghostBestTime, timeSpent) : timeSpent;
@@ -510,7 +513,7 @@ export default function TakeTest() {
     setIsFinishing(false);
   };
   const correctCount = questions.filter((question) => answers[String(question.id)] === question.correct_answer).length;
-  const passed = questions.length > 0 && correctCount / questions.length >= 0.8;
+  const passed = isPassingScore(questions.length, correctCount);
   const hasStartedUnfinishedTest = !showResults && questions.length > 0;
   const returnPath = useMemo(() => {
     if (mode === 'ticket') return '/tickets';
@@ -784,7 +787,7 @@ export default function TakeTest() {
             selectedAnswer={answers[String(currentQuestion.id)]}
             onSelectAnswer={handleSelectAnswer}
             revealAnswer={showResults || answers[String(currentQuestion.id)] !== undefined}
-            isFavorite={user ? isQuestionSaved(currentQuestion.id) : false}
+            isFavorite={user ? savedIds.includes(String(currentQuestion.id)) : false}
             onToggleFavorite={user ? () => {
               const saved = toggleSavedQuestion(currentQuestion.id, user);
               setSavedIds(getSavedQuestionIds());
@@ -1009,11 +1012,17 @@ export default function TakeTest() {
 }
 
 function streakFallback(correct, total) {
-  return correct >= Math.ceil(total * 0.8) ? 1 : 0;
+  return isPassingScore(total, correct) ? 1 : 0;
 }
 
 function formatTime(seconds) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function isPassingScore(total, correct) {
+  if (!total) return false;
+  if (total === 20) return correct >= 18;
+  return Math.round((correct / total) * 100) >= 80;
 }
 
 function Spinner({ text = 'Завантаження...' }) {

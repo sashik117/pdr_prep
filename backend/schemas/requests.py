@@ -150,6 +150,8 @@ class AdminUserUpdateRequest(BaseModel):
     is_blocked: Optional[bool] = None
     is_premium: Optional[bool] = None
     premium_months: Optional[int] = Field(default=None, ge=0, le=120)
+    premium_waived: Optional[bool] = None
+    is_admin: Optional[bool] = None
     total_tests: Optional[int] = None
     total_correct: Optional[int] = None
     total_answers: Optional[int] = None
@@ -167,6 +169,8 @@ class AdminUserCreateRequest(BaseModel):
     is_premium: bool = False
     premium_months: Optional[int] = Field(default=None, ge=0, le=120)
     is_blocked: bool = False
+    is_admin: bool = False
+    premium_waived: bool = False
 
 
 class AdminAchievementUpdateRequest(BaseModel):

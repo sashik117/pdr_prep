@@ -111,6 +111,8 @@ def create_admin_user(
             is_premium=bool(req.is_premium),
             premium_months=int(req.premium_months or 1),
             is_blocked=bool(req.is_blocked),
+            is_admin=bool(req.is_admin),
+            premium_waived=bool(req.premium_waived),
         )
         payload = {
             **present_user(user_row),
@@ -198,12 +200,21 @@ def update_admin_user(
             values["is_premium"] = bool(req.is_premium)
             if not req.is_premium:
                 values["premium_expires_at"] = None
+                values["premium_waived"] = True
             elif req.premium_months is not None:
                 values["premium_expires_at"] = (
                     datetime.utcnow() + timedelta(days=31 * int(req.premium_months))
                     if int(req.premium_months) > 0
                     else None
                 )
+                values["premium_waived"] = False
+        if req.premium_waived is not None:
+            values["premium_waived"] = bool(req.premium_waived)
+            if req.premium_waived:
+                values["is_premium"] = False
+                values["premium_expires_at"] = None
+        if req.is_admin is not None:
+            values["is_admin"] = bool(req.is_admin)
         if req.is_blocked is not None:
             values["is_blocked"] = bool(req.is_blocked)
         updated = repo.update_user(user_id=user_id, values=values) if values else target

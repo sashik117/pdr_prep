@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import api, { resolveApiUrl } from '@/api/apiClient';
-import { AdminPageHeader, EmptyState, LoadingState, StatCard } from '@/features/admin/components/AdminCards';
+import { AdminPageHeader, EmptyState, LoadingState, StatCard } from '@admin/components/AdminCards';
 
 export default function TheoryPage() {
   const queryClient = useQueryClient();

@@ -57,18 +57,20 @@ class AdminUserRepository:
         is_premium: bool,
         premium_months: int,
         is_blocked: bool,
+        is_admin: bool = False,
+        premium_waived: bool = False,
     ) -> dict[str, Any]:
         row = self.conn.execute(
             """
             INSERT INTO users (
                 name, surname, username, email, password_hash,
-                email_verified, is_premium, premium_expires_at, is_blocked
+                email_verified, is_premium, premium_expires_at, is_blocked, is_admin, premium_waived
             )
             VALUES (
                 %s, %s, %s, lower(%s), %s,
                 true, %s,
                 CASE WHEN %s THEN NOW() + (%s * INTERVAL '1 month') ELSE NULL END,
-                %s
+                %s, %s, %s
             )
             RETURNING *
             """,
@@ -82,6 +84,8 @@ class AdminUserRepository:
                 is_premium,
                 max(1, int(premium_months or 1)),
                 is_blocked,
+                is_admin,
+                premium_waived,
             ),
         ).fetchone()
         return dict(row)

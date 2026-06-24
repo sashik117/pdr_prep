@@ -33,28 +33,35 @@ export function toggleSavedQuestion(questionId, user = null) {
   const exists = ids.includes(id);
   const nextSaved = !exists;
   writeSavedIds(exists ? ids.filter((item) => item !== id) : [id, ...ids]);
-  if (user) {
-    const request = nextSaved ? api.saveQuestion(id) : api.unsaveQuestion(id);
-    request
-      .then((response) => {
-        if (Array.isArray(response?.ids)) writeSavedIds(response.ids);
-      })
-      .catch(() => {
-        writeSavedIds(ids);
-      });
-  }
+
+  const request = nextSaved ? api.saveQuestion(id) : api.unsaveQuestion(id);
+  request.catch(() => {
+    // Keep optimistic local state; server will catch up on next sync.
+  });
+
   return nextSaved;
 }
 
 export async function loadSavedQuestionIds(user = null) {
   const localIds = readSavedIds();
   if (!user) return localIds;
-  const response = await api.getSavedQuestionIds();
-  const serverIds = Array.isArray(response?.ids) ? response.ids.map(String).filter(Boolean) : [];
-  const mergedIds = Array.from(new Set([...localIds, ...serverIds]));
-  writeSavedIds(mergedIds);
-  if (localIds.some((id) => !serverIds.includes(id))) {
-    api.syncSavedQuestionIds(mergedIds).catch(() => {});
+
+  let response;
+  try {
+    response = await api.getSavedQuestionIds();
+  } catch {
+    return localIds;
   }
+
+  const serverIds = Array.isArray(response?.ids) ? response.ids.map(String).filter(Boolean) : [];
+  const freshLocalIds = readSavedIds();
+  const mergedIds = Array.from(new Set([...serverIds, ...freshLocalIds]));
+  writeSavedIds(mergedIds);
+
+  const unsynced = mergedIds.filter((item) => !serverIds.includes(item));
+  if (unsynced.length) {
+    api.syncSavedQuestionIds(mergedIds.map((item) => Number(item)).filter((item) => Number.isFinite(item))).catch(() => {});
+  }
+
   return mergedIds;
 }

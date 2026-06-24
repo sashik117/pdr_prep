@@ -21,7 +21,10 @@ def _normalize_ids(values: list[int] | None) -> list[int]:
 
 def list_saved_question_ids(user: dict[str, Any]) -> dict[str, Any]:
     with db() as conn:
-        ids = SavedQuestionRepository(conn).list_ids(user_id=int(user["id"]))
+        repo = SavedQuestionRepository(conn)
+        repo.ensure_schema()
+        conn.commit()
+        ids = repo.list_ids(user_id=int(user["id"]))
     return {"ids": ids}
 
 
@@ -29,6 +32,7 @@ def replace_saved_question_ids(user: dict[str, Any], question_ids: list[int]) ->
     ids = _normalize_ids(question_ids)
     with db() as conn:
         repo = SavedQuestionRepository(conn)
+        repo.ensure_schema()
         valid_ids = [
             question_id
             for question_id in ids
@@ -42,6 +46,7 @@ def replace_saved_question_ids(user: dict[str, Any], question_ids: list[int]) ->
 def save_question(user: dict[str, Any], question_id: int) -> dict[str, Any]:
     with db() as conn:
         repo = SavedQuestionRepository(conn)
+        repo.ensure_schema()
         if not repo.question_exists(question_id=question_id):
             raise ServiceError(404, "Питання не знайдено")
         repo.save(user_id=int(user["id"]), question_id=question_id)
@@ -53,6 +58,7 @@ def save_question(user: dict[str, Any], question_id: int) -> dict[str, Any]:
 def unsave_question(user: dict[str, Any], question_id: int) -> dict[str, Any]:
     with db() as conn:
         repo = SavedQuestionRepository(conn)
+        repo.ensure_schema()
         repo.unsave(user_id=int(user["id"]), question_id=question_id)
         conn.commit()
         ids = repo.list_ids(user_id=int(user["id"]))

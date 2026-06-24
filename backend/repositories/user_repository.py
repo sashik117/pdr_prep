@@ -48,7 +48,10 @@ class UserRepository:
             FROM test_results
             WHERE user_id = %s
               AND total > 0
-              AND ROUND((correct::numeric / total::numeric) * 100) >= 80
+              AND (
+                (total = 20 AND correct >= 18)
+                OR (total <> 20 AND ROUND((correct::numeric / total::numeric) * 100) >= 80)
+              )
             """,
             (user_id,),
         ).fetchone()

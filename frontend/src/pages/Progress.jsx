@@ -812,7 +812,7 @@ function RecentTestRow({ result }) {
   const correct = Number(result.correct || result.correct_answers || 0);
   const total = Number(result.total || result.total_questions || 0);
   const score = total > 0 ? Math.round((correct / total) * 100) : Number(result.score || 0);
-  const passed = typeof result.passed === 'boolean' ? result.passed : score >= 80;
+  const passed = typeof result.passed === 'boolean' ? result.passed : isPassingScore(total, correct);
   const dateValue = result.completed_at || result.created_at || result.date;
 
   return (
@@ -842,6 +842,12 @@ function formatShortDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Нещодавно';
   return date.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' });
+}
+
+function isPassingScore(total, correct) {
+  if (!total) return false;
+  if (total === 20) return correct >= 18;
+  return Math.round((correct / total) * 100) >= 80;
 }
 
 function MetricCard({ icon: Icon, label, value, accent = 'blue', filledIcon = false }) {

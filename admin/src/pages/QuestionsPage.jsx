@@ -12,8 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import api, { resolveApiUrl } from '@/api/apiClient';
-import { AdminPageHeader, EmptyState, LoadingState, StatCard } from '@/features/admin/components/AdminCards';
-import { questionImagesToText, questionOptionsToText, textToLines } from '@/features/admin/admin-utils';
+import { AdminPageHeader, EmptyState, LoadingState, StatCard } from '@admin/components/AdminCards';
+import { questionImagesToText, questionOptionsToText, textToLines } from '@admin/admin-utils';
 
 export default function QuestionsPage() {
   const queryClient = useQueryClient();

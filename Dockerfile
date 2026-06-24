@@ -12,6 +12,7 @@ ENV VITE_MONO_JAR_DESCRIPTION=$VITE_MONO_JAR_DESCRIPTION
 COPY frontend/package*.json ./
 RUN npm ci --include=dev
 COPY frontend/ ./
+COPY admin/ /app/admin/
 RUN npm run build
 
 FROM python:3.11-slim AS runtime
@@ -46,5 +47,5 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 EXPOSE 8000
 
-ENV PYTHONPATH=/app/backend
-CMD ["python", "scripts/backend/container_start.py"]
+ENV PYTHONPATH=/app:/app/backend
+CMD ["python", "scripts/deploy/container_start.py"]

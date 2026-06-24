@@ -65,7 +65,14 @@ function writeJson(key, value) {
 }
 
 export function hasPremiumAccess(user) {
-  return Boolean(user?.has_premium_access ?? user?.is_premium);
+  return Boolean(user?.has_premium_access ?? user?.is_premium ?? user?.premium_waived);
+}
+
+export function shouldShowPremiumOffers(user) {
+  if (user?.premium_enabled === false) return false;
+  if (user?.premium_waived) return false;
+  if (user?.is_premium) return false;
+  return true;
 }
 
 export function isPremiumEnabled(user) {

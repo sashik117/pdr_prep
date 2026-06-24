@@ -104,3 +104,11 @@ def plan_streak_update(user: dict[str, Any], today: date) -> StreakUpdate:
 
 def earned_star(total: int, correct: int) -> bool:
     return total > 0 and correct == total
+
+
+def is_passing_score(total: int, correct: int) -> bool:
+    if total <= 0:
+        return False
+    if total == 20:
+        return correct >= 18
+    return round((correct / total) * 100) >= 80

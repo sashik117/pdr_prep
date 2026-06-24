@@ -296,7 +296,10 @@ class ProgressRepository:
             FROM test_results
             WHERE user_id = %s
               AND total > 0
-              AND ROUND((correct::numeric / total::numeric) * 100) >= 80
+              AND (
+                (total = 20 AND correct >= 18)
+                OR (total <> 20 AND ROUND((correct::numeric / total::numeric) * 100) >= 80)
+              )
             """,
             (user_id,),
         ).fetchone()
@@ -312,7 +315,10 @@ class ProgressRepository:
                     MIN(time_seconds) FILTER (
                         WHERE total >= 10
                           AND time_seconds > 0
-                          AND (correct::numeric / NULLIF(total, 0)) >= 0.8
+                          AND (
+                            (total = 20 AND correct >= 18)
+                            OR (total <> 20 AND (correct::numeric / NULLIF(total, 0)) >= 0.8)
+                          )
                     ),
                     0
                 )::int AS best_exam_time_seconds

@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { Loader2, LockKeyhole, Shield } from 'lucide-react';
@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import api, { adminTokenStore, adminUserStore } from '@/api/apiClient';
-import AdminShell from '@/features/admin/components/AdminShell';
-import OverviewPage from '@/features/admin/pages/OverviewPage';
-import UsersPage from '@/features/admin/pages/UsersPage';
-import TheoryPage from '@/features/admin/pages/TheoryPage';
-import QuestionsPage from '@/features/admin/pages/QuestionsPage';
-import PremiumPage from '@/features/admin/pages/PremiumPage';
-import SupportPage from '@/features/admin/pages/SupportPage';
+import AdminShell from '@admin/components/AdminShell';
+import OverviewPage from '@admin/pages/OverviewPage';
+import UsersPage from '@admin/pages/UsersPage';
+import TheoryPage from '@admin/pages/TheoryPage';
+import QuestionsPage from '@admin/pages/QuestionsPage';
+import PremiumPage from '@admin/pages/PremiumPage';
+import SupportPage from '@admin/pages/SupportPage';
 
 export default function AdminApp() {
   const [admin, setAdmin] = useState(adminUserStore.get());
@@ -168,12 +168,9 @@ function AdminLoginPage({ onLogin }) {
               Увійти в адмінку
             </Button>
           </form>
-
-          <p className="mt-5 text-xs leading-5 text-slate-400">
-            На Render додайте `ADMIN_USERNAME` і `ADMIN_PASSWORD` у Environment. Для локальної розробки, якщо пароль не заданий, працює `admin / admin12345`.
-          </p>
         </CardContent>
       </Card>
     </div>
   );
 }
+

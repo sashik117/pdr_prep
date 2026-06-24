@@ -227,7 +227,7 @@ Render deploy:
 # DATABASE_URL is requested during Blueprint sync.
 # Supabase Postgres works here too. Paste its connection string as DATABASE_URL.
 # DATABASE_SCHEMA=driveprep keeps this project isolated inside a shared database.
-# Backend start: python scripts/backend/container_start.py
+# Backend start: python scripts/deploy/container_start.py
 render.yaml
 ```
 

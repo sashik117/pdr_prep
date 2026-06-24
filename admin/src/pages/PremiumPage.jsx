@@ -9,8 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import api from '@/api/apiClient';
-import { AdminPageHeader, LoadingState, StatCard } from '@/features/admin/components/AdminCards';
-import { formatAdminDate, resolveUserName } from '@/features/admin/admin-utils';
+import { AdminPageHeader, LoadingState, StatCard } from '@admin/components/AdminCards';
+import { formatAdminDate, resolveUserName } from '@admin/admin-utils';
 
 const planLabels = {
   1: '1 місяць',

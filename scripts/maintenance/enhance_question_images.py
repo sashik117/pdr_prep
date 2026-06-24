@@ -19,7 +19,7 @@ BASE_DIR = PROJECT_ROOT / "backend"
 PUBLIC_DIR = BASE_DIR / "public"
 QUESTIONS_FILE = BASE_DIR / "data" / "questions" / "pdr_final_category.json"
 IMAGE_MAP_FILE = BASE_DIR / "data" / "questions" / "question_image_map.json"
-MODEL_PATH = PROJECT_ROOT / "scripts" / "backend" / "models" / "EDSR_x4.pb"
+MODEL_PATH = PROJECT_ROOT / "scripts" / "maintenance" / "models" / "EDSR_x4.pb"
 RUNTIME_DIR = BASE_DIR / "runtime" / "image_enhancement"
 
 EDSR_URL = "https://raw.githubusercontent.com/Saafke/EDSR_Tensorflow/master/models/EDSR_x4.pb"
@@ -50,7 +50,7 @@ def load_sr_model() -> Any:
     if not hasattr(cv2, "dnn_superres"):
         raise RuntimeError("OpenCV dnn_superres is missing. Install opencv-contrib-python or opencv-contrib-python-headless.")
     if not MODEL_PATH.exists():
-        raise RuntimeError("EDSR model not found. Run: python scripts/backend/enhance_question_images.py --download-model")
+        raise RuntimeError("EDSR model not found. Run: python scripts/maintenance/enhance_question_images.py --download-model")
     sr = cv2.dnn_superres.DnnSuperResImpl_create()
     sr.readModel(str(MODEL_PATH))
     sr.setModel("edsr", 4)
@@ -298,7 +298,7 @@ def apply_targets(targets: list[ImageTarget], sr_model: Any) -> dict[str, int]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Enhance referenced PDR question images with EDSR x4.")
-    parser.add_argument("--download-model", action="store_true", help="Download EDSR_x4.pb model into scripts/backend/models.")
+    parser.add_argument("--download-model", action="store_true", help="Download EDSR_x4.pb model into scripts/maintenance/models.")
     parser.add_argument("--section", help="Question section number, for example 33.")
     parser.add_argument("--ids", "--question-ids", dest="question_ids", type=int, nargs="*", default=None)
     parser.add_argument("--limit", type=int, default=None)

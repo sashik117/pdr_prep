@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import api from '@/api/apiClient';
-import { AdminPageHeader, EmptyState, LoadingState, StatCard } from '@/features/admin/components/AdminCards';
-import { formatAdminDate, resolveUserName } from '@/features/admin/admin-utils';
+import { AdminPageHeader, EmptyState, LoadingState, StatCard } from '@admin/components/AdminCards';
+import { formatAdminDate, resolveUserName } from '@admin/admin-utils';
 
 const supportEmail = 'pdr.preparation@gmail.com';
 

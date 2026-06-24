@@ -114,9 +114,11 @@ def random_questions(
         conds.append("LOWER(COALESCE(q.difficulty, 'medium')) = %s")
         params.append(difficulty.strip().lower())
     _append_category_condition(conds, params, category, prefix="q.")
+    parsed_excluded: list[int] = []
     if exclude_ids.strip():
         parsed = [int(value) for value in exclude_ids.split(",") if value.strip().isdigit()]
         if parsed:
+            parsed_excluded.extend(parsed)
             conds.append("q.id <> ALL(%s)")
             params.append(parsed)
     if difficult_only:
@@ -133,9 +135,30 @@ def random_questions(
         )
         params.append(user["id"])
 
-    where_sql = f"WHERE {' AND '.join(conds)}" if conds else ""
     with db() as conn:
-        rows = QuestionRepository(conn).list_random_candidates(
+        repo = QuestionRepository(conn)
+        if user and not difficult_only:
+            recent_ids = [
+                question_id
+                for question_id in repo.list_recent_answered_question_ids(user_id=int(user["id"]))
+                if question_id not in parsed_excluded
+            ]
+            if recent_ids:
+                first_pass_conds = [*conds, "q.id <> ALL(%s)"]
+                first_pass_params = [*params, recent_ids]
+                first_pass_where = f"WHERE {' AND '.join(first_pass_conds)}"
+                first_pass_rows = repo.list_random_candidates(
+                    where_sql=first_pass_where,
+                    params=first_pass_params,
+                    seed=seed,
+                    limit=max(count * 30, 150),
+                )
+                prepared = _prepare_questions(first_pass_rows, count=count)
+                if len(prepared) >= count:
+                    return prepared[:count]
+
+        where_sql = f"WHERE {' AND '.join(conds)}" if conds else ""
+        rows = repo.list_random_candidates(
             where_sql=where_sql,
             params=params,
             seed=seed,

@@ -32,7 +32,7 @@ const result = spawnSync(python, args, {
   cwd: root,
   env: {
     ...process.env,
-    PYTHONPATH: [path.join(root, "backend"), process.env.PYTHONPATH].filter(Boolean).join(path.delimiter),
+    PYTHONPATH: [root, path.join(root, "backend"), process.env.PYTHONPATH].filter(Boolean).join(path.delimiter),
   },
   stdio: "inherit",
   shell: false,

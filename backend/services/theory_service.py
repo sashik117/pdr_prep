@@ -12,7 +12,7 @@ from core.config import (
 )
 from core.database import db
 from domain.media import filter_available_assets, remove_unavailable_media_tags
-from parsers.theory_sources import THEORY_SOURCE_MAP
+from scripts.parsers.theory_sources import THEORY_SOURCE_MAP
 from repositories.handbook_repository import HandbookRepository
 from repositories.theory_repository import TheoryRepository
 from services.errors import ServiceError

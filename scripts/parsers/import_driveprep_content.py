@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup, Comment, Tag
 from dotenv import load_dotenv
 from psycopg.rows import dict_row
 
-from parsers.theory_sources import THEORY_CATEGORY_SEEDS
+from scripts.parsers.theory_sources import THEORY_CATEGORY_SEEDS
 
 load_dotenv()
 
