@@ -312,6 +312,21 @@ export const api = {
     return request(`/questions/mvs-exam${query ? `?${query}` : ''}`);
   },
 
+  getSavedQuestionIds: () => request('/questions/saved'),
+  syncSavedQuestionIds: (ids) =>
+    request('/questions/saved', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
+  saveQuestion: (questionId) =>
+    request(`/questions/saved/${encodeURIComponent(questionId)}`, {
+      method: 'PUT',
+    }),
+  unsaveQuestion: (questionId) =>
+    request(`/questions/saved/${encodeURIComponent(questionId)}`, {
+      method: 'DELETE',
+    }),
+
   getSections: (category) => {
     const query = toQueryString({ category });
     return request(`/sections${query ? `?${query}` : ''}`);

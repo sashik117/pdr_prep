@@ -138,6 +138,15 @@ def ensure_runtime_migrations() -> None:
         "CREATE INDEX IF NOT EXISTS idx_questions_ticket_question ON questions(ticket_number, question_number)",
         "CREATE INDEX IF NOT EXISTS idx_questions_text ON questions USING gin (to_tsvector('simple', question_text))",
         """
+        CREATE TABLE IF NOT EXISTS saved_questions (
+            user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            question_id INT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+            saved_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            PRIMARY KEY (user_id, question_id)
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS idx_saved_questions_user_saved_at ON saved_questions(user_id, saved_at DESC)",
+        """
         CREATE TABLE IF NOT EXISTS user_achievements (
             id SERIAL PRIMARY KEY,
             user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

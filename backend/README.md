@@ -13,7 +13,7 @@
 1. Create a PostgreSQL database named `pdrprep`.
 2. Fill `backend/.env` with your local credentials.
 3. Install dependencies from `requirements.txt`.
-4. Run `scripts/database_setup.py` once to create tables and import questions.
+4. Run `../scripts/backend/database_setup.py` once to create tables and import questions.
 5. Start the server with `uvicorn main:app --reload`.
 
 ## Structure
@@ -28,7 +28,7 @@
 - `parsers/` active parser sources and seeds
 - `repositories/` PostgreSQL queries and persistence boundaries
 - `schemas/` shared backend models
-- `scripts/` one-off maintenance and import helpers
+- `../scripts/backend/` one-off maintenance and import helpers
 - `services/` active business logic
 - `tests/` backend unit and smoke tests
 - `uploads/` local assets served by the API
@@ -36,10 +36,10 @@
 
 ## Content import
 
-- Main theory/content importer: `import_driveprep_content.py`
-- Question bootstrap: `scripts/database_setup.py`
-- Question JSON normalization helper: `scripts/rebuild_category_json.py`
-- Media consistency audit: `scripts/audit_media.py`
+- Main theory/content importer: `../scripts/backend/import_driveprep_content.py`
+- Question bootstrap: `../scripts/backend/database_setup.py`
+- Question JSON normalization helper: `../scripts/backend/rebuild_category_json.py`
+- Media consistency audit: `../scripts/backend/audit_media.py`
 
 ## Quality checks
 

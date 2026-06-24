@@ -41,8 +41,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backend ./backend
+COPY scripts ./scripts
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 EXPOSE 8000
 
-CMD ["python", "backend/scripts/container_start.py"]
+ENV PYTHONPATH=/app/backend
+CMD ["python", "scripts/backend/container_start.py"]

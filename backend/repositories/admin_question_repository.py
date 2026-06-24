@@ -17,11 +17,16 @@ class AdminQuestionRepository:
     def _row(row: Any) -> Optional[dict[str, Any]]:
         return dict(row) if row else None
 
-    def search_questions(self, *, search: str, section: str, limit: int, has_images: Optional[bool] = None) -> list[dict[str, Any]]:
-        rows = self.conn.execute(
-            f"""
-            SELECT {ADMIN_QUESTION_COLUMNS}
-            FROM questions
+    def search_questions(
+        self,
+        *,
+        search: str,
+        section: str,
+        limit: int,
+        offset: int,
+        has_images: Optional[bool] = None,
+    ) -> dict[str, Any]:
+        where_sql = """
             WHERE (%s = '' OR section = %s OR section_name = %s)
               AND (
                    %s::boolean IS NULL
@@ -40,24 +45,38 @@ class AdminQuestionRepository:
                OR section_name ILIKE %s
                OR explanation ILIKE %s
               )
+        """
+        params = (
+            section,
+            section,
+            section,
+            has_images,
+            has_images,
+            has_images,
+            search,
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%",
+        )
+        total_row = self.conn.execute(
+            f"SELECT COUNT(*) AS total FROM questions {where_sql}",
+            params,
+        ).fetchone()
+        rows = self.conn.execute(
+            f"""
+            SELECT {ADMIN_QUESTION_COLUMNS}
+            FROM questions
+            {where_sql}
             ORDER BY id
             LIMIT %s
+            OFFSET %s
             """,
-            (
-                section,
-                section,
-                section,
-                has_images,
-                has_images,
-                has_images,
-                search,
-                f"%{search}%",
-                f"%{search}%",
-                f"%{search}%",
-                limit,
-            ),
+            params + (limit, offset),
         ).fetchall()
-        return [dict(row) for row in rows]
+        return {
+            "items": [dict(row) for row in rows],
+            "total": int((total_row or {}).get("total") or 0),
+        }
 
     def list_sections(self) -> list[dict[str, Any]]:
         rows = self.conn.execute(

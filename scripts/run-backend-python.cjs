@@ -30,7 +30,10 @@ if (!args.length) {
 
 const result = spawnSync(python, args, {
   cwd: root,
-  env: process.env,
+  env: {
+    ...process.env,
+    PYTHONPATH: [path.join(root, "backend"), process.env.PYTHONPATH].filter(Boolean).join(path.delimiter),
+  },
   stdio: "inherit",
   shell: false,
 });

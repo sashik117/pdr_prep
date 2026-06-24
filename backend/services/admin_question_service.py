@@ -19,17 +19,24 @@ def search_admin_questions(
     search: str,
     section: str,
     limit: int,
+    offset: int = 0,
     has_images: bool | None = None,
     present_question: QuestionPresenter,
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     with db() as conn:
-        rows = AdminQuestionRepository(conn).search_questions(
+        result = AdminQuestionRepository(conn).search_questions(
             search=search.strip(),
             section=section.strip(),
             limit=limit,
+            offset=max(0, offset),
             has_images=has_images,
         )
-    return [present_question(row) for row in rows]
+    return {
+        "items": [present_question(row) for row in result["items"]],
+        "total": result["total"],
+        "limit": limit,
+        "offset": max(0, offset),
+    }
 
 
 def list_admin_question_sections() -> list[dict[str, Any]]:

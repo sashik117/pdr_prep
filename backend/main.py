@@ -109,6 +109,7 @@ from schemas.requests import (
     RegisterRequest,
     ResendVerificationRequest,
     ResetPasswordRequest,
+    SavedQuestionsSyncRequest,
     SupportMessageCreateRequest,
     TestResultSubmit,
     UpdateProfileRequest,
@@ -213,6 +214,12 @@ from services.question_service import (
     list_questions as list_questions_use_case,
     list_sections as list_sections_use_case,
     random_questions as random_questions_use_case,
+)
+from services.saved_question_service import (
+    list_saved_question_ids as list_saved_question_ids_use_case,
+    replace_saved_question_ids as replace_saved_question_ids_use_case,
+    save_question as save_question_use_case,
+    unsave_question as unsave_question_use_case,
 )
 from services.frame_service import purchase_frame as purchase_frame_use_case
 from services.handbook_service import (
@@ -1753,6 +1760,29 @@ def get_mvs_exam_questions(
     return build_mvs_exam_session(category, seed=seed)
 
 
+@app.get("/questions/saved")
+def get_saved_questions(user=Depends(get_current_user)):
+    return list_saved_question_ids_use_case(user)
+
+
+@app.post("/questions/saved")
+def sync_saved_questions(req: SavedQuestionsSyncRequest, user=Depends(get_current_user)):
+    return replace_saved_question_ids_use_case(user, req.ids)
+
+
+@app.put("/questions/saved/{question_id}")
+def save_question(question_id: int, user=Depends(get_current_user)):
+    try:
+        return save_question_use_case(user, question_id)
+    except ServiceError as exc:
+        raise HTTPException(exc.status_code, exc.message) from exc
+
+
+@app.delete("/questions/saved/{question_id}")
+def unsave_question(question_id: int, user=Depends(get_current_user)):
+    return unsave_question_use_case(user, question_id)
+
+
 @app.get("/questions/{question_id}")
 def get_question(question_id: int):
     try:
@@ -2163,7 +2193,8 @@ def admin_search_questions(
     search: str = Query(default=""),
     section: str = Query(default=""),
     has_images: Optional[bool] = Query(default=None),
-    limit: int = Query(default=40, ge=1, le=1000),
+    limit: int = Query(default=20, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
     admin=Depends(require_admin),
 ):
     return search_admin_questions_use_case(
@@ -2171,6 +2202,7 @@ def admin_search_questions(
         section=section,
         has_images=has_images,
         limit=limit,
+        offset=offset,
         present_question=_sanitize_question_row,
     )
 
@@ -2290,7 +2322,7 @@ def admin_start_theory_parse(req: AdminTheoryParseRequest, admin=Depends(require
             return status
 
         RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
-        script_path = BASE_DIR / "scripts" / "import_vodiy_theory.py"
+        script_path = BASE_DIR.parent / "scripts" / "backend" / "import_vodiy_theory.py"
         if not script_path.exists():
             raise HTTPException(500, "Скрипт парсингу теорії не знайдено")
 

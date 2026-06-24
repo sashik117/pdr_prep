@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, FileQuestion, ImageIcon, PencilLine, Plus, Search, ShieldCheck, Trash2, UploadCloud } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, FileQuestion, ImageIcon, PencilLine, Plus, Search, ShieldCheck, Trash2, UploadCloud } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,22 +29,31 @@ export default function QuestionsPage() {
   const [inlineStatusMessage, setInlineStatusMessage] = useState('');
   const [drafts, setDrafts] = useState({});
   const [createDraft, setCreateDraft] = useState(null);
-  const questionListLimit = section === 'all' && !search.trim() && imageFilter === 'all' ? 120 : 1000;
+  const [page, setPage] = useState(() => Math.max(1, Number(searchParams.get('page') || 1) || 1));
+  const questionListLimit = 20;
+  const questionListOffset = (page - 1) * questionListLimit;
   const hasImagesFilter = imageFilter === 'with' ? true : imageFilter === 'without' ? false : undefined;
 
   const sectionsQuery = useQuery({ queryKey: ['admin-question-sections'], queryFn: () => api.getAdminQuestionSections() });
   const questionsQuery = useQuery({
-    queryKey: ['admin-questions', section, search, imageFilter, questionListLimit],
+    queryKey: ['admin-questions', section, search, imageFilter, questionListLimit, questionListOffset],
     queryFn: () => api.searchAdminQuestions({
       search,
       section: section === 'all' ? '' : section,
       has_images: hasImagesFilter,
       limit: questionListLimit,
+      offset: questionListOffset,
     }),
+    keepPreviousData: true,
   });
 
   const sections = sectionsQuery.data || [];
-  const questions = questionsQuery.data || [];
+  const questionsPayload = Array.isArray(questionsQuery.data)
+    ? { items: questionsQuery.data, total: questionsQuery.data.length, limit: questionListLimit, offset: 0 }
+    : questionsQuery.data || { items: [], total: 0, limit: questionListLimit, offset: questionListOffset };
+  const questions = questionsPayload.items || [];
+  const filteredTotalQuestions = Number(questionsPayload.total || 0);
+  const totalPages = Math.max(1, Math.ceil(filteredTotalQuestions / questionListLimit));
   const selectedQuestion = useMemo(
     () => questions.find((question) => question.id === selectedQuestionId) || null,
     [questions, selectedQuestionId],
@@ -68,11 +77,23 @@ export default function QuestionsPage() {
       else next.delete('search');
       if (imageFilter && imageFilter !== 'all') next.set('images', imageFilter);
       else next.delete('images');
+      if (page > 1) next.set('page', String(page));
+      else next.delete('page');
       if (selectedQuestionId && editorOpen && !isCreating) next.set('question', String(selectedQuestionId));
       else next.delete('question');
       return next;
     }, { replace: true });
-  }, [section, search, imageFilter, selectedQuestionId, editorOpen, isCreating, setSearchParams]);
+  }, [section, search, imageFilter, page, selectedQuestionId, editorOpen, isCreating, setSearchParams]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [section, search, imageFilter]);
+
+  useEffect(() => {
+    if (!questionsQuery.isLoading && page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, questionsQuery.isLoading, totalPages]);
 
   const questionMutation = useMutation({
     mutationFn: ({ questionId, payload }) => api.updateAdminQuestion(questionId, payload),
@@ -118,10 +139,6 @@ export default function QuestionsPage() {
       const createdSection = String(created?.section || section || 'all');
       setSearch('');
       setSection(createdSection);
-      queryClient.setQueryData(['admin-questions', createdSection, '', 'all', 1000], (current = []) => {
-        const list = Array.isArray(current) ? current : [];
-        return [created, ...list.filter((item) => item.id !== created.id)];
-      });
       await queryClient.invalidateQueries({ queryKey: ['admin-question-sections'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-questions', createdSection, ''] });
       setCreateDraft(null);
@@ -270,7 +287,7 @@ export default function QuestionsPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={FileQuestion} label="У базі" value={totalQuestions} hint={`${sections.length} розділів`} tone="blue" />
-        <StatCard icon={ShieldCheck} label="Поточна вибірка" value={questions.length} hint="питань у таблиці" tone="green" />
+        <StatCard icon={ShieldCheck} label="Поточна вибірка" value={filteredTotalQuestions} hint={`${questions.length} на сторінці`} tone="green" />
         <StatCard icon={ImageIcon} label="З ілюстраціями" value={questionsWithImages} hint="у поточній вибірці" tone="violet" />
         <StatCard icon={CheckCircle2} label="Складні" value={hardQuestions} hint="позначені як hard" tone="rose" />
       </div>
@@ -319,8 +336,9 @@ export default function QuestionsPage() {
             {questionsQuery.isLoading ? (
               <div className="p-4"><LoadingState /></div>
             ) : questions.length ? (
-              <div className="overflow-x-auto">
-                <Table>
+              <div>
+                <div className="overflow-x-auto">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>ID</TableHead>
@@ -363,7 +381,26 @@ export default function QuestionsPage() {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
+                  </Table>
+                </div>
+                <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between">
+                  <span>
+                    {questionListOffset + 1}-{Math.min(questionListOffset + questions.length, filteredTotalQuestions)} з {filteredTotalQuestions}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" size="sm" className="rounded-lg" disabled={page <= 1 || questionsQuery.isFetching} onClick={() => setPage((value) => Math.max(1, value - 1))}>
+                      <ChevronLeft className="mr-1 h-4 w-4" />
+                      Назад
+                    </Button>
+                    <span className="min-w-24 text-center text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
+                      {page} / {totalPages}
+                    </span>
+                    <Button type="button" variant="outline" size="sm" className="rounded-lg" disabled={page >= totalPages || questionsQuery.isFetching} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>
+                      Далі
+                      <ChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="p-4"><EmptyState text="За цим пошуком питань не знайдено." /></div>

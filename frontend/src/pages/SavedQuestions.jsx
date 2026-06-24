@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import api from '@/api/apiClient';
 import { normalizeQuestion } from '@/api/questionsApi';
 import QuestionCard from '@/components/test/QuestionCard';
-import { getSavedQuestionIds, isQuestionSaved, toggleSavedQuestion } from '@/lib/savedQuestions';
+import { getSavedQuestionIds, isQuestionSaved, loadSavedQuestionIds, toggleSavedQuestion } from '@/lib/savedQuestions';
 import { useAuth } from '@/lib/AuthContext';
 import LoginPrompt from '@/components/auth/LoginPrompt';
 
@@ -20,6 +20,12 @@ export default function SavedQuestions() {
   const [revealedAnswers, setRevealedAnswers] = useState({});
   const idsKey = savedIds.join(',');
 
+  const savedIdsQuery = useQuery({
+    queryKey: ['saved-question-ids', user?.id],
+    enabled: Boolean(user),
+    queryFn: () => loadSavedQuestionIds(user),
+  });
+
   useEffect(() => {
     const refresh = () => setSavedIds(getSavedQuestionIds());
     window.addEventListener('driveprep:saved-questions-change', refresh);
@@ -29,6 +35,12 @@ export default function SavedQuestions() {
       window.removeEventListener('storage', refresh);
     };
   }, []);
+
+  useEffect(() => {
+    if (Array.isArray(savedIdsQuery.data)) {
+      setSavedIds(savedIdsQuery.data);
+    }
+  }, [savedIdsQuery.data]);
 
   const questionsQuery = useQuery({
     queryKey: ['saved-questions', idsKey],

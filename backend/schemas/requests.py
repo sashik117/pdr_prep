@@ -130,6 +130,10 @@ class PromoConfigRequest(BaseModel):
     regular_prices: Optional[dict[str, int]] = None
 
 
+class SavedQuestionsSyncRequest(BaseModel):
+    ids: list[int] = Field(default_factory=list)
+
+
 class PremiumFeaturesUpdateRequest(BaseModel):
     features: list[dict[str, Any]]
 

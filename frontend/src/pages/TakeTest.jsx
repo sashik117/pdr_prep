@@ -21,7 +21,7 @@ import GhostBar from '@/components/test/GhostBar';
 import LoginPrompt from '@/components/auth/LoginPrompt';
 import PremiumLimitDialog from '@/components/premium/PremiumLimitDialog';
 import { hasPremiumAccess, registerFreeTestCompletion } from '@/lib/accessLimits';
-import { getSavedQuestionIds, isQuestionSaved, toggleSavedQuestion } from '@/lib/savedQuestions';
+import { getSavedQuestionIds, isQuestionSaved, loadSavedQuestionIds, toggleSavedQuestion } from '@/lib/savedQuestions';
 import { playTone } from '@/lib/soundEffects';
 import { getAchievementCopy } from '@/lib/achievements';
 
@@ -312,6 +312,13 @@ export default function TakeTest() {
       window.removeEventListener('storage', refresh);
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    loadSavedQuestionIds(user)
+      .then((ids) => setSavedIds(ids))
+      .catch(() => {});
+  }, [user?.id]);
 
   useEffect(() => {
     const raw = Number(localStorage.getItem(ghostKey));
@@ -786,7 +793,7 @@ export default function TakeTest() {
                 description: saved
                   ? 'Ви зможете повернутися до нього в розділі “Збережені запитання”.'
                   : 'Список повторення оновлено.',
-                onClick: saved ? () => navigate('/saved') : undefined,
+                onClick: saved ? () => navigate('/saved-questions') : undefined,
               });
             } : undefined}
             isAuthenticated={!!user}
